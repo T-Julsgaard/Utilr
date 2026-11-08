@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simple Notes — Gutter</title>
+<link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000;display:flex;justify-content:center;padding:40px 0}
+a{color:#5fd7ff}a:hover{color:#a8eaff}
+@keyframes vm-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.vm-cursor{animation:vm-blink 1s steps(1) infinite}
+.vm-btn:hover{color:#e6e6ea}
+</style>
+</head>
+<body>
+<div style="width: 780px; height: 480px; box-sizing: border-box; padding: 56px 60px; background: #050506; font-family: 'Martian Mono', ui-monospace, monospace; display: flex; gap: 60px; align-items: flex-start">
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 10px; color: #8b8b96; letter-spacing: 0.1em">NORMAL — EMPTY</span>
+    <div style="width: 300px; height: 300px; background: #0c0c0e; outline: 1px solid #1e1e23; display: flex; flex-direction: column; color: #e6e6ea; font-size: 11px">
+      <div style="height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px">
+        <button class="vm-btn" aria-label="New note" style="height: 26px; padding: 0 8px; border: 0; background: transparent; color: #8b8b96; font-family: inherit; font-size: 13px; cursor: pointer">+</button>
+        <div style="display: flex">
+          <button class="vm-btn" aria-label="Menu" style="height: 26px; padding: 0 6px; border: 0; background: transparent; color: #8b8b96; font-family: inherit; font-size: 12px; cursor: pointer">···</button>
+          <button class="vm-btn" aria-label="Close" style="height: 26px; padding: 0 8px; border: 0; background: transparent; color: #8b8b96; font-family: inherit; font-size: 13px; cursor: pointer">×</button>
+        </div>
+      </div>
+      <div style="flex: 1; display: grid; grid-template-columns: 34px minmax(0, 1fr); line-height: 1.9; padding-top: 4px">
+        <div style="text-align: right; padding-right: 10px; color: #5fd7ff">1</div><div><span class="vm-cursor" style="display: inline-block; width: 7px; height: 13px; background: #5fd7ff; vertical-align: -2px"></span></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+      </div>
+      <div style="height: 22px; display: flex; align-items: center; padding: 0 10px; font-size: 9px; color: #8b8b96">press i to write</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 10px; color: #8b8b96; letter-spacing: 0.1em">INSERT — WRITING</span>
+    <div style="width: 300px; height: 300px; background: #0c0c0e; outline: 1px solid #1e1e23; display: flex; flex-direction: column; color: #e6e6ea; font-size: 11px">
+      <div style="height: 28px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px">
+        <button class="vm-btn" aria-label="New note" style="height: 26px; padding: 0 8px; border: 0; background: transparent; color: #8b8b96; font-family: inherit; font-size: 13px; cursor: pointer">+</button>
+        <div style="display: flex">
+          <button class="vm-btn" aria-label="Menu" style="height: 26px; padding: 0 6px; border: 0; background: transparent; color: #8b8b96; font-family: inherit; font-size: 12px; cursor: pointer">···</button>
+          <button class="vm-btn" aria-label="Close" style="height: 26px; padding: 0 8px; border: 0; background: transparent; color: #8b8b96; font-family: inherit; font-size: 13px; cursor: pointer">×</button>
+        </div>
+      </div>
+      <div style="flex: 1; display: grid; grid-template-columns: 34px minmax(0, 1fr); line-height: 1.9; padding-top: 4px">
+        <div style="text-align: right; padding-right: 10px; color: #8b8b96">1</div><div style="font-weight: 600">deploy checklist</div>
+        <div style="text-align: right; padding-right: 10px; color: #8b8b96">2</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #8b8b96">3</div><div>bump version</div>
+        <div style="text-align: right; padding-right: 10px; color: #8b8b96">4</div><div>run tests</div>
+        <div style="text-align: right; padding-right: 10px; color: #5fd7ff">5</div><div style="background: #15151a">tag + push<span class="vm-cursor" style="display: inline-block; width: 1px; height: 13px; background: #5fd7ff; vertical-align: -2px; margin-left: 1px"></span></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+        <div style="text-align: right; padding-right: 10px; color: #4d4d57">~</div><div></div>
+      </div>
+      <div style="height: 22px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font-size: 9px">
+        <span style="color: #5fd7ff">-- INSERT --</span>
+        <span style="color: #8b8b96">deploy.txt [+]</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "name": "notr",
+  "productName": "notr",
+  "version": "1.0.0",
+  "description": "A tiny, always-on-top note app for Windows. Open it and you get a note.",
+  "main": "src/main.js",
+  "author": "T_J",
+  "license": "MIT",
+  "private": true,
+  "homepage": "https://t-julsgaard.github.io/Notr/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/T-Julsgaard/Notr.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "web": "node scripts/build-web.js",
+    "test": "node scripts/test.js"
+  },
+  "build": {
+    "appId": "app.notr",
+    "productName": "notr",
+    "executableName": "notr",
+    "files": [
+      "src/**/*",
+      "node_modules/@fontsource/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/notr.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "notr",
+      "createStartMenuShortcut": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "src/assets/notr.ico",
+      "uninstallerIcon": "src/assets/notr.ico",
+      "uninstallDisplayName": "notr",
+      "include": "build/installer.nsh",
+      "artifactName": "notr-setup-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "@fontsource/dm-mono": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/martian-mono": "^5.3.0",
+    "@fontsource/space-mono": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0"
+  }
+}

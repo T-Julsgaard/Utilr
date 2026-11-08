@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simple Notes — Dots</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000;display:flex;justify-content:center;padding:40px 0}
+a{color:#e4e4e4}a:hover{color:#ffffff}
+@keyframes dt-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.dt-cursor{animation:dt-blink 1s steps(1) infinite}
+.dt-btn:hover{color:#ffffff}
+</style>
+</head>
+<body>
+<div style="width: 980px; height: 440px; box-sizing: border-box; padding: 56px 80px; background: #050505; font-family: 'Space Mono', ui-monospace, monospace; display: flex; flex-direction: column; gap: 14px">
+  <span style="font-size: 11px; color: #8a8a8a; letter-spacing: 0.1em">ONE DOT OF COLOR PER NOTE — THE ONLY DECORATION</span>
+  <div style="display: flex; gap: 50px; align-items: flex-start">
+
+    <div style="width: 240px; height: 240px; background: #101010; display: flex; flex-direction: column; color: #e4e4e4">
+      <div style="height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 12px">
+        <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #39ff88"></span>
+        <button class="dt-btn" aria-label="Close" style="height: 28px; padding: 0 6px; border: 0; background: transparent; color: #8a8a8a; font-family: inherit; font-size: 13px; cursor: pointer">×</button>
+      </div>
+      <div style="flex: 1; padding: 4px 12px; font-size: 12px; line-height: 1.7">
+        <div>pr #212</div>
+        <div style="color: #9a9a9a">review before standup</div>
+      </div>
+    </div>
+
+    <div style="width: 240px; height: 240px; background: #101010; display: flex; flex-direction: column; color: #e4e4e4">
+      <div style="height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 12px">
+        <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #ffb000"></span>
+        <button class="dt-btn" aria-label="Close" style="height: 28px; padding: 0 6px; border: 0; background: transparent; color: #8a8a8a; font-family: inherit; font-size: 13px; cursor: pointer">×</button>
+      </div>
+      <div style="flex: 1; padding: 4px 12px; font-size: 12px; line-height: 1.7">
+        <div>192.168.1.40</div>
+        <div style="color: #9a9a9a">nas — user: admin</div>
+        <div style="color: #9a9a9a">port 5001</div>
+      </div>
+    </div>
+
+    <div style="width: 240px; height: 240px; background: #101010; outline: 1px solid #2a2a2a; display: flex; flex-direction: column; color: #e4e4e4">
+      <div style="height: 30px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 12px">
+        <span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #5fb3ff"></span>
+        <button class="dt-btn" aria-label="Close" style="height: 28px; padding: 0 6px; border: 0; background: transparent; color: #8a8a8a; font-family: inherit; font-size: 13px; cursor: pointer">×</button>
+      </div>
+      <div style="flex: 1; padding: 4px 12px; font-size: 12px; line-height: 1.7">
+        <span class="dt-cursor" style="display: inline-block; width: 7px; height: 14px; background: #5fb3ff; vertical-align: -2px"></span>
+      </div>
+      <div style="padding: 0 12px 10px; font-size: 10px; color: #8a8a8a">ctrl+n new · ctrl+1–3 color</div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,3 @@
+/* Browser-only tweaks for the GitHub Pages demo (not used by the app). */
+.bar { touch-action: none; }
+.editor { -webkit-tap-highlight-color: transparent; }

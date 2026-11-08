@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simple Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000;display:flex;justify-content:center;padding:40px 0}
+a{color:#39ff88}a:hover{color:#8dffbd}
+@keyframes sn-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.sn-cursor{animation:sn-blink 1s steps(1) infinite}
+.sn-btn:hover{background:#1f2622}
+.sn-item:hover{background:#18201b}
+</style>
+</head>
+<body>
+<div style="width: 1180px; height: 520px; box-sizing: border-box; padding: 56px 60px; background: #070908; font-family: 'JetBrains Mono', ui-monospace, monospace; color: #c9d4cd; display: flex; gap: 60px; align-items: flex-start">
+
+  <!-- ===== 1. Empty note ===== -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 11px; color: #7d8a82; letter-spacing: 0.08em">// 01 — EMPTY</span>
+    <div style="width: 300px; height: 300px; background: #0f1311; border: 1px solid #232b26; display: flex; flex-direction: column; box-shadow: 0 18px 40px rgba(0,0,0,0.55)">
+      <div style="height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px; background: #141a16; border-bottom: 1px solid #232b26">
+        <button class="sn-btn" aria-label="New note" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"></path></svg>
+        </button>
+        <span style="font-size: 11px; color: #7d8a82">note_0x04</span>
+        <div style="display: flex">
+          <button class="sn-btn" aria-label="Menu" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; cursor: pointer; font-family: inherit; font-size: 13px">···</button>
+          <button class="sn-btn" aria-label="Close" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 14px 14px; font-size: 13px; line-height: 1.6; width: 270px">
+        <span style="color: #39ff88">&gt;</span> <span style="color: #6f7c74">take a note</span><span class="sn-cursor" style="display: inline-block; width: 8px; height: 15px; background: #39ff88; vertical-align: -2px; margin-left: 2px"></span>
+      </div>
+      <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-top: 1px solid #1c231f; font-size: 10px; color: #6f7c74">
+        <span>ln 1, col 1</span>
+        <span>utf-8 · empty</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 2. Writing ===== -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 11px; color: #7d8a82; letter-spacing: 0.08em">// 02 — WRITING</span>
+    <div style="width: 300px; height: 300px; background: #0f1311; border: 1px solid #2d6b48; display: flex; flex-direction: column; box-shadow: 0 0 0 1px rgba(57,255,136,0.08), 0 18px 40px rgba(0,0,0,0.55)">
+      <div style="height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px; background: #141a16; border-bottom: 1px solid #232b26">
+        <button class="sn-btn" aria-label="New note" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"></path></svg>
+        </button>
+        <span style="font-size: 11px; color: #39ff88">groceries.txt</span>
+        <div style="display: flex">
+          <button class="sn-btn" aria-label="Menu" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; cursor: pointer; font-family: inherit; font-size: 13px">···</button>
+          <button class="sn-btn" aria-label="Close" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 14px 14px; font-size: 13px; line-height: 1.7; display: flex; flex-direction: column">
+        <div style="color: #e8efe9; font-weight: 700"># groceries</div>
+        <div><span style="color: #39ff88">[x]</span> <span style="color: #6f7c74; text-decoration: line-through">coffee beans</span></div>
+        <div><span style="color: #7d8a82">[ ]</span> oat milk</div>
+        <div><span style="color: #7d8a82">[ ]</span> rye bread</div>
+        <div style="margin-top: 8px; color: #9aa79f">call landlord re: heater</div>
+        <div style="color: #9aa79f">ssh key expires fri<span class="sn-cursor" style="display: inline-block; width: 8px; height: 15px; background: #39ff88; vertical-align: -2px; margin-left: 2px"></span></div>
+      </div>
+      <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-top: 1px solid #1c231f; font-size: 10px; color: #6f7c74">
+        <span>ln 7, col 19</span>
+        <span><span style="color: #39ff88">●</span> saved 14:02</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3. Menu open ===== -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 11px; color: #7d8a82; letter-spacing: 0.08em">// 03 — MENU</span>
+    <div style="width: 300px; height: 300px; background: #0f1311; border: 1px solid #232b26; display: flex; flex-direction: column; position: relative; box-shadow: 0 18px 40px rgba(0,0,0,0.55)">
+      <div style="height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px; background: #141a16; border-bottom: 1px solid #232b26">
+        <button class="sn-btn" aria-label="New note" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"></path></svg>
+        </button>
+        <span style="font-size: 11px; color: #7d8a82">todo.txt</span>
+        <div style="display: flex">
+          <button aria-label="Menu" aria-expanded="true" style="width: 30px; height: 28px; border: 0; background: #1f2622; color: #39ff88; cursor: pointer; font-family: inherit; font-size: 13px">···</button>
+          <button class="sn-btn" aria-label="Close" style="width: 30px; height: 28px; border: 0; background: transparent; color: #c9d4cd; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"></path></svg>
+          </button>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 14px; font-size: 13px; line-height: 1.7; color: #6f7c74">
+        <div>refactor sync loop</div>
+        <div>reply to mads</div>
+      </div>
+      <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-top: 1px solid #1c231f; font-size: 10px; color: #6f7c74">
+        <span>ln 2, col 13</span>
+        <span>utf-8</span>
+      </div>
+      <div role="menu" style="position: absolute; top: 36px; right: 6px; width: 210px; background: #0b0e0c; border: 1px solid #2d6b48; padding: 6px 0; font-size: 12px; box-shadow: 0 12px 30px rgba(0,0,0,0.7)">
+        <button role="menuitem" class="sn-item" style="width: 100%; border: 0; background: transparent; color: #c9d4cd; font-family: inherit; font-size: 12px; display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer"><span><span style="color: #39ff88">&gt;</span> all notes</span><span style="color: #6f7c74">ctrl+l</span></button>
+        <button role="menuitem" class="sn-item" style="width: 100%; border: 0; background: transparent; color: #c9d4cd; font-family: inherit; font-size: 12px; display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer"><span>&nbsp; pin on top</span><span style="color: #6f7c74">ctrl+p</span></button>
+        <button role="menuitem" class="sn-item" style="width: 100%; border: 0; background: transparent; color: #c9d4cd; font-family: inherit; font-size: 12px; display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer"><span>&nbsp; accent: green</span><span style="color: #39ff88">■</span></button>
+        <div style="height: 1px; background: #1c231f; margin: 6px 0"></div>
+        <button role="menuitem" class="sn-item" style="width: 100%; border: 0; background: transparent; color: #ff7a6b; font-family: inherit; font-size: 12px; display: flex; justify-content: space-between; padding: 8px 12px; cursor: pointer"><span>&nbsp; rm note</span><span style="color: #8a5b55">del</span></button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

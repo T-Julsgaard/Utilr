@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Simple Notes — Amber CRT</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000;display:flex;justify-content:center;padding:40px 0}
+a{color:#ffb000}a:hover{color:#ffd277}
+@keyframes am-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.am-cursor{animation:am-blink 1.06s steps(1) infinite}
+.am-scan{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,0.28) 0px,rgba(0,0,0,0.28) 1px,transparent 1px,transparent 3px)}
+.am-btn:hover{background:#ffb000;color:#140d02}
+</style>
+</head>
+<body>
+<div style="width: 780px; height: 480px; box-sizing: border-box; padding: 56px 60px; background: #060402; font-family: 'VT323', ui-monospace, monospace; color: #ffb000; display: flex; gap: 60px; align-items: flex-start">
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 18px; color: #b37c00">:: EMPTY</span>
+    <div class="am-scan" style="width: 300px; height: 300px; background-color: #140d02; border: 2px solid #ffb000; display: flex; flex-direction: column; box-shadow: 0 0 18px rgba(255,176,0,0.22); text-shadow: 0 0 6px rgba(255,176,0,0.55)">
+      <div style="height: 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ffb000; font-size: 22px">
+        <button class="am-btn" aria-label="New note" style="height: 30px; padding: 0 8px; border: 0; background: transparent; color: #ffb000; font-family: inherit; font-size: 22px; cursor: pointer">[+]</button>
+        <span style="font-size: 18px; color: #b37c00">NOTE.004</span>
+        <div style="display: flex">
+          <button class="am-btn" aria-label="Menu" style="height: 30px; padding: 0 6px; border: 0; background: transparent; color: #ffb000; font-family: inherit; font-size: 22px; cursor: pointer">[≡]</button>
+          <button class="am-btn" aria-label="Close" style="height: 30px; padding: 0 8px; border: 0; background: transparent; color: #ffb000; font-family: inherit; font-size: 22px; cursor: pointer">[x]</button>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 12px 14px; font-size: 22px; line-height: 1.2">
+        <span>C:\NOTES&gt;</span><span class="am-cursor" style="display: inline-block; width: 11px; height: 18px; background: #ffb000; vertical-align: -2px; margin-left: 4px"></span>
+        <div style="color: #b37c00; font-size: 20px; margin-top: 4px">TAKE A NOTE...</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 18px; color: #b37c00">:: WRITING</span>
+    <div class="am-scan" style="width: 300px; height: 300px; background-color: #140d02; border: 2px solid #ffb000; display: flex; flex-direction: column; box-shadow: 0 0 18px rgba(255,176,0,0.22); text-shadow: 0 0 6px rgba(255,176,0,0.55)">
+      <div style="height: 32px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #ffb000; font-size: 22px">
+        <button class="am-btn" aria-label="New note" style="height: 30px; padding: 0 8px; border: 0; background: transparent; color: #ffb000; font-family: inherit; font-size: 22px; cursor: pointer">[+]</button>
+        <span style="font-size: 18px; background: #ffb000; color: #140d02; padding: 0 6px; text-shadow: none">IDEAS.TXT</span>
+        <div style="display: flex">
+          <button class="am-btn" aria-label="Menu" style="height: 30px; padding: 0 6px; border: 0; background: transparent; color: #ffb000; font-family: inherit; font-size: 22px; cursor: pointer">[≡]</button>
+          <button class="am-btn" aria-label="Close" style="height: 30px; padding: 0 8px; border: 0; background: transparent; color: #ffb000; font-family: inherit; font-size: 22px; cursor: pointer">[x]</button>
+        </div>
+      </div>
+      <div style="flex: 1; padding: 12px 14px; font-size: 22px; line-height: 1.15">
+        <div>== SIDE PROJECTS ==</div>
+        <div style="margin-top: 6px">* tiny note app</div>
+        <div>* rewrite dotfiles</div>
+        <div>* learn rust (again)</div>
+        <div style="margin-top: 8px; color: #b37c00">-- 2026.11.08 --</div>
+        <div>buy a real CRT<span class="am-cursor" style="display: inline-block; width: 11px; height: 18px; background: #ffb000; vertical-align: -2px; margin-left: 4px"></span></div>
+      </div>
+      <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; border-top: 2px solid #ffb000; font-size: 17px">
+        <span>LN 6</span>
+        <span>SAVED OK</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

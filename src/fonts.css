@@ -1,0 +1,23 @@
+/* Design fonts, bundled locally so Notr works offline. */
+@import url("../node_modules/@fontsource/jetbrains-mono/400.css");
+@import url("../node_modules/@fontsource/jetbrains-mono/500.css");
+@import url("../node_modules/@fontsource/jetbrains-mono/700.css");
+@import url("../node_modules/@fontsource/jetbrains-mono/400-italic.css");
+@import url("../node_modules/@fontsource/jetbrains-mono/700-italic.css");
+@import url("../node_modules/@fontsource/vt323/400.css");
+@import url("../node_modules/@fontsource/ibm-plex-mono/400.css");
+@import url("../node_modules/@fontsource/ibm-plex-mono/600.css");
+@import url("../node_modules/@fontsource/ibm-plex-mono/400-italic.css");
+@import url("../node_modules/@fontsource/ibm-plex-mono/600-italic.css");
+@import url("../node_modules/@fontsource/dm-mono/300.css");
+@import url("../node_modules/@fontsource/dm-mono/400.css");
+@import url("../node_modules/@fontsource/dm-mono/500.css");
+@import url("../node_modules/@fontsource/dm-mono/300-italic.css");
+@import url("../node_modules/@fontsource/dm-mono/400-italic.css");
+@import url("../node_modules/@fontsource/martian-mono/300.css");
+@import url("../node_modules/@fontsource/martian-mono/400.css");
+@import url("../node_modules/@fontsource/martian-mono/600.css");
+@import url("../node_modules/@fontsource/space-mono/400.css");
+@import url("../node_modules/@fontsource/space-mono/700.css");
+@import url("../node_modules/@fontsource/space-mono/400-italic.css");
+@import url("../node_modules/@fontsource/space-mono/700-italic.css");

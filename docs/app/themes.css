@@ -1,0 +1,259 @@
+/* Notr themes — one block per design in simple-notes-design/designs. */
+
+/* ===== 01 green (default) ===== */
+body[data-theme="green"] {
+  --font: 'JetBrains Mono', ui-monospace, monospace;
+  --bg: #0f1311;
+  --bar: #141a16;
+  --border: #232b26;
+  --border-focus: #2d6b48;
+  --frame-shadow-focus: inset 0 0 0 1px rgba(57, 255, 136, .08);
+  --divider: #1c231f;
+  --text: #c9d4cd;
+  --strong: #e8efe9;
+  --muted: #9aa79f;
+  --dim: #6f7c74;
+  --label: #7d8a82;
+  --accent: #39ff88;
+  --hover: #1f2622;
+  --danger: #ff7a6b;
+  --menu-bg: #0b0e0c;
+  --menu-border: #2d6b48;
+  --menu-hover: #18201b;
+  --sel: rgba(57, 255, 136, .22);
+  --size: 13px;
+  --lh: 1.65;
+  --pad: 14px;
+  --title-size: 11px;
+  --status-size: 10px;
+  --menu-size: 12px;
+  --bar-h: 34px;
+  --status-h: 24px;
+}
+
+/* ===== 03 amber CRT ===== */
+body[data-theme="amber"] {
+  --font: 'VT323', ui-monospace, monospace;
+  --bg: #140d02;
+  --bar: transparent;
+  --border: #b37c00;
+  --border-focus: #ffb000;
+  --border-w: 2px;
+  --bar-border: #ffb000;
+  --bar-border-w: 2px;
+  --status-border-w: 2px;
+  --frame-shadow: inset 0 0 18px rgba(255, 176, 0, .12);
+  --frame-shadow-focus: inset 0 0 18px rgba(255, 176, 0, .22);
+  --divider: #ffb000;
+  --text: #ffb000;
+  --strong: #ffd277;
+  --dim: #b37c00;
+  --label: #b37c00;
+  --accent: #ffb000;
+  --hover: #ffb000;
+  --btn-hover: #140d02;
+  --danger: #ff6a3d;
+  --menu-bg: #140d02;
+  --menu-border: #ffb000;
+  --menu-hover: rgba(255, 176, 0, .18);
+  --sel: rgba(255, 176, 0, .35);
+  --size: 22px;
+  --lh: 1.15;
+  --pad: 12px 14px;
+  --title-size: 18px;
+  --status-size: 17px;
+  --menu-size: 19px;
+  --mi-pad: 3px 12px;
+  --bar-h: 32px;
+  --status-h: 24px;
+  text-shadow: 0 0 6px rgba(255, 176, 0, .55);
+}
+body[data-theme="amber"] { --hr: #ffb000; --hr-w: 2px; }
+body[data-theme="amber"] .scan {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0px, rgba(0,0,0,.28) 1px, transparent 1px, transparent 3px);
+}
+body[data-theme="amber"] .btn { font-size: 22px; padding: 0 6px; }
+body[data-theme="amber"] .btn .ico { display: none; }
+body[data-theme="amber"] .btn .txt { display: inline; }
+body[data-theme="amber"] .btn:hover { text-shadow: none; }
+body[data-theme="amber"] .bar,
+body[data-theme="amber"] .status,
+body[data-theme="amber"] .menu,
+body[data-theme="amber"] .confirm { text-transform: uppercase; }
+body[data-theme="amber"] .menu { box-shadow: 0 0 18px rgba(255, 176, 0, .22); }
+body[data-theme="amber"] .stepper button { font-size: 20px; }
+
+/* ===== 04 bare mono (dark) ===== */
+body[data-theme="mono"],
+body[data-theme="paper"] {
+  --font: 'IBM Plex Mono', ui-monospace, monospace;
+  --bar: transparent;
+  --bar-border-w: 0;
+  --status-border-w: 0;
+  --btn-opacity: .7;
+  --size: 13px;
+  --lh: 1.75;
+  --pad: 16px 14px;
+  --title-size: 11px;
+  --status-size: 10px;
+  --menu-size: 12px;
+  --bar-h: 30px;
+  --status-h: 24px;
+}
+body[data-theme="mono"] {
+  --bg: #000000;
+  --border: #333333;
+  --border-focus: #555555;
+  --divider: #222222;
+  --text: #f2f2f2;
+  --strong: #ffffff;
+  --dim: #8c8c8c;
+  --label: #8c8c8c;
+  --accent: #f2f2f2;
+  --hover: transparent;
+  --danger: #ff7a6b;
+  --menu-bg: #0a0a0a;
+  --menu-border: #444444;
+  --menu-hover: #1a1a1a;
+  --sel: rgba(255, 255, 255, .2);
+}
+/* ===== 04 bare mono (light paper) ===== */
+body[data-theme="paper"] {
+  --bg: #f4f4f0;
+  --border: #d6d6cf;
+  --border-focus: #9a9a92;
+  --divider: #e2e2dc;
+  --text: #111111;
+  --strong: #000000;
+  --dim: #6b6b6b;
+  --label: #6b6b6b;
+  --accent: #111111;
+  --hover: transparent;
+  --danger: #c0392b;
+  --menu-bg: #fbfbf8;
+  --menu-border: #111111;
+  --menu-hover: #ebebe5;
+  --sel: rgba(0, 0, 0, .12);
+  --scroll: #cfcfc8;
+}
+body[data-theme="mono"] .rule,
+body[data-theme="paper"] .rule { display: block; }
+body[data-theme="mono"] .status, body[data-theme="paper"] .status { padding: 0 14px; }
+body[data-theme="paper"] .menu { box-shadow: 0 10px 24px rgba(0, 0, 0, .15); }
+
+/* ===== 05 ghost (chrome only on hover) ===== */
+body[data-theme="ghost"] {
+  --font: 'DM Mono', ui-monospace, monospace;
+  --weight: 300;
+  --bg: #111111;
+  --bar: transparent;
+  --bar-border-w: 0;
+  --status-border-w: 0;
+  --border: #2a2a2a;
+  --border-focus: #333333;
+  --divider: #1d1d1d;
+  --text: #d6d6d6;
+  --strong: #ffffff;
+  --dim: #8a8a8a;
+  --label: #8a8a8a;
+  --accent: #d6d6d6;
+  --btn: #8a8a8a;
+  --btn-hover: #ffffff;
+  --hover: transparent;
+  --danger: #ff7a6b;
+  --menu-bg: #161616;
+  --menu-border: #2a2a2a;
+  --menu-hover: #1f1f1f;
+  --sel: rgba(255, 255, 255, .14);
+  --size: 13px;
+  --lh: 1.8;
+  --pad: 6px 18px;
+  --title-size: 10px;
+  --status-size: 10px;
+  --menu-size: 12px;
+  --bar-h: 30px;
+  --status-h: 22px;
+}
+body[data-theme="ghost"] .bar > *,
+body[data-theme="ghost"] .status,
+body[data-theme="ghost"] .frame { opacity: 0; transition: opacity .25s; }
+body[data-theme="ghost"].hover .bar > *,
+body[data-theme="ghost"].hover .status,
+body[data-theme="ghost"].hover .frame,
+body[data-theme="ghost"].menu-open .bar > *,
+body[data-theme="ghost"].menu-open .frame { opacity: 1; }
+
+/* ===== 06 gutter (vim) ===== */
+body[data-theme="gutter"] {
+  --font: 'Martian Mono', ui-monospace, monospace;
+  --bg: #0c0c0e;
+  --bar: transparent;
+  --bar-border-w: 0;
+  --status-border-w: 0;
+  --border: #1e1e23;
+  --border-focus: #2b2b33;
+  --divider: #1e1e23;
+  --text: #e6e6ea;
+  --strong: #ffffff;
+  --dim: #8b8b96;
+  --label: #8b8b96;
+  --accent: #5fd7ff;
+  --btn: #8b8b96;
+  --btn-hover: #e6e6ea;
+  --hover: transparent;
+  --danger: #ff7a6b;
+  --menu-bg: #0f0f12;
+  --menu-border: #2b2b33;
+  --menu-hover: #15151a;
+  --sel: rgba(95, 215, 255, .2);
+  --size: 11px;
+  --lh: 1.9;
+  --pad: 4px 12px 10px 14px;
+  --title-size: 10px;
+  --status-size: 9px;
+  --menu-size: 11px;
+  --bar-h: 28px;
+  --status-h: 22px;
+}
+body[data-theme="gutter"] .editor { border-left: 1px solid #16161a; }
+
+/* ===== 07 dots (one colour dot per note) ===== */
+body[data-theme="dots"] {
+  --font: 'Space Mono', ui-monospace, monospace;
+  --bg: #101010;
+  --bar: transparent;
+  --bar-border-w: 0;
+  --status-border-w: 0;
+  --border: #101010;
+  --border-focus: #2a2a2a;
+  --divider: #1d1d1d;
+  --text: #e4e4e4;
+  --strong: #ffffff;
+  --dim: #8a8a8a;
+  --label: #8a8a8a;
+  --accent: #39ff88;
+  --btn: #8a8a8a;
+  --btn-hover: #ffffff;
+  --hover: transparent;
+  --danger: #ff7a6b;
+  --menu-bg: #141414;
+  --menu-border: #2a2a2a;
+  --menu-hover: #1d1d1d;
+  --sel: rgba(255, 255, 255, .14);
+  --size: 12px;
+  --lh: 1.7;
+  --pad: 4px 12px;
+  --title-size: 10px;
+  --status-size: 10px;
+  --menu-size: 12px;
+  --bar-h: 30px;
+  --status-h: 22px;
+}
+body[data-theme="dots"][data-dot="amber"] { --accent: #ffb000; }
+body[data-theme="dots"][data-dot="blue"] { --accent: #5fb3ff; }
+body[data-theme="dots"] .dot { display: block; order: -1; margin: 0 8px 0 8px; }
