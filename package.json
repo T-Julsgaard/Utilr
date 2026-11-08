@@ -1,8 +1,8 @@
 {
   "name": "notr",
   "productName": "notr",
-  "version": "1.0.0",
-  "description": "A tiny, always-on-top note app for Windows. Open it and you get a note.",
+  "version": "1.1.0",
+  "description": "A tiny, always-on-top note app. Open it and you get a note.",
   "main": "src/main.js",
   "author": "T_J",
   "license": "MIT",
@@ -14,7 +14,10 @@
   },
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder --win nsis",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never",
     "web": "node scripts/build-web.js",
     "test": "node scripts/test.js"
   },
@@ -42,6 +45,42 @@
       "uninstallDisplayName": "notr",
       "include": "build/installer.nsh",
       "artifactName": "notr-setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "notr-${version}-mac.${ext}"
+    },
+    "dmg": {
+      "title": "notr"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "synopsis": "A tiny, always-on-top note app",
+      "maintainer": "T-Julsgaard <T-Julsgaard@users.noreply.github.com>",
+      "executableName": "notr"
+    },
+    "appImage": {
+      "artifactName": "notr-${version}-linux-x86_64.${ext}"
+    },
+    "deb": {
+      "artifactName": "notr-${version}-linux-amd64.${ext}"
     }
   },
   "devDependencies": {

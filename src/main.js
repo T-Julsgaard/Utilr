@@ -23,8 +23,21 @@ const DOTS = ['green', 'amber', 'blue'];
 const DEFAULT_SIZE = { width: 300, height: 300 };
 const MIN_SIZE = { width: 200, height: 150 };
 const GAP = 14; // space between notes when a new one is placed
-const ICON = path.join(__dirname, 'assets', 'notr.ico');
-const TRAY_ICON = ICON; // the .ico carries the chunkier 16/24 px mark for small sizes
+const IS_WIN = process.platform === 'win32';
+const IS_MAC = process.platform === 'darwin';
+const ICON = path.join(__dirname, 'assets', IS_WIN ? 'notr.ico' : 'notr-256.png');
+
+// Tray / menu bar icon: the .ico carries the chunkier 16/24 px mark on
+// Windows; macOS wants a black "template" image it can recolour.
+function trayImage() {
+  if (IS_WIN) return nativeImage.createFromPath(ICON);
+  if (IS_MAC) {
+    const img = nativeImage.createFromPath(path.join(__dirname, 'assets', 'trayTemplate.png'));
+    img.setTemplateImage(true);
+    return img;
+  }
+  return nativeImage.createFromPath(ICON).resize({ width: 24, height: 24 });
+}
 
 // Dev / test hook: keep a separate data folder (e.g. NOTR_USER_DATA=C:\tmp\notr).
 if (process.env.NOTR_USER_DATA) app.setPath('userData', process.env.NOTR_USER_DATA);
@@ -477,7 +490,7 @@ function quitApp() {
 
 function createTray() {
   try {
-    tray = new Tray(nativeImage.createFromPath(TRAY_ICON));
+    tray = new Tray(trayImage());
   } catch (_) { return; }
   tray.setToolTip('notr');
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -487,23 +500,74 @@ function createTray() {
     { type: 'separator' },
     { label: 'Quit notr', click: quitApp },
   ]));
-  tray.on('click', showAll);
+  if (!IS_MAC) tray.on('click', showAll); // on macOS a click opens the menu
+}
+
+// macOS needs an app menu, or cmd+c / cmd+v / cmd+z stop working in notes.
+// Windows and Linux get none: notes have no menu bar.
+function setAppMenu() {
+  if (!IS_MAC) { Menu.setApplicationMenu(null); return; }
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: 'notr',
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { label: 'New Note', click: () => { if (!openWindows().length) openAll(); else newNoteFrom(lastFocused); } },
+        { label: 'Close Notes', accelerator: 'Cmd+W', click: closeAll },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { type: 'separator' },
+        { label: 'Quit notr', accelerator: 'Cmd+Q', click: quitApp },
+      ],
+    },
+    { role: 'editMenu' },
+  ]));
 }
 
 // Start with Windows (in the background, so "open notr" works right after
 // login). Only for the installed app, never for a dev checkout.
+// On macOS and Linux it's "start at login".
 function syncLoginItem() {
   if (!app.isPackaged) return;
   try {
-    app.setLoginItemSettings({
-      openAtLogin: !!state.settings.startup,
-      path: process.execPath,
-      args: ['--hidden'],
-      name: 'notr',
-    });
+    if (process.platform === 'linux') syncLinuxAutostart();
+    else if (IS_MAC) app.setLoginItemSettings({ openAtLogin: !!state.settings.startup });
+    else {
+      app.setLoginItemSettings({
+        openAtLogin: !!state.settings.startup,
+        path: process.execPath,
+        args: ['--hidden'],
+        name: 'notr',
+      });
+    }
   } catch (err) {
-    console.warn('notr: could not update start-with-windows', err.message);
+    logLine('could not update start at login: ' + err.message);
   }
+}
+
+// Linux: a desktop entry in ~/.config/autostart (works with every desktop).
+function syncLinuxAutostart() {
+  const dir = path.join(app.getPath('appData'), 'autostart'); // ~/.config/autostart
+  const file = path.join(dir, 'notr.desktop');
+  if (!state.settings.startup) { try { fs.unlinkSync(file); } catch (_) {} return; }
+  const exec = process.env.APPIMAGE || process.execPath; // the AppImage moves its files on every run
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(file, [
+    '[Desktop Entry]',
+    'Type=Application',
+    'Name=notr',
+    `Exec="${exec}" --hidden`,
+    'X-GNOME-Autostart-enabled=true',
+    '',
+  ].join('\n'));
+}
+
+// Started by the login item: stay in the tray until "open notr".
+function startedHidden() {
+  if (process.argv.includes('--hidden')) return true;
+  try { return IS_MAC && app.getLoginItemSettings().wasOpenedAtLogin; } catch (_) { return false; }
 }
 
 // ---------------------------------------------------------------------------
@@ -518,6 +582,7 @@ ipcMain.handle('note:init', (e) => {
   return {
     note: { id: note.id, html: note.html, dot: note.dot },
     settings: publicSettings(),
+    platform: process.platform,
   };
 });
 
@@ -605,6 +670,20 @@ ipcMain.on('kbd:stop', (e, dir) => {
   if (win) kbdStop(win, dir);
 });
 
+// tab / shift+tab: focus the next / previous note, left to right on screen
+ipcMain.on('note:cycle', (e, dir) => {
+  const open = [...windows.entries()]
+    .filter(([, w]) => !w.isDestroyed())
+    .map(([id, w]) => ({ id, w, b: w.getBounds() }))
+    .sort((a, b) => a.b.x - b.b.x || a.b.y - b.b.y);
+  if (open.length < 2) return;
+  const i = open.findIndex((o) => o.id === senderNote(e));
+  const next = open[(i + (dir < 0 ? -1 : 1) + open.length) % open.length];
+  if (next.w.isMinimized()) next.w.restore();
+  next.w.show();
+  next.w.focus();
+});
+
 ipcMain.on('note:new', (e) => newNoteFrom(senderNote(e)));
 ipcMain.on('note:close', (e) => { const id = senderNote(e); if (id) deleteNote(id); });
 
@@ -674,15 +753,20 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', showAll);
+  // macOS: dock icon clicked (macOS also sends one at launch; that one is skipped
+  // so a start at login stays hidden)
+  let readyAt = Infinity;
+  app.on('ready', () => { readyAt = Date.now(); });
+  app.on('activate', () => { if (Date.now() - readyAt > 1500) showAll(); });
 
   app.whenReady().then(() => {
-    app.setAppUserModelId('app.notr');
-    Menu.setApplicationMenu(null);
+    if (IS_WIN) app.setAppUserModelId('app.notr');
+    setAppMenu();
     loadState();
-    logLine(`start ${app.getVersion()} args=${JSON.stringify(process.argv.slice(1))}`);
+    logLine(`start ${app.getVersion()} ${process.platform} args=${JSON.stringify(process.argv.slice(1))}`);
 
-    // At Windows login notr starts with --hidden: tray + shortcut only.
-    if (!process.argv.includes('--hidden')) openAll();
+    // At login notr starts hidden: tray + shortcut only.
+    if (!startedHidden()) openAll();
     createTray();
     registerOpenShortcut();
     syncLoginItem();

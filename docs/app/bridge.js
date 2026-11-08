@@ -17,6 +17,7 @@
     update: (patch) => desk.update(id, patch),
     newNote: () => desk.newNote(id),
     closeNote: () => desk.closeNote(id),
+    cycle: () => {},
     setSettings: (patch) => desk.setSettings(patch),
     edit: (cmd) => desk.edit(window, cmd),
     kbdStart: (mode, dir) => desk.kbdStart(id, mode, dir),
@@ -25,6 +26,19 @@
     onSettings: (cb) => desk.onSettings(id, cb),
     onFocusEditor: (cb) => desk.onFocusEditor(id, cb),
   };
+
+  // No keyboard shortcuts in the demo: they'd fight the browser's own keys
+  // (ctrl+arrows jump words, ctrl+s saves the page...). The keys simply do
+  // what they normally do on a web page.
+  window.addEventListener('keydown', (e) => {
+    const Keys = window.NotrKeys;
+    const combo = Keys && Keys.fromEvent(e);
+    const sc = desk.shortcuts();
+    const arrowMove = /^Arrow/.test(e.key) && (e.ctrlKey || e.altKey);
+    if (e.key === 'Tab' || arrowMove || (combo && (combo === sc.add || combo === sc.del))) {
+      e.stopImmediatePropagation(); // note.js never sees it
+    }
+  }, true);
 
   // the note you click comes to the front, like windows do
   window.addEventListener('focus', () => desk.raise(id));

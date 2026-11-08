@@ -31,7 +31,8 @@
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(STORE));
-      if (s && Array.isArray(s.notes) && s.settings) return s;
+      // v2: new welcome note (without the shortcuts the demo no longer has)
+      if (s && s.v === 2 && Array.isArray(s.notes) && s.settings) return s;
     } catch (_) {}
     return null;
   }
@@ -56,9 +57,9 @@
     '<b>hi, this is notr.</b>',
     'type anything. it saves itself.',
     '<hr>',
-    'ctrl+s · new note beside this one',
-    'ctrl+arrows · resize',
-    'alt+arrows · move',
+    '+ top left · a new note',
+    'drag the top · move',
+    'drag an edge · resize',
     '/line + enter · a separator line',
     'right-click text · bold, font, size',
     '⚙ top right · themes and fonts',
@@ -86,7 +87,7 @@
       notes.push({ id: 'n1', x: GAP, y: GAP, w, h: 330, html: toHtml(WELCOME), dot: 'green' });
       notes.push({ id: 'n2', x: GAP, y: GAP * 2 + 330, w, h: Math.max(MIN.h, Math.min(220, H - 330 - GAP * 3)), html: toHtml(TODAY), dot: 'amber' });
     }
-    return { seq: 2, notes, settings: defaultSettings() };
+    return { v: 2, seq: 2, notes, settings: defaultSettings() };
   }
 
   // Keep a note inside the desk (the desk shrinks on small screens). Only
@@ -452,6 +453,7 @@
       if (DOTS.includes(patch.dot)) v.note.dot = patch.dot;
       save();
     },
+    shortcuts: () => ({ ...state.settings.shortcuts }),
     newNote, closeNote, setSettings, edit, raise,
     kbdStart, kbdStop,
     onSettings(id, cb) { const v = views.get(id); if (v) v.onSettings = cb; },

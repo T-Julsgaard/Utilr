@@ -111,7 +111,7 @@ async function phase1() {
   await wait(300);
   const t1 = await text(w1);
   L('note text:\n' + t1);
-  check('shortcut list written', t1.includes('add note [ctrl+s]\ndelete note [ctrl+d]\nopen notr [ctrl+n]\nresize note: ctrl + arrows\nmove note: alt + arrows\nseparator: /line + enter'));
+  check('shortcut list written, with the how-to line on top', t1.includes('to change a shortcut, just edit the key in its [brackets]\nadd note [ctrl+s]\ndelete note [ctrl+d]\nopen notr [ctrl+n]\nswitch note: tab\nresize note: ctrl + arrows\nmove note: alt + arrows\nseparator: /line + enter'));
   await shot(w1, '03-shortcuts');
 
   // editing the brackets changes the shortcut (after typing pauses)
@@ -220,6 +220,19 @@ async function phase1() {
   await wait(500);
   const saved = stateFile().notes.find((n) => n.bounds.width === 200);
   check('keyboard size/position saved', !!saved && saved.bounds.y === wa.y, saved && saved.bounds);
+
+  // smallest note: the settings menu opens below the title bar and leaves ⚙ and × uncovered
+  await js(w1, `document.getElementById('btn-settings').click()`);
+  await wait(250);
+  const small = await js(w1, `(() => {
+    const m = document.getElementById('menu').getBoundingClientRect();
+    const bar = document.querySelector('.bar').getBoundingClientRect();
+    const hit = (id) => { const r = document.getElementById(id).getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2).closest('#' + id) !== null; };
+    return { below: m.top >= bar.bottom, inside: m.bottom <= innerHeight, gear: hit('btn-settings'), close: hit('btn-close') };
+  })()`);
+  check('small note: menu below the bar, ⚙ and × visible', small.below && small.inside && small.gear && small.close, small);
+  await shot(w1, '05c-small-menu');
+  await js(w1, `document.getElementById('btn-settings').click()`);
   w1.setBounds({ ...g0 });
   await wait(400);
 
@@ -243,6 +256,44 @@ async function phase1() {
   check('clicked note comes to front', z1 === 'b' && z2 === 'a', z1 + z2);
   w3.setBounds({ ...w3.getBounds(), x: b1.x + b1.width + 14, y: b1.y });
   await wait(600);
+
+  // tab -> next note (left to right), shift+tab -> back; no tab character typed
+  const { clipboard } = require('electron');
+  w1.focus();
+  await js(w1, `document.getElementById('editor').focus()`);
+  const textBeforeTab = await text(w1);
+  key(w1, 'Tab');
+  await wait(400);
+  check('tab focuses the next note', BrowserWindow.getFocusedWindow() === w3);
+  key(w3, 'Tab', ['shift']);
+  await wait(400);
+  check('shift+tab goes back', BrowserWindow.getFocusedWindow() === w1);
+  check('tab typed nothing', (await text(w1)) === textBeforeTab);
+
+  // copying a separator gives other apps a drawn line; pasting it back makes a separator
+  // (Electron 45's clipboard is async, like the web Clipboard API)
+  const clipBefore = await clipboard.readText();
+  w3.focus();
+  await js(w3, `(() => { const e = document.getElementById('editor'); e.innerHTML = 'above<hr>below'; e.focus();
+    const r = document.createRange(); r.selectNodeContents(e); const s = getSelection(); s.removeAllRanges(); s.addRange(r); })()`);
+  w3.webContents.copy();
+  await wait(300);
+  const copied = (await clipboard.readText()).replace(/\r\n/g, '\n');
+  check('copied separator becomes a line of ─', copied === 'above\n' + '─'.repeat(24) + '\nbelow', JSON.stringify(copied));
+  const clipItems = await clipboard.read();
+  const htmlItem = clipItems.find((it) => it.types.includes('text/html'));
+  const copiedHtml = htmlItem ? await (await htmlItem.getType('text/html')).text() : '';
+  check('copied separator is an <hr> for formatted paste', /<hr/i.test(copiedHtml), copiedHtml.slice(0, 120));
+  await js(w3, `(() => { const e = document.getElementById('editor'); e.innerHTML = ''; e.focus(); })()`);
+  await clipboard.writeText('one\n────────────\ntwo');
+  w3.webContents.paste();
+  await wait(300);
+  const pasted = await js(w3, `document.getElementById('editor').innerHTML`);
+  check('pasted ─── line becomes a separator', pasted === 'one<hr>two', pasted);
+  await js(w3, `(() => { const e = document.getElementById('editor'); e.innerHTML = ''; e.dispatchEvent(new Event('input')); })()`);
+  await clipboard.writeText(clipBefore);
+  w1.focus();
+  await wait(300);
 
   // delete prompt: "delete note?" [y]es [n]o [d]ont show again
   key(w1, 'K', ['control', 'alt']);

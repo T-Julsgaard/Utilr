@@ -19,7 +19,7 @@
     };
     return {
       init: async () => ({ note: { id: 'preview', dot: 'green', html: '' }, settings: s }),
-      update: noop, newNote: noop, closeNote: noop, quit: noop,
+      update: noop, newNote: noop, closeNote: noop, quit: noop, cycle: noop,
       setSettings: (p) => {
         if (p.theme) s.theme = p.theme;
         if (p.font) s.fonts[p.font.theme] = { ...(s.fonts[p.font.theme] || {}), ...p.font.value };
@@ -69,6 +69,7 @@
   const btnSettings = $('btn-settings');
 
   let note = null;
+  let platform = 'win32';
   let S = null; // settings shared by all notes: theme, fonts, status, shortcuts
   let lastRange = null;
 
@@ -79,9 +80,13 @@
   // -------------------------------------------------------------------------
   const BLOCK = /^(DIV|P|LI|H[1-6]|PRE|BLOCKQUOTE|UL|OL)$/;
 
+  // A separator line as plain text (what lands in other apps when you copy one).
+  const HR_TEXT = '─'.repeat(24);
+
   // Plain text of a node, with line breaks. In `full` mode a trailing <br>
   // is ignored (it's only there so the browser can show an empty last line).
-  function serialize(root, full) {
+  // A separator (<hr>) is a line of its own: empty, or `hrText` when given.
+  function serialize(root, full, hrText = '') {
     let out = '';
     let lastWasBr = false;
     (function walk(n) {
@@ -95,7 +100,7 @@
         } else if (c.nodeName === 'HR') {
           // a separator is a line of its own
           if (out && !out.endsWith('\n')) out += '\n';
-          out += '\n';
+          out += hrText + '\n';
           lastWasBr = false;
         } else if (c.nodeType === 1) {
           if (BLOCK.test(c.nodeName) && out && !out.endsWith('\n')) { out += '\n'; lastWasBr = false; }
@@ -308,8 +313,11 @@
   // shortcuts
   // -------------------------------------------------------------------------
   // The bracketed keys can be edited in place; the rest are fixed.
+  const SHORTCUTS_HINT = 'to change a shortcut, just edit the key in its [brackets]';
   const shortcutLines = () => [
+    SHORTCUTS_HINT,
     ...Keys.ACTIONS.map((a) => `${Keys.LABELS[a]} [${S.shortcuts[a]}]`),
+    'switch note: tab',
     'resize note: ctrl + arrows',
     'move note: alt + arrows',
     'separator: /line + enter',
@@ -357,9 +365,6 @@
       if (slashCommand()) return;
       // keep the note flat: line breaks instead of nested <div>s
       document.execCommand('insertLineBreak');
-    } else if (e.key === 'Tab' && !e.ctrlKey && !e.altKey) {
-      e.preventDefault();
-      document.execCommand('insertText', false, '\t');
     }
   });
 
@@ -382,12 +387,41 @@
     return true;
   }
 
+  // Copying a separator: other apps get a drawn line (──────) as text, and a
+  // real line in apps that take formatted text. Pasting it back into notr
+  // turns it into a separator again.
+  function copySelection(e) {
+    const sel = getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) return false;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return false;
+    const box = document.createElement('div');
+    box.appendChild(range.cloneContents());
+    if (!box.querySelector('hr')) return false; // nothing special: let the browser copy
+    e.preventDefault();
+    e.clipboardData.setData('text/plain', serialize(box, false, HR_TEXT));
+    e.clipboardData.setData('text/html', box.innerHTML);
+    return true;
+  }
+  editor.addEventListener('copy', copySelection);
+  editor.addEventListener('cut', (e) => {
+    if (copySelection(e)) document.execCommand('delete');
+  });
+
+  const isHrLine = (line) => /^\s*[─━]{3,}\s*$/.test(line);
+
   // paste as plain text so notes stay clean
   editor.addEventListener('paste', (e) => {
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
     if (!text) return;
-    const html = esc(text.replace(/\r\n?/g, '\n')).replace(/\n/g, '<br>');
+    const lines = text.replace(/\r\n?/g, '\n').split('\n');
+    let html = '';
+    lines.forEach((line, i) => {
+      const hr = isHrLine(line);
+      if (i > 0 && !hr && !isHrLine(lines[i - 1])) html += '<br>';
+      html += hr ? '<hr>' : esc(line);
+    });
     document.execCommand('insertHTML', false, html);
   });
 
@@ -530,7 +564,7 @@
       { sep: true },
       { label: 'always on top', check: S.onTop, hint: onOff(S.onTop), keep: true, run: () => setSetting({ onTop: !S.onTop }) },
       { label: 'ask before delete', check: S.confirmDelete, hint: onOff(S.confirmDelete), keep: true, run: () => setSetting({ confirmDelete: !S.confirmDelete }) },
-      { label: 'start with windows', check: S.startup, hint: onOff(S.startup), keep: true, run: () => setSetting({ startup: !S.startup }) },
+      { label: platform === 'win32' ? 'start with windows' : 'start at login', check: S.startup, hint: onOff(S.startup), keep: true, run: () => setSetting({ startup: !S.startup }) },
       { sep: true },
       { label: 'shortcuts', hint: 'write in note', run: insertShortcuts },
     ];
@@ -644,19 +678,21 @@
   }
 
   function positionMenu() {
-    const w = menuEl.offsetWidth, h = menuEl.offsetHeight;
     const vw = innerWidth, vh = innerHeight;
-    let x, y;
     if (menuKind === 'settings') {
-      const bar = document.querySelector('.bar').getBoundingClientRect();
-      x = vw - w - 6;
-      y = bar.bottom + 2;
-    } else {
-      x = menuAt.x;
-      y = menuAt.y;
+      // Always below the title bar, so the gear and × stay visible and
+      // clickable. In a small note the menu gets shorter and scrolls.
+      const top = document.querySelector('.bar').getBoundingClientRect().bottom + 2;
+      menuEl.style.maxHeight = Math.max(60, vh - top - 6) + 'px';
+      const w = menuEl.offsetWidth;
+      menuEl.style.left = Math.max(6, vw - w - 6) + 'px';
+      menuEl.style.top = top + 'px';
+      return;
     }
-    menuEl.style.left = Math.max(6, Math.min(x, vw - w - 6)) + 'px';
-    menuEl.style.top = Math.max(6, Math.min(y, vh - h - 6)) + 'px';
+    menuEl.style.maxHeight = '';
+    const w = menuEl.offsetWidth, h = menuEl.offsetHeight;
+    menuEl.style.left = Math.max(6, Math.min(menuAt.x, vw - w - 6)) + 'px';
+    menuEl.style.top = Math.max(6, Math.min(menuAt.y, vh - h - 6)) + 'px';
   }
 
   // keep the editor's selection while clicking menu items
@@ -737,6 +773,14 @@
       return;
     }
 
+    // tab / shift+tab: jump to the next / previous note
+    if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      closeMenu();
+      api.cycle(e.shiftKey ? -1 : 1);
+      return;
+    }
+
     const combo = Keys.fromEvent(e);
     if (!combo) return;
     if (combo === S.shortcuts.add) { e.preventDefault(); api.newNote(); }
@@ -780,6 +824,7 @@
     const data = await api.init();
     if (!data) return;
     note = data.note;
+    if (data.platform) platform = data.platform;
     editor.innerHTML = note.html || '';
     body.dataset.dot = note.dot || 'green';
     applySettings(data.settings);

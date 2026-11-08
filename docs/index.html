@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>notr: a note, nothing else</title>
-<meta name="description" content="A tiny, always-on-top note app for Windows. No home screen, no menu, no save button. You open it and you get a note.">
+<meta name="description" content="A tiny, always-on-top note app for Windows, macOS and Linux. No home screen, no menu, no save button. You open it and you get a note.">
 <meta name="theme-color" content="#0a0a0a">
 <meta property="og:title" content="notr: a note, nothing else">
-<meta property="og:description" content="A tiny, always-on-top note app for Windows. Try it in your browser.">
+<meta property="og:description" content="A tiny, always-on-top note app for Windows, macOS and Linux. Try it in your browser.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://t-julsgaard.github.io/Notr/">
 <meta property="og:image" content="https://t-julsgaard.github.io/Notr/assets/hero.png">
@@ -23,45 +23,31 @@
     <img src="assets/logo.png" alt="" width="26" height="26">
     <span>notr</span>
   </a>
-  <nav class="nav-links" aria-label="Sections">
-    <a href="#try">try it</a>
-    <a href="#themes">themes</a>
-    <a href="#keys">keys</a>
-    <a href="https://github.com/T-Julsgaard/Notr">github</a>
-    <a class="nav-dl" href="#download">download</a>
-  </nav>
 </header>
 
 <main id="top">
   <section class="hero wrap">
-    <p class="eyebrow">notes for windows · free and open source</p>
     <h1>a note.<br>nothing <span class="nowrap">else.<span class="caret" aria-hidden="true"></span></span></h1>
-    <p class="lede">notr is a tiny note app that stays on top of everything. No home screen, no menu, no save button. You open it and you get a note.</p>
     <div class="cta">
-      <a class="button primary" href="https://github.com/T-Julsgaard/Notr/releases/latest/download/notr-setup-1.0.0.exe">
+      <a class="button primary" id="hero-dl" href="#download">
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg>
-        download for windows
+        <span>download</span>
       </a>
-      <a class="button" href="#try">try it here ↓</a>
+      <a class="button" href="#try">try it ↓</a>
     </div>
-    <p class="meta">v1.0.0 · windows 10 &amp; 11 · mit licence</p>
+    <p class="meta">windows · macos · linux · free and open source</p>
   </section>
 
   <section class="try wrap" id="try" aria-labelledby="try-title">
-    <div class="try-head">
-      <div>
-        <h2 id="try-title">try it</h2>
-        <p class="muted">These are real notr notes, running the same code as the app. Type, press <kbd>ctrl</kbd>+<kbd>s</kbd>, drag them around.</p>
-      </div>
-      <div class="chips" role="group" aria-label="Theme">
-        <button data-set-theme="ghost" aria-pressed="true"><i style="--sw:#8a8a8a"></i>ghost</button>
-        <button data-set-theme="mono" aria-pressed="false"><i style="--sw:#f2f2f2"></i>bare mono</button>
-        <button data-set-theme="paper" aria-pressed="false"><i style="--sw:#f4f4f0"></i>paper</button>
-        <button data-set-theme="dots" aria-pressed="false"><i style="--sw:#39ff88"></i>dots</button>
-        <button data-set-theme="gutter" aria-pressed="false"><i style="--sw:#5fd7ff"></i>gutter</button>
-        <button data-set-theme="green" aria-pressed="false"><i style="--sw:#39ff88"></i>green</button>
-        <button data-set-theme="amber" aria-pressed="false"><i style="--sw:#ffb000"></i>amber crt</button>
-      </div>
+    <h2 id="try-title" class="section-title">try it</h2>
+    <div class="chips" role="group" aria-label="Theme">
+      <button data-set-theme="ghost" aria-pressed="true"><i style="--sw:#8a8a8a"></i>ghost</button>
+      <button data-set-theme="mono" aria-pressed="false"><i style="--sw:#f2f2f2"></i>bare mono</button>
+      <button data-set-theme="paper" aria-pressed="false"><i style="--sw:#f4f4f0"></i>paper</button>
+      <button data-set-theme="dots" aria-pressed="false"><i style="--sw:#39ff88"></i>dots</button>
+      <button data-set-theme="gutter" aria-pressed="false"><i style="--sw:#5fd7ff"></i>gutter</button>
+      <button data-set-theme="green" aria-pressed="false"><i style="--sw:#39ff88"></i>green</button>
+      <button data-set-theme="amber" aria-pressed="false"><i style="--sw:#ffb000"></i>amber crt</button>
     </div>
 
     <div class="desk" id="desk">
@@ -74,13 +60,11 @@
       </div>
       <div class="desk-empty" id="desk-empty" hidden>
         <p>no notes open.</p>
-        <p class="muted">In the app, notr would now wait in the tray until you press <kbd>ctrl</kbd>+<kbd>n</kbd>.</p>
         <button class="button" id="desk-open">[open notr]</button>
       </div>
     </div>
 
     <div class="try-foot">
-      <p class="muted"><span class="hint-hover">Hover a note to see its buttons. Right-click selected text to format it.</span><span class="hint-touch">Best on a computer: the shortcuts need a keyboard.</span> Your notes stay in this browser only.</p>
       <button class="link" id="desk-reset">reset demo</button>
     </div>
   </section>
@@ -90,36 +74,33 @@
     <div class="grid">
       <article>
         <h3><span>&gt;</span> always on top</h3>
-        <p>Notes float above every other window, so whatever you're writing down never gets buried. Among themselves they act like normal windows. You can turn it off in ⚙.</p>
+        <p>Notes float above every other window, so whatever you're writing down never gets buried. You can turn it off in ⚙.</p>
       </article>
       <article>
         <h3><span>&gt;</span> nothing to save</h3>
-        <p>Every keystroke is saved. Close notr and it comes back with the same notes, in the same places, with the same text.</p>
+        <p>Every keystroke is saved. Close notr and it comes back with the same notes, in the same places.</p>
       </article>
       <article>
         <h3><span>&gt;</span> new notes go beside</h3>
-        <p><kbd>ctrl</kbd>+<kbd>s</kbd> or <b>+</b> slides a new note in right next to the one you're in. It never lands on top of another note.</p>
+        <p>A new note slides in right next to the one you're in. It never lands on top of another note.</p>
       </article>
       <article>
         <h3><span>&gt;</span> keyboard first</h3>
-        <p>Resize with <kbd>ctrl</kbd>+arrows, move with <kbd>alt</kbd>+arrows, delete with <kbd>ctrl</kbd>+<kbd>d</kbd>. Tap to nudge, hold to speed up.</p>
+        <p>Add, delete, switch, resize and move notes without touching the mouse.</p>
       </article>
       <article>
         <h3><span>&gt;</span> shortcuts live in a note</h3>
-        <p>⚙ → shortcuts writes them into the note. Change the key inside the brackets and it works straight away. There's no settings screen to dig through.</p>
+        <p>⚙ → shortcuts writes them into the note. Change a key by editing the text.</p>
       </article>
       <article>
         <h3><span>&gt;</span> out of the way</h3>
-        <p>It starts quietly with Windows and waits in the tray. <kbd>ctrl</kbd>+<kbd>n</kbd> from any program brings your notes back.</p>
+        <p>It starts quietly at login and waits in the tray until you need it.</p>
       </article>
     </div>
   </section>
 
   <section class="themes wrap" id="themes" aria-labelledby="themes-title">
-    <div class="section-head">
-      <h2 id="themes-title" class="section-title">seven themes</h2>
-      <p class="muted">Click one to try it above. Font, size, bold and italic are remembered per theme.</p>
-    </div>
+    <h2 id="themes-title" class="section-title">seven themes</h2>
     <div class="gallery">
       <button data-set-theme="ghost" data-scroll="1"><img src="assets/themes/ghost.png" alt="ghost theme" loading="lazy" width="300" height="300"><span><b>ghost</b>buttons appear on hover</span></button>
       <button data-set-theme="mono" data-scroll="1"><img src="assets/themes/mono.png" alt="bare mono theme" loading="lazy" width="300" height="300"><span><b>bare mono</b>black, white, nothing else</span></button>
@@ -133,46 +114,54 @@
   </section>
 
   <section class="keys wrap" id="keys" aria-labelledby="keys-title">
-    <div class="section-head">
-      <h2 id="keys-title" class="section-title">keys</h2>
-      <p class="muted">⚙ → shortcuts writes the list into your note. Edit a key in the brackets to change it.</p>
-    </div>
+    <h2 id="keys-title" class="section-title">keys</h2>
     <dl class="keylist">
       <div><dt><kbd>ctrl</kbd>+<kbd>s</kbd></dt><dd>new note, beside the current one</dd></div>
-      <div><dt><kbd>ctrl</kbd>+<kbd>d</kbd></dt><dd>delete note <span class="muted">(asks first: [y]es [n]o [d]ont show again)</span></dd></div>
+      <div><dt><kbd>ctrl</kbd>+<kbd>d</kbd></dt><dd>delete note</dd></div>
+      <div><dt><kbd>tab</kbd></dt><dd>switch to the next note <span class="muted">(shift+tab: previous)</span></dd></div>
       <div><dt><kbd>ctrl</kbd>+<kbd>n</kbd></dt><dd>bring notr to the front, from any program</dd></div>
-      <div><dt><kbd>ctrl</kbd>+<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>resize: → ↓ grow, ← ↑ shrink</dd></div>
+      <div><dt><kbd>ctrl</kbd>+<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>resize the note</dd></div>
       <div><dt><kbd>alt</kbd>+<kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>move the note</dd></div>
-      <div><dt><code>/line</code> + <kbd>enter</kbd></dt><dd>a separator line across the note</dd></div>
-      <div><dt>right-click</dt><dd>cut, copy, paste, bold, italic, underline, font, size</dd></div>
-      <div><dt><kbd>alt</kbd>+<kbd>f4</kbd></dt><dd>close notr; your notes come back exactly as they were</dd></div>
+      <div><dt><code>/line</code> + <kbd>enter</kbd></dt><dd>a separator line</dd></div>
+      <div><dt>right-click</dt><dd>bold, italic, underline, font, size</dd></div>
     </dl>
   </section>
 
   <section class="download wrap" id="download" aria-labelledby="dl-title">
-    <div class="dl-card">
-      <img src="assets/logo.png" alt="" width="72" height="72">
-      <div class="dl-text">
-        <h2 id="dl-title">get notr</h2>
-        <p class="muted">Windows 10 and 11 (64-bit). Installs for your user only, so no admin is needed. Uninstall it from Settings → Apps.</p>
-        <div class="cta">
-          <a class="button primary" href="https://github.com/T-Julsgaard/Notr/releases/latest/download/notr-setup-1.0.0.exe">download notr-setup-1.0.0.exe</a>
-          <a class="button" href="https://github.com/T-Julsgaard/Notr/releases">all releases</a>
-        </div>
-        <p class="small muted">notr isn't code-signed yet, so Windows may say <i>“Windows protected your PC”</i>. Click <b>More info</b>, then <b>Run anyway</b>. The source is <a href="https://github.com/T-Julsgaard/Notr">on GitHub</a> if you'd rather build it yourself.</p>
+    <h2 id="dl-title" class="section-title">get notr</h2>
+    <div class="platforms">
+      <div class="platform" data-os="windows">
+        <h3>windows</h3>
+        <p class="muted">10 and 11</p>
+        <a class="button primary" data-asset="exe" href="https://github.com/T-Julsgaard/Notr/releases/latest/download/notr-setup-1.1.0.exe">download .exe</a>
+        <p class="small muted">If SmartScreen warns you, click <b>More info → Run anyway</b>.</p>
+      </div>
+      <div class="platform" data-os="mac">
+        <h3>macos</h3>
+        <p class="muted">Apple Silicon and Intel</p>
+        <a class="button primary" data-asset="dmg" href="https://github.com/T-Julsgaard/Notr/releases/latest/download/notr-1.1.0-mac.dmg">download .dmg</a>
+        <p class="small muted">On first open, go to <b>System Settings → Privacy &amp; Security → Open Anyway</b>.</p>
+      </div>
+      <div class="platform" data-os="linux">
+        <h3>linux</h3>
+        <p class="muted">x64</p>
+        <a class="button primary" data-asset="AppImage" href="https://github.com/T-Julsgaard/Notr/releases/latest/download/notr-1.1.0-linux-x86_64.AppImage">download .AppImage</a>
+        <p class="small muted">or the <a data-asset="deb" href="https://github.com/T-Julsgaard/Notr/releases/latest/download/notr-1.1.0-linux-amd64.deb">.deb</a> for Debian and Ubuntu.</p>
       </div>
     </div>
+    <p class="small muted dl-more"><a href="https://github.com/T-Julsgaard/Notr/releases">all releases</a> · <a href="https://github.com/T-Julsgaard/Notr">source on github</a></p>
   </section>
 </main>
 
 <footer class="foot wrap">
   <span><img src="assets/logo.png" alt="" width="16" height="16"> notr</span>
-  <span class="muted">MIT licence · <a href="https://github.com/T-Julsgaard/Notr">source on GitHub</a></span>
+  <span class="muted">MIT licence · <a href="https://github.com/T-Julsgaard/Notr">github</a></span>
 </footer>
 
 <div class="drag-shield" id="drag-shield" hidden></div>
 
 <script src="app/shortcuts.js"></script>
 <script src="desk.js"></script>
+<script src="download.js"></script>
 </body>
 </html>

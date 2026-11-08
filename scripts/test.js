@@ -15,7 +15,7 @@ const runs = [
 let failed = 0;
 for (const [name, args, env] of runs) {
   console.log(`\n=== ${name} ===`);
-  const r = spawnSync(electron, args, { stdio: 'inherit', env: { ...process.env, ...env } });
+  const r = spawnSync(electron, args, { stdio: 'inherit', env: { ...process.env, ...env }, timeout: 180000 });
   if (r.status !== 0) { failed++; console.log(`=== ${name}: FAILED ===`); }
 }
 console.log(failed ? `\n${failed} test run(s) failed` : '\nall tests passed');

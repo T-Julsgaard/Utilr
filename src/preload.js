@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('notr', {
   update: (patch) => ipcRenderer.send('note:update', patch),
   newNote: () => ipcRenderer.send('note:new'),
   closeNote: () => ipcRenderer.send('note:close'),
+  cycle: (dir) => ipcRenderer.send('note:cycle', dir),
   setSettings: (patch) => ipcRenderer.send('settings:set', patch),
   edit: (cmd) => ipcRenderer.send('edit', cmd),
   kbdStart: (mode, dir) => ipcRenderer.send('kbd:start', mode, dir),
