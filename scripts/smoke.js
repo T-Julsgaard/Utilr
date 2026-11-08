@@ -52,6 +52,10 @@ public static class Z { [DllImport("user32.dll")] public static extern IntPtr Ge
   return require('child_process').execFileSync('powershell', ['-NoProfile', '-Command', ps]).toString().trim();
 }
 
+// an uncaught error in the main process is a failure (and shouldn't pop up a dialog)
+const crashes = [];
+process.on('uncaughtException', (err) => { crashes.push(err.message); L('CRASH', err.stack || String(err)); });
+
 app.on('browser-window-created', (_e, w) => {
   w.webContents.on('console-message', (e) => L('[renderer]', String(e.message || e)));
 });
@@ -137,11 +141,15 @@ async function phase1() {
   check('new note sits right of the first', w2.getBounds().x === w1.getBounds().x + w1.getBounds().width + 14, w2.getBounds());
   check('new note shows line/col too', /^ln 1, col 1 \| 0 chars$/.test(await status(w2)), await status(w2));
 
-  // ctrl+d deletes (empty note: no question)
+  // ctrl+d deletes (empty note: no question) -- here while alt+down is still
+  // held, so the note closes mid-glide (this used to crash the main process)
   await js(w2, `document.getElementById('editor').focus()`);
+  w2.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down', modifiers: ['alt'] });
+  await wait(150);
   key(w2, 'D', ['control']);
-  await wait(700);
+  await wait(900);
   check('ctrl+d deletes empty note', wins().length === 1);
+  check('closing a note mid-glide does not crash', crashes.length === 0, crashes);
 
   // per-theme font: 18px in ghost, default in paper, back to 18px in ghost
   await js(w1, `window.notr.setSettings({ font: { theme: 'ghost', value: { size: 18, bold: true } } })`);
@@ -371,6 +379,7 @@ app.whenReady().then(async () => {
     L('ERROR', err.stack || String(err));
     failures++;
   }
+  if (crashes.length) { failures++; L('FAIL main process crashed', crashes); }
   L(failures ? `${failures} FAILED` : 'ALL PASSED');
   if (failures) { fs.writeFileSync(path.join(out, 'log' + phase + '.txt'), log.join('\n')); app.exit(1); }
 });

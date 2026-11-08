@@ -1,7 +1,7 @@
 {
   "name": "notr",
   "productName": "notr",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A tiny, always-on-top note app. Open it and you get a note.",
   "main": "src/main.js",
   "author": "T_J",

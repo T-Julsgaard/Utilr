@@ -8,6 +8,7 @@
 - `/line` separators come along when you copy text into other apps (as a drawn line), and turn back into separators when pasted into notr
 - In a small note, the ⚙ menu no longer covers the ⚙ and × buttons
 - ⚙ → shortcuts now starts with a line telling you that you can edit the keys right there
+- Fixed: deleting or closing a note while holding `Ctrl`/`Alt` + an arrow no longer shows a "JavaScript error in the main process" box
 
 ### Download
 

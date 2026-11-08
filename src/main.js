@@ -602,7 +602,9 @@ ipcMain.on('note:update', (e, patch) => {
 // ---------------------------------------------------------------------------
 
 const KBD = { startSpeed: 140, maxSpeed: 1100, rampSeconds: 0.9 }; // px/s
-const kbd = new Map(); // webContents.id -> motion
+// Keyed by the window itself: a note can close while a key is still held,
+// and a closed window can't be asked for its ids any more.
+const kbd = new Map(); // BrowserWindow -> motion
 
 function unionWorkArea() {
   const was = screen.getAllDisplays().map((d) => d.workArea);
@@ -640,12 +642,14 @@ function kbdStep(win, m) {
 
 function kbdStart(win, mode, dir) {
   if (!['left', 'right', 'up', 'down'].includes(dir) || !['resize', 'move'].includes(mode)) return;
-  let m = kbd.get(win.webContents.id);
+  if (win.isDestroyed()) return;
+  let m = kbd.get(win);
   if (m && m.mode !== mode) { kbdStop(win); m = null; }
   if (!m) {
     const now = Date.now();
     m = { mode, dirs: new Set(), start: now, last: now - 16, b: { ...win.getBounds() }, timer: null };
-    kbd.set(win.webContents.id, m);
+    kbd.set(win, m);
+    win.once('closed', () => kbdStop(win)); // note deleted / notr closed mid-glide
   }
   m.dirs.add(dir);
   kbdStep(win, m); // move right away, so a quick tap always does something
@@ -653,12 +657,12 @@ function kbdStart(win, mode, dir) {
 }
 
 function kbdStop(win, dir) {
-  const m = kbd.get(win.webContents.id);
+  const m = kbd.get(win);
   if (!m) return;
-  if (dir) m.dirs.delete(dir); else m.dirs.clear();
+  if (dir && !win.isDestroyed()) m.dirs.delete(dir); else m.dirs.clear();
   if (m.dirs.size) return;
   clearInterval(m.timer);
-  kbd.delete(win.webContents.id);
+  kbd.delete(win);
 }
 
 ipcMain.on('kbd:start', (e, mode, dir) => {
