@@ -5,6 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; script-src 'self'">
 <title>snipr</title>
 <link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="theme/ghost.css">
 <link rel="stylesheet" href="snipr.css">
 </head>
@@ -20,7 +21,10 @@
       <button class="btn sm" data-tool="box" title="Box (b)" aria-label="Box">
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1.7 3.2h10.6v7.6H1.7z" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
       </button>
-      <button class="btn sm" data-tool="text" title="Text (t)" aria-label="Text">
+      <button class="btn sm" data-tool="circle" title="Circle (c)" aria-label="Circle">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5.4" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
+      </button>
+      <button class="btn sm" data-tool="text" title="Text (t) — drag a box: the text follows its height" aria-label="Text">
         <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.2 2.6h9.6M7 2.6v9.4M5 12h4" stroke="currentColor" stroke-width="1.3" fill="none"/></svg>
       </button>
       <button class="btn sm" data-tool="blur" title="Blur (x)" aria-label="Blur">
@@ -72,6 +76,7 @@
 
   <script src="theme/ghost.js"></script>
   <script src="keys.js"></script>
+  <script src="fonts/list.js"></script>
   <script src="menu.js"></script>
   <script src="snip.js"></script>
 </body>

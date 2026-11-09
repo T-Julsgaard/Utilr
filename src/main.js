@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const Keys = require('./keys');
+const Fonts = require('./fonts/list');
 
 // ---------------------------------------------------------------------------
 // constants
@@ -16,7 +17,7 @@ const Keys = require('./keys');
 const BG = '#111111';          // ghost --bg, so windows never flash white
 const BAR_H = 30;              // ghost --bar-h
 const STATUS_H = 22;           // ghost --status-h
-const SNIP_MIN = { width: 280, height: 150 };
+const SNIP_MIN = { width: 310, height: 150 };
 const IS_WIN = process.platform === 'win32';
 const IS_MAC = process.platform === 'darwin';
 const ASSETS = path.join(__dirname, 'assets');
@@ -50,6 +51,7 @@ function logLine(msg) {
   } catch (_) {}
 }
 
+const SETTINGS_VERSION = 2;
 const SETTINGS_FILE = () => path.join(app.getPath('userData'), 'snipr-settings.json');
 const defaultFolder = () => path.join(app.getPath('pictures'), 'snipr');
 
@@ -58,7 +60,9 @@ const defaultFolder = () => path.join(app.getPath('pictures'), 'snipr');
 // open:         show the snip in its own window after capture
 // autoSave:     also save every snip to the folder right away
 // folder:       where snips are saved (null = Pictures/snipr)
+// closeAfterCopy: a snip window closes once you copy it
 // ink:          annotation colour: ghost (white, dark halo), red, black
+// font:         the font text marks are written in (notr's font list)
 // onTop:        snip windows stay in front of other programs
 // confirmDiscard: ask before closing a snip with unsaved marks
 // startup:      start (in the tray) when you log in
@@ -67,12 +71,15 @@ const defaults = () => ({
   copy: true,
   open: true,
   autoSave: false,
+  closeAfterCopy: false,
   folder: null,
   ink: 'ghost',
-  onTop: true,
+  font: Fonts.DEFAULT,
+  onTop: false,
   confirmDiscard: true,
   startup: true,
   welcomed: false,
+  version: SETTINGS_VERSION,
 });
 
 let settings = defaults();
@@ -86,6 +93,10 @@ function loadSettings() {
         settings = { ...defaults(), ...raw };
         settings.key = Keys.normalize(settings.key) || Keys.DEFAULT;
         if (!INKS.includes(settings.ink)) settings.ink = 'ghost';
+        if (!Fonts.FONTS.includes(settings.font)) settings.font = Fonts.DEFAULT;
+        // v2: snips no longer stay on top unless you turn it on
+        if ((raw.version || 1) < 2) settings.onTop = false;
+        settings.version = SETTINGS_VERSION;
         if (settings.folder && typeof settings.folder !== 'string') settings.folder = null;
         return;
       }
@@ -112,6 +123,11 @@ const scheduleSave = () => { clearTimeout(saveTimer); saveTimer = setTimeout(wri
 
 const folder = () => settings.folder || defaultFolder();
 
+// The snip folder is made up front, so it's there before the first save.
+function ensureFolder() {
+  try { fs.mkdirSync(folder(), { recursive: true }); } catch (err) { logLine('could not create the folder: ' + err.message); }
+}
+
 // "C:\Users\me\Pictures\snipr" -> "~\pictures\snipr" (lowercase, like the rest of the UI)
 function shortPath(p) {
   const home = os.homedir();
@@ -124,8 +140,10 @@ const publicSettings = () => ({
   copy: settings.copy,
   open: settings.open,
   autoSave: settings.autoSave,
+  closeAfterCopy: settings.closeAfterCopy,
   folder: shortPath(folder()),
   ink: settings.ink,
+  font: settings.font,
   onTop: settings.onTop,
   confirmDiscard: settings.confirmDiscard,
   startup: settings.startup,
@@ -579,7 +597,7 @@ let settingsWin = null;
 function openSettings() {
   if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
   const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  const width = 320, height = 480;
+  const width = 320, height = 548;
   settingsWin = new BrowserWindow({
     x: Math.round(wa.x + (wa.width - width) / 2),
     y: Math.round(wa.y + (wa.height - height) / 3),
@@ -720,8 +738,9 @@ ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.on('settings:set', (_e, patch) => {
   if (!patch || typeof patch !== 'object') return;
   const s = settings;
-  for (const k of ['copy', 'open', 'autoSave', 'confirmDiscard']) if (typeof patch[k] === 'boolean') s[k] = patch[k];
+  for (const k of ['copy', 'open', 'autoSave', 'closeAfterCopy', 'confirmDiscard']) if (typeof patch[k] === 'boolean') s[k] = patch[k];
   if (INKS.includes(patch.ink)) s.ink = patch.ink;
+  if (Fonts.FONTS.includes(patch.font)) s.font = patch.font;
   if (typeof patch.onTop === 'boolean' && patch.onTop !== s.onTop) {
     s.onTop = patch.onTop;
     for (const { win } of snips.values()) applyOnTop(win);
@@ -748,6 +767,7 @@ ipcMain.handle('folder:choose', async (e) => {
   const r = await dialog.showOpenDialog(parent, { title: 'snipr folder', defaultPath: folder(), properties: ['openDirectory', 'createDirectory'] });
   if (r.canceled || !r.filePaths[0]) return null;
   settings.folder = r.filePaths[0] === defaultFolder() ? null : r.filePaths[0];
+  ensureFolder();
   scheduleSave();
   broadcast('settings:changed', publicSettings());
   return shortPath(folder());
@@ -815,7 +835,10 @@ ipcMain.handle('snip:save', async (e, png, ask) => {
       fs.writeFileSync(r.filePath, buf);
       return shortPath(r.filePath);
     }
-    return shortPath(saveBuffer(buf, s.snip.at));
+    // save again = update this snip's file (no -2, -3 copies of the same snip)
+    if (s.snip.savedTo && fs.existsSync(path.dirname(s.snip.savedTo))) fs.writeFileSync(s.snip.savedTo, buf);
+    else s.snip.savedTo = saveBuffer(buf, s.snip.at);
+    return shortPath(s.snip.savedTo);
   } catch (err) {
     logLine('save failed: ' + err.message);
     return { error: err.message };
@@ -865,6 +888,7 @@ if (!app.requestSingleInstanceLock()) {
     setAppMenu();
     loadSettings();
     logLine(`start ${app.getVersion()} ${process.platform} args=${JSON.stringify(process.argv.slice(1))}`);
+    ensureFolder();
     registerKey();
     createTray();
     syncLoginItem();

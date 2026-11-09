@@ -51,6 +51,9 @@ module.exports = async (h) => {
   try {
     const shotsDir = path.join(path.dirname(out), 'smoke-out', 'saved');
     fs.rmSync(shotsDir, { recursive: true, force: true });
+    check(h.settings().onTop === false, 'snips are not on top by default');
+    check(h.settings().closeAfterCopy === false, '"close after copy" is off by default');
+    check(fs.existsSync(path.join(app.getPath('pictures'), 'snipr')), 'the snipr folder exists from the start');
     h.settings().folder = shotsDir;
     await wait(900);
 
@@ -107,10 +110,16 @@ module.exports = async (h) => {
     await tool('arrow'); await drag(snip.win, at(0.85, 0.85), at(0.5, 0.45));
     await tool('blur'); await drag(snip.win, at(0.55, 0.08), at(0.92, 0.3));
     await tool('pen'); await drag(snip.win, at(0.1, 0.8), at(0.35, 0.9), 12);
+    await tool('circle'); await drag(snip.win, at(0.62, 0.55), at(0.8, 0.8));
+    await js(snip.win, "window.snipr.setSettings({ font: 'Space Mono' })");
+    await wait(150);
     await tool('text');
-    mouse(snip.win, 'mouseDown', at(0.12, 0.66).x, at(0.12, 0.66).y);
-    mouse(snip.win, 'mouseUp', at(0.12, 0.66).x, at(0.12, 0.66).y);
+    await drag(snip.win, at(0.08, 0.62), at(0.4, 0.78)); // a box: the letters follow its height
     await wait(80);
+    const ed = await js(snip.win, "(() => { const e = document.querySelector('.text-input'); return e && { size: parseFloat(e.style.fontSize), font: e.style.fontFamily }; })()");
+    const boxH = r.h * 0.16;
+    check(ed && Math.abs(ed.size - boxH / 1.25) < 1.5, 'text size follows the box (' + (ed && ed.size.toFixed(1)) + ' px for a ' + boxH.toFixed(0) + ' px box)');
+    check(ed && /Space Mono/.test(ed.font), 'text uses the chosen font');
     await snip.win.webContents.insertText('look here');
     key(snip.win, 'Enter');
     await wait(120);
@@ -130,13 +139,23 @@ module.exports = async (h) => {
     await until(() => fs.existsSync(shotsDir) && fs.readdirSync(shotsDir).length === 1, 3000, 'saved file');
     const saved = fs.readdirSync(shotsDir)[0];
     check(/^snip-\d{4}-\d\d-\d\d-\d{6}\.png$/.test(saved), `saved as ${saved}`);
-    await wait(100);
+    await js(snip.win, "document.getElementById('btn-save').click()");
+    await wait(300);
+    check(fs.readdirSync(shotsDir).length === 1, 'saving again updates the same file');
     await shot(snip.win, '6-saved');
 
     // --- 6. menus -----------------------------------------------------------
     await js(snip.win, "document.getElementById('btn-settings').click()");
     await wait(200);
     await shot(snip.win, '7-gear-menu');
+    const sb0 = snip.win.getBounds();
+    snip.win.setBounds({ ...sb0, width: sb0.width + 120 });
+    await wait(250);
+    const edge = await js(snip.win, "(() => { const r = document.getElementById('menu').getBoundingClientRect(); return [r.right, innerWidth]; })()");
+    check(Math.abs(edge[1] - 6 - edge[0]) < 2, 'settings menu follows a resize (right edge ' + Math.round(edge[0]) + ' / ' + edge[1] + ')');
+    await shot(snip.win, '7b-gear-menu-resized');
+    snip.win.setBounds(sb0);
+    await wait(150);
     key(snip.win, 'Escape');
     await wait(100);
     check(await js(snip.win, "document.getElementById('menu').hidden"), 'esc closes the menu');
@@ -178,6 +197,21 @@ module.exports = async (h) => {
     await wait(200);
     if (h.toastWin()) await shot(h.toastWin(), '10-toast');
     h.settings().open = true;
+
+    // --- 9b. close after copy ----------------------------------------------
+    h.settings().open = true;
+    h.settings().closeAfterCopy = true;
+    h.startCapture('key');
+    const o4 = h.overlays.get(primary.id);
+    await until(() => o4.isVisible() && o4.getOpacity() > 0.99, 6000, 'fourth overlay');
+    await drag(o4, { x: 300, y: 300 }, { x: 600, y: 500 });
+    await until(() => h.snips.size === 1, 6000, 'snip window');
+    const s4 = [...h.snips.values()][0];
+    await until(() => s4.win.isVisible() && s4.win.getOpacity() > 0.99, 6000, 'snip fade-in');
+    await js(s4.win, "document.getElementById('btn-copy').click()");
+    await until(() => h.snips.size === 0, 3000, 'close after copy');
+    check(true, '"close after copy" closes the snip');
+    h.settings().closeAfterCopy = false;
 
     // --- 10. settings window -----------------------------------------------
     h.openSettings();

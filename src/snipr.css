@@ -13,6 +13,10 @@
   --halo: rgba(0, 0, 0, .55);            /* ghost ink outline */
 }
 
+/* No focus rings. Chromium draws them in the system accent colour (an orange
+   square on some setups); ghost has no colour, and nothing here is tabbed to. */
+button:focus, button:focus-visible, canvas:focus, [tabindex]:focus { outline: none; }
+
 /* small square panel: the ghost menu surface, used for readouts and notices */
 .panel {
   background: var(--menu-bg);
@@ -41,11 +45,10 @@ body.overlay * { cursor: crosshair; }
   pointer-events: none;
 }
 #sel[hidden] { display: none; }
-#sel i { position: absolute; width: 12px; height: 12px; border: 0 solid var(--sel-tick); }
-#sel .tl { left: -2px; top: -2px; border-left-width: 2px; border-top-width: 2px; }
-#sel .tr { right: -2px; top: -2px; border-right-width: 2px; border-top-width: 2px; }
-#sel .bl { left: -2px; bottom: -2px; border-left-width: 2px; border-bottom-width: 2px; }
-#sel .br { right: -2px; bottom: -2px; border-right-width: 2px; border-bottom-width: 2px; }
+/* the logo's two crop corners, 4px thick, just outside the selection so they cover nothing */
+#sel i { position: absolute; width: 18px; height: 18px; border: 0 solid var(--sel-tick); }
+#sel .tl { left: -5px; top: -5px; border-left-width: 4px; border-top-width: 4px; }
+#sel .br { right: -5px; bottom: -5px; border-right-width: 4px; border-bottom-width: 4px; }
 
 .guide { position: fixed; background: var(--guide); pointer-events: none; }
 .guide.x { top: 0; bottom: 0; width: 1px; }
@@ -131,8 +134,8 @@ body[data-tool="text"] #canvas { cursor: text; }
   margin: 0;
   padding: 0;
   border: 0;
-  outline: 1px dashed rgba(255, 255, 255, .35);
-  outline-offset: 2px;
+  outline: 1px dashed rgba(255, 255, 255, .45);
+  outline-offset: 0;
   background: transparent;
   font-family: var(--font);
   font-weight: 400;

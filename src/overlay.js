@@ -75,7 +75,7 @@
 
   // under the selection, right-aligned; inside it when there's no room below
   function placeReadout() {
-    const rw = readout.offsetWidth, rh = readout.offsetHeight, gap = 6;
+    const rw = readout.offsetWidth, rh = readout.offsetHeight, gap = 10; // clear of the corner mark
     let x = rect.x + rect.width - rw;
     let y = rect.y + rect.height + gap;
     if (y + rh > innerHeight - 4) y = rect.y - rh - gap;

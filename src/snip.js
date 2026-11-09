@@ -22,7 +22,11 @@
     red: { color: '#ff7a6b', halo: 'rgba(0, 0, 0, .35)' },
     black: { color: '#111111', halo: 'rgba(255, 255, 255, .6)' },
   };
-  const TOOL_KEYS = { KeyP: 'pen', KeyA: 'arrow', KeyB: 'box', KeyT: 'text', KeyX: 'blur', KeyV: 'none' };
+  const TOOL_KEYS = { KeyP: 'pen', KeyA: 'arrow', KeyB: 'box', KeyC: 'circle', KeyT: 'text', KeyX: 'blur', KeyV: 'none' };
+  const Fonts = window.SniprFonts;
+  const LINE = 1.25;         // text line height, in font sizes
+  const DEFAULT_TEXT = 15;   // text size for a click without a box (logical px)
+  const fontStack = (f) => `"${f || Fonts.DEFAULT}", monospace`;
 
   const init = await api.snipInit();
   if (!init) return;
@@ -47,7 +51,9 @@
   let view = 1;         // css size / natural (logical) size
   let textEl = null;
 
-  try { await document.fonts.load('400 16px "DM Mono"'); } catch (_) {}
+  // fonts load on demand; text marks redraw once theirs is ready
+  const loadFont = async (f) => { try { await document.fonts.load(`400 16px ${fontStack(f)}`); } catch (_) {} };
+  await loadFont(S.font);
 
   function loadImage(png) {
     return new Promise((resolve, reject) => {
@@ -139,13 +145,13 @@
 
   function drawText(c, s) {
     const I = ink(s);
-    const lh = s.size * 1.25;
+    const lh = s.size * LINE;
     c.save();
-    c.font = `400 ${s.size}px "DM Mono", monospace`;
+    c.font = `400 ${s.size}px ${fontStack(s.font)}`;
     c.textBaseline = 'top';
     c.lineJoin = 'round';
     s.lines.forEach((line, i) => {
-      const y = s.y + s.size * 0.125 + i * lh; // match the css half-leading of the editor
+      const y = s.y + s.size * (LINE - 1) / 2 + i * lh; // match the css half-leading of the editor
       c.strokeStyle = I.halo;
       c.lineWidth = Math.max(2, s.size * 0.2);
       c.strokeText(line, s.x, y);
@@ -186,6 +192,21 @@
     } else if (s.type === 'box') {
       const r = norm(s.a, s.b);
       stroke(c, s, s.w, (k) => { k.beginPath(); k.rect(r.x, r.y, r.w, r.h); });
+    } else if (s.type === 'circle') {
+      const r = norm(s.a, s.b);
+      stroke(c, s, s.w, (k) => {
+        k.beginPath();
+        k.ellipse(r.x + r.w / 2, r.y + r.h / 2, Math.max(0.5, r.w / 2), Math.max(0.5, r.h / 2), 0, 0, Math.PI * 2);
+      });
+    } else if (s.type === 'textbox') {
+      // the box you drag for text, before you type: a faint dashed frame
+      const r = norm(s.a, s.b);
+      c.save();
+      c.setLineDash([4 * scale, 3 * scale]);
+      c.lineWidth = Math.max(1, scale);
+      c.strokeStyle = 'rgba(255, 255, 255, .7)';
+      c.strokeRect(r.x + 0.5, r.y + 0.5, r.w, r.h);
+      c.restore();
     } else if (s.type === 'blur') {
       pixelate(c, norm(s.a, s.b));
     } else if (s.type === 'text') {
@@ -266,6 +287,7 @@
     await api.copy(await png());
     dirty = false;
     flash('copied');
+    if (S.closeAfterCopy) setTimeout(() => api.closeSnip(), 350); // long enough to see "copied"
   }
 
   async function save(ask) {
@@ -312,7 +334,7 @@
       const len = Math.hypot(dx, dy);
       return { x: s.a.x + Math.cos(ang) * len, y: s.a.y + Math.sin(ang) * len };
     }
-    if (s.type === 'box' || s.type === 'blur') {
+    if (s.type === 'box' || s.type === 'blur' || s.type === 'circle') {
       const m = Math.max(Math.abs(dx), Math.abs(dy));
       return { x: s.a.x + Math.sign(dx || 1) * m, y: s.a.y + Math.sign(dy || 1) * m };
     }
@@ -324,11 +346,11 @@
     closeMenus();
     if (tool === 'none') return; // the native drag takes it from here
     e.preventDefault();
-    if (tool === 'text') { startText(e); return; }
     commitText();
     canvas.setPointerCapture(e.pointerId);
     const p = toImg(e);
-    current = { type: tool, ink: S.ink, w: lineW(), a: p, b: p, pts: [p] };
+    // text starts as a box you drag: its height sets the size of the letters
+    current = { type: tool === 'text' ? 'textbox' : tool, ink: S.ink, w: lineW(), a: p, b: p, pts: [p] };
     render();
   });
 
@@ -349,6 +371,12 @@
     const s = current;
     current = null;
     const r = norm(s.a, s.b);
+    if (s.type === 'textbox') {
+      render();
+      const boxed = r.w > 8 * scale && r.h > 8 * scale; // a click gives the default size
+      startText(r.x, r.y, boxed ? Math.max(8 * scale, r.h / LINE) : DEFAULT_TEXT * scale, boxed ? r : null);
+      return;
+    }
     const real = s.type === 'pen' ? true : s.type === 'arrow' ? Math.hypot(r.w, r.h) > 4 * scale : r.w > 3 && r.h > 3;
     if (real) {
       if (s.type !== 'pen') delete s.pts;
@@ -367,12 +395,12 @@
 
   // --- text ---------------------------------------------------------------
 
-  function startText(e) {
+  // x, y, size in image pixels; box = the dragged box (the editor fills it)
+  function startText(x, y, size, box) {
     commitText();
-    const p = toImg(e);
+    const p = { x, y };
     const r = canvas.getBoundingClientRect(), sr = stage.getBoundingClientRect();
     const k = r.width / W; // css px per image px
-    const size = 15 * scale;
     const I = INK[S.ink] || INK.ghost;
     const el = document.createElement('div');
     el.className = 'text-input';
@@ -385,7 +413,12 @@
       color: I.color,
       textShadow: `0 0 2px ${I.halo}, 0 0 1px ${I.halo}`,
       caretColor: I.color,
+      fontFamily: fontStack(S.font),
+      lineHeight: String(LINE),
+      minWidth: box ? box.w * k + 'px' : '',
+      minHeight: box ? box.h * k + 'px' : '',
     });
+    el.dataset.font = S.font;
     el.dataset.x = p.x;
     el.dataset.y = p.y;
     el.dataset.size = size;
@@ -415,7 +448,8 @@
     const text = el.innerText.replace(/\n+$/, '');
     el.remove();
     if (!text.trim()) return;
-    commit({ type: 'text', ink: el.dataset.ink, x: +el.dataset.x, y: +el.dataset.y, size: +el.dataset.size, lines: text.split('\n') });
+    const s = { type: 'text', ink: el.dataset.ink, font: el.dataset.font, x: +el.dataset.x, y: +el.dataset.y, size: +el.dataset.size, lines: text.split('\n') };
+    loadFont(s.font).then(() => commit(s));
   }
 
   // --- menus: gear (settings) and right click (actions) ---------------------
@@ -435,6 +469,11 @@
     menuEl.hidden = false;
     gear.setAttribute('aria-expanded', 'true');
     Ghost.menuOpen(true);
+    placeSettings();
+  }
+
+  // just under the bar, right-aligned with a 6px gap (like notr); again on every resize
+  function placeSettings() {
     const top = document.querySelector('.bar').getBoundingClientRect().bottom + 2;
     menuEl.style.maxHeight = Math.max(60, innerHeight - top - 6) + 'px';
     menuEl.style.top = top + 'px';
@@ -564,7 +603,18 @@
 
   // --- start --------------------------------------------------------------
 
-  api.onSettings((s) => { S = s; settingsMenu.set(s); });
+  api.onSettings((s) => { S = s; settingsMenu.set(s); loadFont(s.font); if (!menuEl.hidden) placeSettings(); });
+
+  window.addEventListener('resize', () => {
+    if (!menuEl.hidden) placeSettings();
+    if (!ctxEl.hidden) place(ctxEl, parseFloat(ctxEl.style.left) || 0, parseFloat(ctxEl.style.top) || 0);
+  });
+
+  // buttons never take focus from a click: no focus ring, and space / enter
+  // can't re-press the last button you clicked
+  document.addEventListener('mousedown', (e) => {
+    if (e.target instanceof Element && e.target.closest('button')) e.preventDefault();
+  });
 
   rebuild();
   layout();
