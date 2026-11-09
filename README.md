@@ -77,6 +77,7 @@ Or build it yourself from source (see below).
 | `Ctrl+N` (from any program) | bring notr's notes to the front |
 | hold `Ctrl` + arrows | resize: → / ↓ grow, ← / ↑ shrink |
 | hold `Alt` + arrows | move the note (stops at the screen edge) |
+| hold `Ctrl` + `F`, then `↑` / `↓` | font size bigger / smaller (same as ⚙ → size) |
 | `/line` then `Enter` (on its own line) | a separator line across the note. Copied into other apps it becomes `────────`, and pasting that back into notr makes it a separator again |
 | select text + right click | cut, copy, paste, select all, bold, italic, underline, font, size |
 | `⚙` (top right) | theme, font, size, bold/italic, status line, shortcuts |
@@ -101,12 +102,19 @@ Or build it yourself from source (see below).
 
 ```
 to change a shortcut, just edit the key in its [brackets]
+
+── notes
 add note [ctrl+s]
 delete note [ctrl+d]
 open notr [ctrl+n]
 switch note: tab
+
+── window
 resize note: ctrl + arrows
 move note: alt + arrows
+
+── text
+font size: ctrl + f + up / down
 separator: /line + enter
 ```
 

@@ -300,6 +300,8 @@
     api.setSettings(patch);
   }
   const setFont = (value) => setSetting({ font: { theme: S.theme, value } });
+  // ⚙ size − / + and ctrl+f+up / down
+  const stepSize = (d) => setFont({ size: Math.min(48, Math.max(8, (font().size || themeSize()) + d)) });
 
   function setDot(dot) {
     note.dot = dot;
@@ -312,16 +314,18 @@
   // -------------------------------------------------------------------------
   // shortcuts
   // -------------------------------------------------------------------------
-  // The bracketed keys can be edited in place; the rest are fixed.
+  // The bracketed keys can be edited in place; the rest are fixed. Grouped
+  // with a blank line and a small heading between groups, easier to scan.
   const SHORTCUTS_HINT = 'to change a shortcut, just edit the key in its [brackets]';
-  const shortcutLines = () => [
-    SHORTCUTS_HINT,
-    ...Keys.ACTIONS.map((a) => `${Keys.LABELS[a]} [${S.shortcuts[a]}]`),
-    'switch note: tab',
-    'resize note: ctrl + arrows',
-    'move note: alt + arrows',
-    'separator: /line + enter',
-  ];
+  const shortcutLines = () => {
+    const bound = (a) => `${Keys.LABELS[a]} [${S.shortcuts[a]}]`;
+    const groups = [
+      ['notes', [bound('add'), bound('del'), bound('open'), 'switch note: tab']],
+      ['window', ['resize note: ctrl + arrows', 'move note: alt + arrows']],
+      ['text', ['font size: ctrl + f + up / down', 'separator: /line + enter']],
+    ];
+    return [SHORTCUTS_HINT, ...groups.flatMap(([name, lines]) => ['', `── ${name}`, ...lines])];
+  };
 
   // Settings -> shortcuts: write the list into the note (at the end).
   function insertShortcuts() {
@@ -552,8 +556,8 @@
       { label: 'font', hint: (f.family ? f.family.toLowerCase() : 'theme default') + ' ›', sub: fontItems },
       {
         type: 'stepper', label: 'size', value: f.size || themeSize(),
-        dec: () => setFont({ size: Math.max(8, (font().size || themeSize()) - 1) }),
-        inc: () => setFont({ size: Math.min(48, (font().size || themeSize()) + 1) }),
+        dec: () => stepSize(-1),
+        inc: () => stepSize(1),
         reset: () => setFont({ size: null }),
       },
       { label: 'bold', check: f.bold, hint: onOff(f.bold), keep: true, run: () => setFont({ bold: !font().bold }) },
@@ -749,6 +753,11 @@
   // -------------------------------------------------------------------------
   // keyboard
   // -------------------------------------------------------------------------
+  // ctrl+f+up / down is a chord: while ctrl and f are held, the up / down
+  // arrows change the font size instead of resizing the note.
+  let fHeld = false;
+  const isF = (e) => e.code === 'KeyF';
+
   document.addEventListener('keydown', (e) => {
     if (!confirmEl.hidden) {
       const k = e.key.toLowerCase();
@@ -764,9 +773,23 @@
     }
     if (!S) return;
 
+    if (isF(e) && e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+      fHeld = true;
+      api.kbdStop(); // a resize that was already gliding stops here
+    }
+
+    // ctrl+f+up / down: font size, one step per press (or key repeat)
+    const arrow = ARROWS[e.key];
+    if (arrow && fHeld && e.ctrlKey) {
+      e.preventDefault();
+      if ((arrow === 'up' || arrow === 'down') && !e.shiftKey && !e.altKey && !e.metaKey) {
+        stepSize(arrow === 'up' ? 1 : -1);
+      }
+      return;
+    }
+
     // ctrl+arrows resize the note, alt+arrows move it, for as long as the key
     // is held (ctrl+shift+arrows still select words)
-    const arrow = ARROWS[e.key];
     if (arrow && !e.shiftKey && !e.metaKey && e.ctrlKey !== e.altKey) {
       e.preventDefault();
       if (!e.repeat) api.kbdStart(e.ctrlKey ? 'resize' : 'move', arrow);
@@ -789,8 +812,10 @@
 
   const ARROWS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
   document.addEventListener('keyup', (e) => {
+    if (isF(e)) fHeld = false;
     if (ARROWS[e.key]) api.kbdStop(ARROWS[e.key]);
     else if (e.key === 'Control' || e.key === 'Alt') {
+      if (e.key === 'Control') fHeld = false;
       api.kbdStop();
       if (e.key === 'Alt') e.preventDefault(); // don't let Windows open the window menu
     }
@@ -806,6 +831,7 @@
   window.addEventListener('blur', () => {
     body.classList.remove('focused');
     closeMenu();
+    fHeld = false;
     api.kbdStop(); // never keep gliding after focus leaves
   });
   document.documentElement.addEventListener('mouseenter', () => body.classList.add('hover'));

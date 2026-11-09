@@ -115,7 +115,7 @@ async function phase1() {
   await wait(300);
   const t1 = await text(w1);
   L('note text:\n' + t1);
-  check('shortcut list written, with the how-to line on top', t1.includes('to change a shortcut, just edit the key in its [brackets]\nadd note [ctrl+s]\ndelete note [ctrl+d]\nopen notr [ctrl+n]\nswitch note: tab\nresize note: ctrl + arrows\nmove note: alt + arrows\nseparator: /line + enter'));
+  check('shortcut list written, with the how-to line on top', t1.includes('to change a shortcut, just edit the key in its [brackets]\n\n── notes\nadd note [ctrl+s]\ndelete note [ctrl+d]\nopen notr [ctrl+n]\nswitch note: tab\n\n── window\nresize note: ctrl + arrows\nmove note: alt + arrows\n\n── text\nfont size: ctrl + f + up / down\nseparator: /line + enter'));
   await shot(w1, '03-shortcuts');
 
   // editing the brackets changes the shortcut (after typing pauses)
@@ -164,6 +164,21 @@ async function phase1() {
   await wait(300);
   check('ghost font remembered', (await js(w1, `document.getElementById('editor').style.fontSize`)) === '18px');
 
+  // ctrl+f+up / down changes the font size (and doesn't resize the note)
+  const edSize = () => js(w1, `document.getElementById('editor').style.fontSize`);
+  const fb0 = w1.getBounds();
+  w1.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'F', modifiers: ['control'] });
+  key(w1, 'Up', ['control']); await wait(50);
+  key(w1, 'Up', ['control']); await wait(250);
+  check('ctrl+f+up x2 -> 20px', (await edSize()) === '20px', await edSize());
+  key(w1, 'Down', ['control']); await wait(50);
+  key(w1, 'Down', ['control']); await wait(250);
+  w1.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'F', modifiers: ['control'] });
+  await wait(100);
+  check('ctrl+f+down x2 -> back to 18px', (await edSize()) === '18px', await edSize());
+  const fb1 = w1.getBounds();
+  check('ctrl+f+arrows leave the note size alone', fb1.width === fb0.width && fb1.height === fb0.height, fb1);
+
   // caret follows when the text grows past the bottom, and back up
   await js(w1, `(() => { const e=document.getElementById('editor'); const r=document.createRange(); r.selectNodeContents(e); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); })()`);
   for (let i = 0; i < 30; i++) { key(w1, 'Return'); await wait(15); }
@@ -173,7 +188,7 @@ async function phase1() {
   const st1 = await js(w1, `document.getElementById('body').scrollTop`);
   check('scrolled down with the caret', st1 > 0 && (await js(w1, caretVisible)), 'scrollTop=' + st1);
   await shot(w1, '05-scrolled-bottom');
-  for (let i = 0; i < 50; i++) { key(w1, 'Up'); await wait(15); }
+  for (let i = 0; i < 80; i++) { key(w1, 'Up'); await wait(15); }
   await wait(300);
   const st2 = await js(w1, `document.getElementById('body').scrollTop`);
   check('scrolled back up with arrow keys', st2 === 0 && (await js(w1, caretVisible)), 'scrollTop=' + st2);
