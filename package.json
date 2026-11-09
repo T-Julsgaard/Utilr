@@ -1,0 +1,71 @@
+{
+  "name": "snipr",
+  "productName": "snipr",
+  "version": "1.0.0",
+  "description": "A quiet screenshot tool. Press the key, drag, it's on your clipboard.",
+  "main": "src/main.js",
+  "author": "T_J",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "icons": "electron scripts/icons.js",
+    "test": "electron scripts/smoke.js",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "build": {
+    "appId": "app.snipr",
+    "productName": "snipr",
+    "executableName": "snipr",
+    "files": [
+      "src/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/snipr.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "snipr",
+      "createStartMenuShortcut": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "src/assets/snipr.ico",
+      "uninstallerIcon": "src/assets/snipr.ico",
+      "uninstallDisplayName": "snipr",
+      "include": "build/installer.nsh",
+      "artifactName": "snipr-setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["universal"] }],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "snipr needs to see the screen to take screenshots."
+      },
+      "artifactName": "snipr-${version}-mac.${ext}"
+    },
+    "dmg": { "title": "snipr" },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "synopsis": "A quiet screenshot tool",
+      "maintainer": "T-Julsgaard <T-Julsgaard@users.noreply.github.com>",
+      "executableName": "snipr"
+    },
+    "appImage": { "artifactName": "snipr-${version}-linux-x86_64.${ext}" },
+    "deb": { "artifactName": "snipr-${version}-linux-amd64.${ext}" }
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "^26.18.0"
+  }
+}
