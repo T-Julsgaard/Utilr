@@ -41,6 +41,13 @@ ghost window. At rest it's just the image. Hover for the chrome.
 | `esc` / `ctrl+w` | close (asks first if you have marks you haven't copied or saved) |
 | right click | all of the above as a menu |
 
+**Blur can't be undone.** A normal mosaic keeps an average per block, and those averages are
+enough to guess text back. snipr's blur keeps nothing of what's under it except one average
+colour for the whole area; each block is that colour shifted by random noise from the system's
+secure random source (`crypto.getRandomValues`). Mind that a snip goes to the clipboard (and,
+with auto save, to the folder) the moment you take it, before you blur: copy or save again
+after blurring.
+
 Marks use the ink set in settings: **ghost** (white with a dark halo, so it reads on anything),
 **red** or **black**. Text uses the font set in settings, from notr's font list: JetBrains Mono,
 IBM Plex Mono, DM Mono, Martian Mono, Space Mono and VT323 (bundled), plus Cascadia Mono,

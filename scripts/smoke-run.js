@@ -111,6 +111,23 @@ module.exports = async (h) => {
     await tool('box'); await drag(snip.win, at(0.08, 0.15), at(0.45, 0.6));
     await tool('arrow'); await drag(snip.win, at(0.85, 0.85), at(0.5, 0.45));
     await tool('blur'); await drag(snip.win, at(0.55, 0.08), at(0.92, 0.3));
+    // the blur keeps nothing of what was under it but one average colour: every pixel
+    // is that colour + the same random shift on r, g and b, within ±14
+    const blurInfo = await js(snip.win, `(() => {
+      const c = document.getElementById('canvas'), x = c.getContext('2d');
+      const x0 = Math.ceil(c.width * 0.55) + 1, y0 = Math.ceil(c.height * 0.08) + 1;
+      const w = Math.floor(c.width * 0.37) - 2, h = Math.floor(c.height * 0.22) - 2;
+      const d = x.getImageData(x0, y0, w, h).data;
+      let rg = new Set(), gb = new Set(), lo = 255, hi = 0, clamped = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] === 0 || d[i] === 255 || d[i + 1] === 0 || d[i + 1] === 255 || d[i + 2] === 0 || d[i + 2] === 255) { clamped++; continue; }
+        rg.add(d[i] - d[i + 1]); gb.add(d[i + 1] - d[i + 2]);
+        lo = Math.min(lo, d[i + 1]); hi = Math.max(hi, d[i + 1]);
+      }
+      return { rg: rg.size, gb: gb.size, spread: hi - lo, clamped, n: d.length / 4 };
+    })()`);
+    check(blurInfo.rg <= 2 && blurInfo.gb <= 2 && blurInfo.spread <= 29,
+      `blur keeps only one average colour + noise (${blurInfo.rg}/${blurInfo.gb} channel offsets, spread ${blurInfo.spread})`);
     await tool('pen'); await drag(snip.win, at(0.1, 0.8), at(0.35, 0.9), 12);
     await tool('circle'); await drag(snip.win, at(0.62, 0.55), at(0.8, 0.8));
     await js(snip.win, "window.snipr.setSettings({ font: 'Space Mono' })");

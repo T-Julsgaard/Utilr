@@ -118,26 +118,42 @@
 
   const norm = (a, b) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) });
 
-  function pixelate(c, r) {
+  // Blur that can't be undone. A plain mosaic keeps one average per block, and
+  // those averages are enough to guess text back (render candidates, mosaic
+  // them the same way, compare: what Depix does). So no block here is computed
+  // from what's under it. The whole area gets ONE colour, its overall average,
+  // and each block is that colour shifted by random noise. The only thing left
+  // of the content is that single average; the block pattern is pure chance.
+  //
+  // Noise: 64 KB from crypto.getRandomValues (the OS's secure random source),
+  // drawn once per blur mark and kept with it, so the mark looks the same on
+  // every redraw (undo, redo, resize) and doesn't flicker while you drag.
+  const NOISE_SIDE = 256;          // noise table: 256 × 256 blocks, one byte each
+  const NOISE_AMP = 14;            // ± brightness per block, out of 255
+  const makeNoise = () => crypto.getRandomValues(new Uint8Array(NOISE_SIDE * NOISE_SIDE));
+
+  function pixelate(c, r, noise) {
     const x = Math.max(0, Math.floor(r.x)), y = Math.max(0, Math.floor(r.y));
     const w = Math.min(W - x, Math.ceil(r.w)), h = Math.min(H - y, Math.ceil(r.h));
-    if (w < 1 || h < 1) return;
+    if (w < 1 || h < 1 || !noise) return;
     const b = Math.max(6, Math.round(9 * scale));
     const img = c.getImageData(x, y, w, h);
     const d = img.data;
-    for (let by = 0; by < h; by += b) {
-      for (let bx = 0; bx < w; bx += b) {
+    // one average for the whole area
+    let r0 = 0, g0 = 0, b0 = 0;
+    for (let i = 0; i < d.length; i += 4) { r0 += d[i]; g0 += d[i + 1]; b0 += d[i + 2]; }
+    const n = w * h;
+    r0 /= n; g0 /= n; b0 /= n;
+    const clamp = (v) => (v < 0 ? 0 : v > 255 ? 255 : v | 0);
+    // every pixel of the area is overwritten: blocks of that colour ± noise
+    for (let by = 0, row = 0; by < h; by += b, row++) {
+      for (let bx = 0, col = 0; bx < w; bx += b, col++) {
+        const k = ((noise[(row % NOISE_SIDE) * NOISE_SIDE + (col % NOISE_SIDE)] / 255) * 2 - 1) * NOISE_AMP;
+        const R = clamp(r0 + k), G = clamp(g0 + k), B = clamp(b0 + k);
         const bw = Math.min(b, w - bx), bh = Math.min(b, h - by);
-        let r0 = 0, g0 = 0, b0 = 0;
         for (let yy = 0; yy < bh; yy++) {
           let i = ((by + yy) * w + bx) * 4;
-          for (let xx = 0; xx < bw; xx++, i += 4) { r0 += d[i]; g0 += d[i + 1]; b0 += d[i + 2]; }
-        }
-        const n = bw * bh;
-        r0 = (r0 / n) | 0; g0 = (g0 / n) | 0; b0 = (b0 / n) | 0;
-        for (let yy = 0; yy < bh; yy++) {
-          let i = ((by + yy) * w + bx) * 4;
-          for (let xx = 0; xx < bw; xx++, i += 4) { d[i] = r0; d[i + 1] = g0; d[i + 2] = b0; d[i + 3] = 255; }
+          for (let xx = 0; xx < bw; xx++, i += 4) { d[i] = R; d[i + 1] = G; d[i + 2] = B; d[i + 3] = 255; }
         }
       }
     }
@@ -218,7 +234,7 @@
       c.strokeRect(r.x + 0.5, r.y + 0.5, r.w, r.h);
       c.restore();
     } else if (s.type === 'blur') {
-      pixelate(c, norm(s.a, s.b));
+      pixelate(c, norm(s.a, s.b), s.noise);
     } else if (s.type === 'text') {
       drawText(c, s);
     }
@@ -361,6 +377,7 @@
     const p = toImg(e);
     // text starts as a box you drag: its height sets the size of the letters
     current = { type: tool === 'text' ? 'textbox' : tool, ink: S.ink, w: lineW(), a: p, b: p, pts: [p] };
+    if (tool === 'blur') current.noise = makeNoise();
     render();
   });
 
