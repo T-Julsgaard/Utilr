@@ -69,7 +69,10 @@
 
   function layout() {
     const lw = W / scale, lh = H / scale;
-    view = Math.min(1, stage.clientWidth / lw, stage.clientHeight / lh);
+    const cs = getComputedStyle(stage); // the room inside the matte
+    const aw = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    view = Math.max(0.01, Math.min(1, aw / lw, ah / lh));
     canvas.style.width = Math.max(1, Math.round(lw * view)) + 'px';
     canvas.style.height = Math.max(1, Math.round(lh * view)) + 'px';
     if (textEl) commitText(); // the editor was placed for the old size

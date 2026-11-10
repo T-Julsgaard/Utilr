@@ -114,7 +114,9 @@ module.exports = async (h) => {
     const originalFile = fs.readFileSync(path.join(shotsDir, autoFile));
     check(clip.width === Math.round(500 * sc) && clip.height === Math.round(300 * sc), `clipboard holds ${clip.width}×${clip.height}`);
     const sb = snip.win.getBounds();
-    check(sb.x === primary.bounds.x + A.x && sb.y === primary.bounds.y + A.y - 30, `snip sits where it was taken (${sb.x},${sb.y})`);
+    check(sb.x === primary.bounds.x + A.x - 24 && sb.y === primary.bounds.y + A.y - 30 - 24, `snip window grows round where it was taken (${sb.x},${sb.y})`);
+    const cr = await js(snip.win, "(() => { const r = document.getElementById('canvas').getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; })()");
+    check(sb.x + cr[0] === primary.bounds.x + A.x && sb.y + cr[1] === primary.bounds.y + A.y && cr[2] === 500 && cr[3] === 300, `snip image sits where it was taken, at full size (${cr.join(', ')})`);
     await wait(300);
     await shot(snip.win, '3-snip-rest');
     await js(snip.win, "document.body.classList.add('hover')");

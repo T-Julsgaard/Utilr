@@ -11,6 +11,8 @@
   --guide: rgba(255, 255, 255, .13);     /* crosshair before you drag */
   --panel-pad: 4px 8px;                  /* readouts, hints, toast */
   --halo: rgba(0, 0, 0, .55);            /* ghost ink outline */
+  --matte: 24px;                         /* margin round a snip's image (main.js MATTE) */
+  --edge: rgba(255, 255, 255, .09);      /* hairline round a snip's image */
 }
 
 /* No focus rings. Chromium draws them in the system accent colour (an orange
@@ -120,8 +122,13 @@ body.toast { background: transparent; justify-content: flex-end; align-items: fl
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  padding: var(--matte);
 }
-#canvas { display: block; image-rendering: auto; }
+/* the matte keeps the image apart from the screen behind it, the hairline keeps
+   a dark image apart from the matte */
+#canvas { display: block; image-rendering: auto; box-shadow: 0 0 0 1px var(--edge); }
+/* a snip keeps its window edge at rest: without it the matte melts into a dark screen */
+body.ghost.snip .frame { opacity: 1; }
 body[data-tool="none"] #canvas { cursor: grab; }
 body[data-tool="pen"] #canvas,
 body[data-tool="arrow"] #canvas,

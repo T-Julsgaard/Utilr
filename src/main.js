@@ -19,6 +19,7 @@ const Ocr = require('./ocr');
 const BG = '#111111';          // ghost --bg, so windows never flash white
 const BAR_H = 30;              // ghost --bar-h
 const STATUS_H = 22;           // ghost --status-h
+const MATTE = 24;              // snipr.css --matte: the margin round a snip's image
 const SNIP_MIN = { width: 310, height: 150 };
 const IS_WIN = process.platform === 'win32';
 const IS_MAC = process.platform === 'darwin';
@@ -512,17 +513,18 @@ let quitting = false;
 
 function snipBounds(d, rect) {
   const wa = d.workArea;
-  const maxW = Math.floor(wa.width * 0.9);
-  const maxH = Math.floor(wa.height * 0.9) - BAR_H - STATUS_H;
+  const padW = 2 * MATTE, padH = BAR_H + STATUS_H + 2 * MATTE;
+  const maxW = Math.floor(wa.width * 0.9) - padW;
+  const maxH = Math.floor(wa.height * 0.9) - padH;
   const k = Math.min(1, maxW / rect.width, maxH / rect.height);
   const iw = Math.round(rect.width * k), ih = Math.round(rect.height * k);
-  const width = Math.max(SNIP_MIN.width, iw);
-  const height = Math.max(SNIP_MIN.height, ih + BAR_H + STATUS_H);
+  const width = Math.max(SNIP_MIN.width, iw + padW);
+  const height = Math.max(SNIP_MIN.height, ih + padH);
   let x, y;
   if (k === 1) {
-    // the image stays exactly where it was on screen; the chrome grows around it
+    // the image stays exactly where it was on screen; the matte and chrome grow around it
     x = Math.round(d.bounds.x + rect.x - (width - iw) / 2);
-    y = Math.round(d.bounds.y + rect.y - BAR_H - (height - BAR_H - STATUS_H - ih) / 2);
+    y = Math.round(d.bounds.y + rect.y - BAR_H - MATTE - (height - padH - ih) / 2);
   } else {
     x = Math.round(wa.x + (wa.width - width) / 2);
     y = Math.round(wa.y + (wa.height - height) / 2);
