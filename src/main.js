@@ -900,7 +900,7 @@ if (!app.requestSingleInstanceLock()) {
 
     // test hook: scripts/smoke.js drives the real windows
     if (process.env.SNIPR_SMOKE) {
-      require(process.env.SNIPR_SMOKE)({ startCapture, overlays, snips, toast, openSettings, logLine,
+      require(process.env.SNIPR_SMOKE)({ startCapture, overlays, snips, toast, openSettings, openSnip, logLine,
         settings: () => settings, session: () => session, settingsWin: () => settingsWin, toastWin: () => toastWin });
     }
     // Opening snipr gives you a snip. At login it waits in the tray.

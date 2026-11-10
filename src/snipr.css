@@ -128,8 +128,10 @@ body[data-tool="box"] #canvas,
 body[data-tool="blur"] #canvas { cursor: crosshair; }
 body[data-tool="text"] #canvas { cursor: text; }
 
+.text-layer { position: absolute; overflow: hidden; z-index: 5; pointer-events: none; }
 .text-input {
   position: absolute;
+  pointer-events: auto;
   min-width: 2ch;
   margin: 0;
   padding: 0;

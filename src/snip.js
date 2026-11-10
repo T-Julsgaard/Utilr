@@ -72,6 +72,7 @@
     view = Math.min(1, stage.clientWidth / lw, stage.clientHeight / lh);
     canvas.style.width = Math.max(1, Math.round(lw * view)) + 'px';
     canvas.style.height = Math.max(1, Math.round(lh * view)) + 'px';
+    if (textEl) commitText(); // the editor was placed for the old size
     status();
   }
   new ResizeObserver(layout).observe(stage);
@@ -148,14 +149,23 @@
     const lh = s.size * LINE;
     c.save();
     c.font = `400 ${s.size}px ${fontStack(s.font)}`;
-    c.textBaseline = 'top';
-    c.lineJoin = 'round';
+    // place each line the way css does: the font's ascent + descent, centred in the line box
+    c.textBaseline = 'alphabetic';
+    // (css rounds the font's ascent and descent to whole css pixels, so do the same here)
+    const fm = c.measureText('Hg');
+    const px = s.px || scale;                    // image pixels per css pixel when it was typed
+    const asc = Math.round(fm.fontBoundingBoxAscent / px) * px;
+    const desc = Math.round(fm.fontBoundingBoxDescent / px) * px;
+    const base = Math.floor((lh - (asc + desc)) / 2 / px) * px + asc;
+    c.fillStyle = I.color;
+    c.shadowColor = I.halo;
+    // the same soft glow the editor shows while you type (text-shadow 2px + 1px),
+    // so placing the text changes nothing
     s.lines.forEach((line, i) => {
-      const y = s.y + s.size * (LINE - 1) / 2 + i * lh; // match the css half-leading of the editor
-      c.strokeStyle = I.halo;
-      c.lineWidth = Math.max(2, s.size * 0.2);
-      c.strokeText(line, s.x, y);
-      c.fillStyle = I.color;
+      const y = s.y + i * lh + base;
+      c.shadowBlur = 2 * px;
+      c.fillText(line, s.x, y);
+      c.shadowBlur = 1 * px;
       c.fillText(line, s.x, y);
     });
     c.restore();
@@ -406,9 +416,15 @@
     el.className = 'text-input';
     el.contentEditable = 'plaintext-only';
     el.spellcheck = false;
+    // the editor sits in a layer exactly over the image that clips it, so text
+    // you keep typing disappears behind the image's edge, like the drawn text will
+    const layer = document.createElement('div');
+    layer.className = 'text-layer';
+    Object.assign(layer.style, { left: r.left - sr.left + 'px', top: r.top - sr.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+    layer.addEventListener('scroll', () => { layer.scrollLeft = 0; layer.scrollTop = 0; }); // never follow the caret
     Object.assign(el.style, {
-      left: r.left - sr.left + p.x * k + 'px',
-      top: r.top - sr.top + p.y * k + 'px',
+      left: p.x * k + 'px',
+      top: p.y * k + 'px',
       fontSize: size * k + 'px',
       color: I.color,
       textShadow: `0 0 2px ${I.halo}, 0 0 1px ${I.halo}`,
@@ -423,13 +439,15 @@
     el.dataset.y = p.y;
     el.dataset.size = size;
     el.dataset.ink = S.ink;
+    el.dataset.px = 1 / k;
     el.addEventListener('keydown', (ev) => {
       ev.stopPropagation();
       if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); commitText(); }
       else if (ev.key === 'Escape') { ev.preventDefault(); cancelText(); }
     });
     el.addEventListener('blur', () => setTimeout(commitText, 0));
-    stage.appendChild(el);
+    layer.appendChild(el);
+    stage.appendChild(layer);
     textEl = el;
     setTimeout(() => el.focus(), 0);
   }
@@ -438,7 +456,7 @@
     if (!textEl) return;
     const el = textEl;
     textEl = null;
-    el.remove();
+    (el.parentElement || el).remove();
   }
 
   function commitText() {
@@ -446,9 +464,9 @@
     const el = textEl;
     textEl = null;
     const text = el.innerText.replace(/\n+$/, '');
-    el.remove();
+    (el.parentElement || el).remove(); // the clipping layer goes with it
     if (!text.trim()) return;
-    const s = { type: 'text', ink: el.dataset.ink, font: el.dataset.font, x: +el.dataset.x, y: +el.dataset.y, size: +el.dataset.size, lines: text.split('\n') };
+    const s = { type: 'text', ink: el.dataset.ink, font: el.dataset.font, x: +el.dataset.x, y: +el.dataset.y, size: +el.dataset.size, px: +el.dataset.px, lines: text.split('\n') };
     loadFont(s.font).then(() => commit(s));
   }
 

@@ -84,6 +84,8 @@ module.exports = async (h) => {
     const sc = primary.scaleFactor;
     check(readout.replace(/\s/g, '') === `${Math.round(500 * sc)}×${Math.round(300 * sc)}`, `size readout says "${readout}"`);
     t0 = Date.now();
+    // finish with the exact rectangle, so a real mouse moving during the test can't skew the rest
+    await js(ov, `window.snipr.overlayDone(${h.session().sid}, { x: ${A.x}, y: ${A.y}, width: ${B.x - A.x}, height: ${B.y - A.y} })`);
     mouse(ov, 'mouseUp', B.x, B.y);
 
     // --- 3. the snip window -------------------------------------------------
@@ -121,10 +123,39 @@ module.exports = async (h) => {
     check(ed && Math.abs(ed.size - boxH / 1.25) < 1.5, 'text size follows the box (' + (ed && ed.size.toFixed(1)) + ' px for a ' + boxH.toFixed(0) + ' px box)');
     check(ed && /Space Mono/.test(ed.font), 'text uses the chosen font');
     await snip.win.webContents.insertText('look here');
-    key(snip.win, 'Enter');
     await wait(120);
+    // the text must look the same before and after enter (no dark outline appearing)
+    const tr = await js(snip.win, "(() => { const r = document.querySelector('.text-input').getBoundingClientRect(); return { x: Math.round(r.left) + 2, y: Math.round(r.top) + 2, width: Math.round(r.width) - 4, height: Math.round(r.height) - 4 }; })()");
+    await js(snip.win, "document.querySelector('.text-input').style.outline = 'none'; document.querySelector('.text-input').style.caretColor = 'transparent'");
+    await wait(80);
+    const before = await snip.win.webContents.capturePage(tr);
+    fs.writeFileSync(path.join(out, '5a-text-typing.png'), before.toPNG());
+    key(snip.win, 'Enter');
+    await wait(250);
     const n = await js(snip.win, "document.querySelectorAll('.text-input').length");
     check(n === 0, 'text committed');
+    const after = await snip.win.webContents.capturePage(tr);
+    fs.writeFileSync(path.join(out, '5b-text-placed.png'), after.toPNG());
+    const a = before.toBitmap(), b = after.toBitmap();
+    let diff = 0, big = 0;
+    for (let i = 0; i < Math.min(a.length, b.length); i += 4) {
+      const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+      diff += d; if (d > 60) big++;
+    }
+    const px = a.length / 4;
+    check(big / px < 0.02, `placed text matches what you typed (mean diff ${(diff / px).toFixed(1)}, ${(100 * big / px).toFixed(2)}% pixels off)`);
+
+    // typing past the edge: the editor is clipped by the image, not drawn over the chrome
+    // (the text tool is still on)
+    await drag(snip.win, at(0.6, 0.05), at(0.75, 0.13));
+    await wait(80);
+    await snip.win.webContents.insertText('this line runs well past the edge of the snip');
+    await wait(120);
+    const clipInfo = await js(snip.win, "(() => { const l = document.querySelector('.text-layer'), e = document.querySelector('.text-input'), c = document.getElementById('canvas').getBoundingClientRect(), lr = l.getBoundingClientRect(); return { over: e.getBoundingClientRect().right > c.right, hidden: getComputedStyle(l).overflow === 'hidden', same: Math.abs(lr.right - c.right) < 1 && Math.abs(lr.left - c.left) < 1 && Math.abs(lr.top - c.top) < 1, scroll: l.scrollLeft }; })()");
+    check(clipInfo.over && clipInfo.hidden && clipInfo.same && clipInfo.scroll === 0, 'long text is clipped at the image edge');
+    await shot(snip.win, '5c-text-clipped');
+    key(snip.win, 'Escape'); // drop that one
+    await wait(80);
     await tool('text'); // back to the hand
     await wait(350);
     await shot(snip.win, '5-marks');
