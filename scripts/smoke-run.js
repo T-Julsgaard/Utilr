@@ -7,6 +7,18 @@ const fs = require('fs');
 const { app, clipboard, screen, nativeImage } = require('electron');
 
 // size of the image on the clipboard, or null
+// fingerprint of the clipboard image's pixels, or null
+async function clipPixels() {
+  try {
+    const items = await clipboard.read();
+    const item = items.find((i) => i.types.includes('image/png'));
+    if (!item) return null;
+    const blob = await item.getType('image/png');
+    const bmp = nativeImage.createFromBuffer(Buffer.from(await blob.arrayBuffer())).toBitmap();
+    return require('crypto').createHash('sha256').update(bmp).digest('hex');
+  } catch (_) { return null; }
+}
+
 async function clipSize() {
   try {
     const items = await clipboard.read();
@@ -55,6 +67,7 @@ module.exports = async (h) => {
     check(h.settings().closeAfterCopy === false, '"close after copy" is off by default');
     check(fs.existsSync(path.join(app.getPath('pictures'), 'snipr')), 'the snipr folder exists from the start');
     h.settings().folder = shotsDir;
+    h.settings().autoSave = true; // first snip only: lets the test see the saved file get blurred too
     await wait(900);
 
     // --- 1. capture: overlay comes up over the screen ----------------------
@@ -95,6 +108,10 @@ module.exports = async (h) => {
     check(true, `snip window shown ${Date.now() - t0} ms after release`);
     check(!ov.isVisible(), 'overlay hidden after the snip');
     const clip = (await clipSize()) || {};
+    h.settings().autoSave = false;
+    const originalClip = await clipPixels();
+    const autoFile = fs.readdirSync(shotsDir)[0];
+    const originalFile = fs.readFileSync(path.join(shotsDir, autoFile));
     check(clip.width === Math.round(500 * sc) && clip.height === Math.round(300 * sc), `clipboard holds ${clip.width}×${clip.height}`);
     const sb = snip.win.getBounds();
     check(sb.x === primary.bounds.x + A.x && sb.y === primary.bounds.y + A.y - 30, `snip sits where it was taken (${sb.x},${sb.y})`);
@@ -128,6 +145,17 @@ module.exports = async (h) => {
     })()`);
     check(blurInfo.rg <= 2 && blurInfo.gb <= 2 && blurInfo.spread <= 29,
       `blur keeps only one average colour + noise (${blurInfo.rg}/${blurInfo.gb} channel offsets, spread ${blurInfo.spread})`);
+    // the unblurred original is gone from the clipboard and the auto-saved file
+    await until(async () => (await clipPixels()) !== originalClip, 3000, 'clipboard to be blurred');
+    check(true, 'blurring replaced the original on the clipboard');
+    check(!fs.readFileSync(path.join(shotsDir, autoFile)).equals(originalFile), 'blurring replaced the auto-saved original');
+    // but something you copied yourself since is left alone
+    await clipboard.writeText('mine');
+    await tool('blur'); await drag(snip.win, at(0.02, 0.85), at(0.1, 0.97));
+    await wait(600);
+    const mine = await clipboard.readText();
+    check(mine === 'mine', 'a later blur leaves your own clipboard alone' + (mine === 'mine' ? '' : ` (clipboard: ${JSON.stringify((await clipboard.read()).map((i) => i.types))} "${mine}")`));
+    await tool('blur');
     await tool('pen'); await drag(snip.win, at(0.1, 0.8), at(0.35, 0.9), 12);
     await tool('circle'); await drag(snip.win, at(0.62, 0.55), at(0.8, 0.8));
     await js(snip.win, "window.snipr.setSettings({ font: 'Space Mono' })");

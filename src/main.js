@@ -7,6 +7,7 @@ const {
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
 const Keys = require('./keys');
 const Fonts = require('./fonts/list');
 
@@ -392,9 +393,9 @@ async function finishCapture(win, rect) {
   const snip = { png, width: px.width, height: px.height, scale: s, at: new Date() };
 
   const done = [];
-  if (settings.copy) { copyPng(png); done.push('copied'); } // not awaited: the snip opens at once
+  if (settings.copy) { copyPng(png); snip.clipHash = pixelHash(img); done.push('copied'); } // not awaited: the snip opens at once
   if (settings.autoSave) {
-    try { snip.savedTo = saveBuffer(png, snip.at); done.push('saved'); } catch (err) { logLine('auto save failed: ' + err.message); }
+    try { snip.savedTo = saveBuffer(png, snip.at); snip.autoSaved = true; done.push('saved'); } catch (err) { logLine('auto save failed: ' + err.message); }
   }
 
   if (settings.open) {
@@ -409,6 +410,22 @@ async function finishCapture(win, rect) {
 // ---------------------------------------------------------------------------
 // clipboard + saving
 // ---------------------------------------------------------------------------
+
+// A fingerprint of an image's pixels (not its png bytes, which differ per encoder).
+const pixelHash = (img) => crypto.createHash('sha256').update(img.toBitmap()).digest('hex');
+
+// fingerprint of the image on the clipboard, or null when there is none
+async function clipboardHash() {
+  try {
+    const items = await clipboard.read();
+    const item = items.find((i) => i.types.includes('image/png'));
+    if (!item) return null;
+    const blob = await item.getType('image/png');
+    return pixelHash(nativeImage.createFromBuffer(Buffer.from(await blob.arrayBuffer())));
+  } catch (_) {
+    return null;
+  }
+}
 
 // Electron's clipboard is the async, W3C-shaped one: a PNG blob goes in as an image.
 async function copyPng(buf) {
@@ -814,7 +831,9 @@ const toBuffer = (s, png) => (png && png.length ? Buffer.from(png) : s.snip.png)
 ipcMain.handle('snip:copy', async (e, png) => {
   const s = snipOf(e);
   if (!s) return false;
-  await copyPng(toBuffer(s, png));
+  const buf = toBuffer(s, png);
+  await copyPng(buf);
+  s.snip.clipHash = pixelHash(nativeImage.createFromBuffer(buf));
   return true;
 });
 
@@ -846,6 +865,28 @@ ipcMain.handle('snip:save', async (e, png, ask) => {
 });
 
 // drag the snip out of its window, into a chat, a folder, a document…
+// After a blur, the unblurred original must not be left behind. snipr put it
+// on the clipboard (auto copy) and maybe in the folder (auto save) the moment
+// the snip was taken; both get the blurred version. The clipboard only if it
+// still holds exactly what this snip put there (compared pixel for pixel), so
+// anything you copied since is left alone.
+ipcMain.handle('snip:secure', async (e, png) => {
+  const s = snipOf(e);
+  if (!s || !png || !png.length) return [];
+  const buf = Buffer.from(png);
+  const done = [];
+  if (s.snip.clipHash && (await clipboardHash()) === s.snip.clipHash) {
+    if (await copyPng(buf)) {
+      s.snip.clipHash = pixelHash(nativeImage.createFromBuffer(buf));
+      done.push('clipboard');
+    }
+  }
+  if (s.snip.autoSaved && s.snip.savedTo && fs.existsSync(s.snip.savedTo)) {
+    try { fs.writeFileSync(s.snip.savedTo, buf); done.push('file'); } catch (err) { logLine('could not update the saved snip: ' + err.message); }
+  }
+  return done;
+});
+
 ipcMain.on('snip:drag', (e, png) => {
   const s = snipOf(e);
   if (!s) return;

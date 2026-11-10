@@ -264,6 +264,13 @@
     shapes.push(s);
     undone = [];
     changed();
+    if (s.type === 'blur') secure();
+  }
+
+  // a blur replaces the unblurred original wherever snipr already put it
+  async function secure() {
+    const done = await api.secure(await png());
+    if (done && done.length) flash((done.includes('clipboard') ? 'clipboard' : 'file') + (done.length > 1 ? ' + file' : '') + ' updated');
   }
   function undo() {
     if (!shapes.length) return;
