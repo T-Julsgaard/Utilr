@@ -69,7 +69,7 @@
 
   function layout() {
     const lw = W / scale, lh = H / scale;
-    const cs = getComputedStyle(stage); // the room inside the matte
+    const cs = getComputedStyle(stage); // the room inside the border
     const aw = stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const ah = stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
     view = Math.max(0.01, Math.min(1, aw / lw, ah / lh));
@@ -79,6 +79,18 @@
     status();
   }
   new ResizeObserver(layout).observe(stage);
+
+  // the border round the image (settings → border); main grows the window to match
+  let border = -1;
+  function applyBorder() {
+    const px = S.border || 0;
+    if (px === border) return false;
+    border = px;
+    document.documentElement.style.setProperty('--matte', px + 'px');
+    body.classList.toggle('matte', px > 0);
+    return true;
+  }
+  applyBorder();
 
   // --- status line ----------------------------------------------------------
 
@@ -684,7 +696,7 @@
 
   // --- start --------------------------------------------------------------
 
-  api.onSettings((s) => { S = s; settingsMenu.set(s); loadFont(s.font); if (!menuEl.hidden) placeSettings(); });
+  api.onSettings((s) => { S = s; settingsMenu.set(s); loadFont(s.font); if (applyBorder()) layout(); if (!menuEl.hidden) placeSettings(); });
 
   window.addEventListener('resize', () => {
     if (!menuEl.hidden) placeSettings();

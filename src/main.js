@@ -19,7 +19,7 @@ const Ocr = require('./ocr');
 const BG = '#111111';          // ghost --bg, so windows never flash white
 const BAR_H = 30;              // ghost --bar-h
 const STATUS_H = 22;           // ghost --status-h
-const MATTE = 24;              // snipr.css --matte: the margin round a snip's image
+const BORDERS = [0, 12, 24, 48]; // the snip border choices, px round the image (settings.border)
 const SNIP_MIN = { width: 310, height: 150 };
 const IS_WIN = process.platform === 'win32';
 const IS_MAC = process.platform === 'darwin';
@@ -66,6 +66,7 @@ const defaultFolder = () => path.join(app.getPath('pictures'), 'snipr');
 // folder:       where snips are saved (null = Pictures/snipr)
 // closeAfterCopy: a snip window closes once you copy it
 // ink:          annotation colour: ghost (white, dark halo), red, black
+// border:       px of window round a snip's image (0 = the image edge to edge)
 // font:         the font text marks are written in (notr's font list)
 // onTop:        snip windows stay in front of other programs
 // confirmDiscard: ask before closing a snip with unsaved marks
@@ -79,6 +80,7 @@ const defaults = () => ({
   closeAfterCopy: false,
   folder: null,
   ink: 'ghost',
+  border: 0,
   font: Fonts.DEFAULT,
   onTop: false,
   confirmDiscard: true,
@@ -100,6 +102,7 @@ function loadSettings() {
         settings.textKey = Keys.normalize(settings.textKey) || Keys.TEXT_DEFAULT;
         if (settings.textKey === settings.key) settings.textKey = settings.key === Keys.TEXT_DEFAULT ? Keys.DEFAULT : Keys.TEXT_DEFAULT;
         if (!INKS.includes(settings.ink)) settings.ink = 'ghost';
+        if (!BORDERS.includes(settings.border)) settings.border = 0;
         if (!Fonts.FONTS.includes(settings.font)) settings.font = Fonts.DEFAULT;
         // v2: snips no longer stay on top unless you turn it on
         if ((raw.version || 1) < 2) settings.onTop = false;
@@ -153,6 +156,7 @@ const publicSettings = () => ({
   closeAfterCopy: settings.closeAfterCopy,
   folder: shortPath(folder()),
   ink: settings.ink,
+  border: settings.border,
   font: settings.font,
   onTop: settings.onTop,
   confirmDiscard: settings.confirmDiscard,
@@ -513,7 +517,8 @@ let quitting = false;
 
 function snipBounds(d, rect) {
   const wa = d.workArea;
-  const padW = 2 * MATTE, padH = BAR_H + STATUS_H + 2 * MATTE;
+  const m = settings.border;
+  const padW = 2 * m, padH = BAR_H + STATUS_H + 2 * m;
   const maxW = Math.floor(wa.width * 0.9) - padW;
   const maxH = Math.floor(wa.height * 0.9) - padH;
   const k = Math.min(1, maxW / rect.width, maxH / rect.height);
@@ -522,9 +527,9 @@ function snipBounds(d, rect) {
   const height = Math.max(SNIP_MIN.height, ih + padH);
   let x, y;
   if (k === 1) {
-    // the image stays exactly where it was on screen; the matte and chrome grow around it
+    // the image stays exactly where it was on screen; the border and chrome grow around it
     x = Math.round(d.bounds.x + rect.x - (width - iw) / 2);
-    y = Math.round(d.bounds.y + rect.y - BAR_H - MATTE - (height - padH - ih) / 2);
+    y = Math.round(d.bounds.y + rect.y - BAR_H - m - (height - padH - ih) / 2);
   } else {
     x = Math.round(wa.x + (wa.width - width) / 2);
     y = Math.round(wa.y + (wa.height - height) / 2);
@@ -657,7 +662,7 @@ let settingsWin = null;
 function openSettings() {
   if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
   const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  const width = 320, height = 548 + (Ocr.available ? 34 : 0); // + the text key row
+  const width = 320, height = 582 + (Ocr.available ? 34 : 0); // + the text key row
   settingsWin = new BrowserWindow({
     x: Math.round(wa.x + (wa.width - width) / 2),
     y: Math.round(wa.y + (wa.height - height) / 3),
@@ -812,6 +817,16 @@ ipcMain.on('settings:set', (_e, patch) => {
   for (const k of ['copy', 'open', 'autoSave', 'closeAfterCopy', 'confirmDiscard']) if (typeof patch[k] === 'boolean') s[k] = patch[k];
   if (INKS.includes(patch.ink)) s.ink = patch.ink;
   if (Fonts.FONTS.includes(patch.font)) s.font = patch.font;
+  if (BORDERS.includes(patch.border) && patch.border !== s.border) {
+    // open snips grow or shrink round their image, which stays where it is
+    const d = patch.border - s.border;
+    s.border = patch.border;
+    for (const { win } of snips.values()) {
+      if (win.isDestroyed()) continue;
+      const b = win.getBounds();
+      win.setBounds({ x: b.x - d, y: b.y - d, width: b.width + 2 * d, height: b.height + 2 * d });
+    }
+  }
   if (typeof patch.onTop === 'boolean' && patch.onTop !== s.onTop) {
     s.onTop = patch.onTop;
     for (const { win } of snips.values()) applyOnTop(win);

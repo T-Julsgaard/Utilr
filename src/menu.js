@@ -13,11 +13,19 @@
     { id: 'black', label: 'black', sw: '#111111' },
   ];
 
+  const BORDERS = [
+    { px: 0, label: 'none' },
+    { px: 12, label: 'small' },
+    { px: 24, label: 'medium' },
+    { px: 48, label: 'large' },
+  ];
+  const borderLabel = (px) => (BORDERS.find((b) => b.px === px) || BORDERS[0]).label;
+
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   function create({ el, api, inline = false, onClose = () => {} }) {
     let S = null;
-    let page = 'main';      // 'main' | 'ink' | 'font'
+    let page = 'main';      // 'main' | 'ink' | 'border' | 'font'
     let recording = null;   // 'key' | 'textKey' while a new shortcut is being recorded
     let keyNote = null;     // { field, text, bad } shown in place of the key for a moment
     let noteTimer = null;
@@ -48,6 +56,10 @@
         html += row({ act: 'back', label: 'back', value: 'esc', mark: '‹' });
         html += sep;
         for (const ink of INKS) html += row({ act: 'ink:' + ink.id, label: ink.label, mark: S.ink === ink.id ? '&gt;' : '', sw: ink.sw });
+      } else if (page === 'border') {
+        html += row({ act: 'back', label: 'back', value: 'esc', mark: '‹' });
+        html += sep;
+        for (const b of BORDERS) html += row({ act: 'border:' + b.px, label: b.label, value: b.px ? b.px + 'px' : '', mark: S.border === b.px ? '&gt;' : '' });
       } else if (page === 'font') {
         html += row({ act: 'back', label: 'back', value: 'esc', mark: '‹' });
         html += sep;
@@ -61,6 +73,7 @@
         html += row({ act: 'folder', label: 'folder', value: S.folder });
         html += row({ act: 'ink', label: 'ink', value: S.ink + ' ›' });
         html += row({ act: 'font', label: 'font', value: S.font.toLowerCase() + ' ›' });
+        html += row({ act: 'border', label: 'border', value: borderLabel(S.border) + ' ›' });
         html += keyRow('key', 'snip key');
         if (S.ocr) html += keyRow('textKey', 'text key');
         html += sep;
@@ -99,6 +112,8 @@
       if (a === 'back') { page = 'main'; render(); return; }
       if (a === 'ink') { page = 'ink'; render(); return; }
       if (a.startsWith('ink:')) { api.setSettings({ ink: a.slice(4) }); page = 'main'; return; }
+      if (a === 'border') { page = 'border'; render(); return; }
+      if (a.startsWith('border:')) { api.setSettings({ border: Number(a.slice(7)) }); page = 'main'; return; }
       if (a === 'font') { page = 'font'; render(); return; }
       if (a.startsWith('font:')) { api.setSettings({ font: a.slice(5) }); page = 'main'; return; }
       if (['copy', 'open', 'autoSave', 'closeAfterCopy', 'onTop', 'confirmDiscard', 'startup'].includes(a)) {
