@@ -151,6 +151,29 @@ function scheduleSave() {
 
 const findNote = (id) => state.notes.find((n) => n.id === id);
 
+// Saved notes (the floppy button): note.saved + note.slot (the number on its
+// tab). Closing a saved note keeps it (note.closed) and its tab stays in the
+// title bar of every note; emptying its text unsaves it again.
+const hasText = (html) => String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;|​/g, '').trim() !== '';
+
+function freeSlot() {
+  const used = new Set(state.notes.filter((n) => n.saved).map((n) => n.slot));
+  let slot = 1;
+  while (used.has(slot)) slot++;
+  return slot;
+}
+
+function unsave(note) {
+  note.saved = false;
+  delete note.slot;
+  delete note.closed;
+}
+
+const savedTabs = () => state.notes
+  .filter((n) => n.saved)
+  .sort((a, b) => a.slot - b.slot)
+  .map((n) => ({ id: n.id, slot: n.slot, open: !n.closed, title: n.preview || '' }));
+
 function newNoteData(bounds) {
   state.settings.seq = (state.settings.seq || 0) + 1;
   const note = {
@@ -184,9 +207,9 @@ function isFree(r, wa, others) {
 
 // Beside the source note: right, left, below, above. If all of those are
 // taken, the nearest free spot on screen. If the screen is full, cascade.
-function findSpotNextTo(src) {
+function findSpotNextTo(src, size = src) {
   const others = [...windows.values()].filter((w) => !w.isDestroyed()).map((w) => w.getBounds());
-  const width = src.width, height = src.height;
+  const { width, height } = size;
   const wa = screen.getDisplayMatching(src).workArea;
 
   const candidates = [
@@ -323,7 +346,8 @@ function createWindow(note, { slideFrom = null, focus = false } = {}) {
 
   applyOnTop(win);
   windows.set(note.id, win);
-  byContents.set(win.webContents.id, note.id);
+  const contentsId = win.webContents.id;
+  byContents.set(contentsId, note.id);
 
   win.loadFile(path.join(__dirname, 'note.html'));
 
@@ -369,9 +393,11 @@ function createWindow(note, { slideFrom = null, focus = false } = {}) {
     e.preventDefault();
     closeAll();
   });
+  // A saved note can be reopened while its old window is still going away:
+  // only forget this window, never the new one.
   win.on('closed', () => {
-    windows.delete(note.id);
-    byContents.forEach((v, k) => { if (v === note.id) byContents.delete(k); });
+    if (windows.get(note.id) === win) windows.delete(note.id);
+    byContents.delete(contentsId);
   });
 
   win.webContents.on('render-process-gone', () => {
@@ -407,19 +433,65 @@ function deleteNote(id) {
   });
 }
 
+// Closing a saved note: the window goes, the note (and its tab) stays.
+function stashNote(id) {
+  const note = findNote(id);
+  if (!note || deleting.has(id)) return;
+  note.closed = true;
+  writeStateNow();
+  broadcastTabs();
+  const win = windows.get(id);
+  if (!win || win.isDestroyed()) return;
+  deleting.add(id);
+  animate(win, { opacity: win.getOpacity() }, { opacity: 0 }, 160, () => {
+    if (!win.isDestroyed()) win.destroy();
+    deleting.delete(id);
+  });
+}
+
+// A saved note's tab was clicked: bring it to the front, or open it again.
+// It comes back where it was if that spot is still free, otherwise it slides
+// out beside the note whose tab was clicked.
+function openSaved(id, fromId) {
+  const note = findNote(id);
+  if (!note || !note.saved || deleting.has(id)) return;
+  const open = windows.get(id);
+  if (open && !open.isDestroyed()) {
+    if (open.isMinimized()) open.restore();
+    open.show();
+    open.focus();
+    return;
+  }
+  const srcWin = windows.get(fromId);
+  const src = srcWin && !srcWin.isDestroyed() ? srcWin.getBounds() : null;
+  let bounds = ensureVisible(note.bounds || firstNoteBounds());
+  let slideFrom = null;
+  const others = openWindows().map((w) => w.getBounds());
+  if (src && !isFree(bounds, screen.getDisplayMatching(bounds).workArea, others)) {
+    bounds = findSpotNextTo(src, bounds);
+    slideFrom = src;
+  }
+  note.bounds = bounds;
+  note.closed = false;
+  writeStateNow();
+  createWindow(note, { slideFrom, focus: true });
+  broadcastTabs();
+}
+
 const openWindows = () => [...windows.values()].filter((w) => !w.isDestroyed());
 
-// Open every saved note (or a fresh one if there are none).
+// Open every note that was open (or a fresh one if there are none).
+// Saved notes that were closed stay closed: they are tabs.
 function openAll() {
-  if (state.notes.length === 0) {
+  if (!state.notes.some((n) => !n.closed)) {
     newNoteData(firstNoteBounds());
     writeStateNow();
   }
-  const last = state.notes.length - 1;
-  state.notes.forEach((note, i) => {
+  const toOpen = state.notes.filter((n) => !n.closed);
+  toOpen.forEach((note, i) => {
     if (windows.has(note.id)) return;
     note.bounds = ensureVisible(note.bounds || firstNoteBounds());
-    createWindow(note, { focus: i === last });
+    createWindow(note, { focus: i === toOpen.length - 1 });
   });
 }
 
@@ -459,6 +531,8 @@ function broadcast(channel, ...args) {
     if (!win.isDestroyed()) win.webContents.send(channel, ...args);
   }
 }
+
+const broadcastTabs = () => broadcast('tabs:changed', savedTabs());
 
 // The "open notr" shortcut is system-wide: from any program it opens the
 // notes again (after notr was closed) or brings them to the front.
@@ -582,18 +656,42 @@ ipcMain.handle('note:init', (e) => {
   return {
     note: { id: note.id, html: note.html, dot: note.dot },
     settings: publicSettings(),
+    tabs: savedTabs(),
     platform: process.platform,
   };
 });
 
+// patch: { html, dot, preview (first line, for the tab's hover text), empty }
 ipcMain.on('note:update', (e, patch) => {
   const note = findNote(senderNote(e));
   if (!note || !patch || typeof patch !== 'object') return;
   if (typeof patch.html === 'string') note.html = patch.html;
   if (DOTS.includes(patch.dot)) note.dot = patch.dot;
+  let tabsChanged = false;
+  if (typeof patch.preview === 'string') {
+    const p = patch.preview.slice(0, 60);
+    if (p !== note.preview) { note.preview = p; tabsChanged = note.saved; }
+  }
+  // all text deleted: the note isn't saved any more and its tab goes
+  if (note.saved && (patch.empty === true || (typeof patch.html === 'string' && !hasText(patch.html)))) {
+    unsave(note);
+    tabsChanged = true;
+  }
   note.updatedAt = Date.now();
   scheduleSave();
+  if (tabsChanged) broadcastTabs();
 });
+
+ipcMain.on('note:save', (e) => {
+  const note = findNote(senderNote(e));
+  if (!note || note.saved || !hasText(note.html)) return;
+  note.saved = true;
+  note.slot = freeSlot();
+  writeStateNow();
+  broadcastTabs();
+});
+
+ipcMain.on('note:open', (e, id) => openSaved(id, senderNote(e)));
 
 // ---------------------------------------------------------------------------
 // keyboard resize (ctrl+arrows) and move (alt+arrows)
@@ -689,7 +787,13 @@ ipcMain.on('note:cycle', (e, dir) => {
 });
 
 ipcMain.on('note:new', (e) => newNoteFrom(senderNote(e)));
-ipcMain.on('note:close', (e) => { const id = senderNote(e); if (id) deleteNote(id); });
+// The note's own × / ctrl+d: a saved note is only closed, any other is deleted.
+ipcMain.on('note:close', (e) => {
+  const id = senderNote(e);
+  if (!id) return;
+  const note = findNote(id);
+  if (note && note.saved) stashNote(id); else deleteNote(id);
+});
 
 // One message for every setting; the result goes to all notes.
 ipcMain.on('settings:set', (_e, patch) => {

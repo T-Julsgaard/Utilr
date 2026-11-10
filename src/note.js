@@ -18,8 +18,9 @@
       onTop: true, confirmDelete: true, startup: true,
     };
     return {
-      init: async () => ({ note: { id: 'preview', dot: 'green', html: '' }, settings: s }),
+      init: async () => ({ note: { id: 'preview', dot: 'green', html: '' }, settings: s, tabs: [] }),
       update: noop, newNote: noop, closeNote: noop, quit: noop, cycle: noop,
+      save: noop, openSaved: noop, onTabs: noop,
       setSettings: (p) => {
         if (p.theme) s.theme = p.theme;
         if (p.font) s.fonts[p.font.theme] = { ...(s.fonts[p.font.theme] || {}), ...p.font.value };
@@ -67,8 +68,11 @@
   const menuEl = $('menu');
   const confirmEl = $('confirm');
   const btnSettings = $('btn-settings');
+  const btnSave = $('btn-save');
+  const tabsEl = $('tabs');
 
   let note = null;
+  let tabs = []; // saved notes: [{ id, slot, open, title }]
   let platform = 'win32';
   let S = null; // settings shared by all notes: theme, fonts, status, shortcuts
   let lastRange = null;
@@ -280,8 +284,16 @@
   // -------------------------------------------------------------------------
   // saving + settings
   // -------------------------------------------------------------------------
+  // First line with text: the hover text of the note's tab.
+  const preview = (text) => (text.split('\n').find((l) => l.trim()) || '').trim().slice(0, 60);
+
   function onEdit() {
-    api.update({ html: editor.innerHTML });
+    const text = fullText();
+    const empty = text.trim() === '';
+    api.update({ html: editor.innerHTML, preview: preview(text), empty });
+    // all text gone: no longer saved (main drops the tab and tells every note)
+    if (empty && isSaved()) { tabs = tabs.filter((t) => t.id !== note.id); renderTabs(); }
+    renderSaveBtn(empty);
     renderStatus();
     revealCaret();
     queueShortcutScan();
@@ -310,6 +322,58 @@
   }
 
   api.onSettings(applySettings);
+
+  // -------------------------------------------------------------------------
+  // saved notes: the floppy button + the numbered tabs next to the +
+  // -------------------------------------------------------------------------
+  const isSaved = () => !!note && tabs.some((t) => t.id === note.id);
+
+  function renderSaveBtn(empty = fullText().trim() === '') {
+    const saved = isSaved();
+    btnSave.classList.toggle('saved', saved);
+    btnSave.setAttribute('aria-pressed', String(saved));
+    btnSave.setAttribute('aria-disabled', String(!saved && empty));
+    btnSave.title = saved ? 'Saved' : 'Save';
+    btnSave.querySelector('.txt').textContent = saved ? '[*]' : '[s]';
+  }
+
+  let tabsShown = false; // the first render (note opening) doesn't animate
+  function renderTabs() {
+    const known = new Set([...tabsEl.children].map((b) => b.dataset.id));
+    const animateNew = tabsShown;
+    tabsShown = true;
+    tabsEl.innerHTML = '';
+    for (const t of tabs) {
+      const b = document.createElement('button');
+      const current = note && t.id === note.id;
+      b.className = 'tab' + (current ? ' current' : '') + (t.open ? '' : ' closed') + (animateNew && !known.has(t.id) ? ' fresh' : '');
+      b.dataset.id = t.id;
+      b.textContent = String(t.slot);
+      b.title = t.title ? `${t.slot} · ${t.title}` : `saved note ${t.slot}`;
+      b.setAttribute('aria-label', b.title);
+      b.addEventListener('click', () => {
+        if (current) { focusEditor(); return; }
+        api.openSaved(t.id);
+      });
+      tabsEl.appendChild(b);
+    }
+    renderSaveBtn();
+  }
+
+  function saveNote() {
+    if (isSaved() || fullText().trim() === '') { focusEditor(); return; }
+    // the html is already sent on every edit; send it once more so main has
+    // exactly this text when it saves
+    onEdit();
+    api.save();
+    btnSave.classList.add('pop');
+    setTimeout(() => btnSave.classList.remove('pop'), 300);
+    focusEditor();
+  }
+
+  btnSave.addEventListener('click', saveNote);
+  if (api.onTabs) api.onTabs((next) => { tabs = next || []; renderTabs(); });
+  if (!api.save) btnSave.hidden = true; // web demo: nothing to save to
 
   // -------------------------------------------------------------------------
   // shortcuts
@@ -733,7 +797,8 @@
 
   function askClose() {
     closeMenu();
-    if (fullText().trim() === '' || !S.confirmDelete) { api.closeNote(); return; }
+    // a saved note is only closed, never deleted: nothing to ask
+    if (isSaved() || fullText().trim() === '' || !S.confirmDelete) { api.closeNote(); return; }
     confirmEl.hidden = false;
     $('confirm-yes').focus();
   }
@@ -854,6 +919,8 @@
     editor.innerHTML = note.html || '';
     body.dataset.dot = note.dot || 'green';
     applySettings(data.settings);
+    tabs = data.tabs || [];
+    renderTabs();
     if (document.hasFocus()) {
       body.classList.add('focused');
       focusEditor();

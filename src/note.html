@@ -17,9 +17,20 @@
         <svg class="ico" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
         <span class="txt">[+]</span>
       </button>
+      <div class="tabs" id="tabs"></div>
       <button class="dot" id="btn-dot" title="Note colour" aria-label="Note colour"></button>
     </div>
     <div class="bar-right">
+      <button class="btn" id="btn-save" title="Save" aria-label="Save" aria-pressed="false">
+        <!-- old style floppy disk: clipped corner, metal shutter, label -->
+        <svg class="ico" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M1.65 1.65h8.6l2.1 2.1v8.6H1.65z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+          <path class="shutter" d="M4.2 1.65h4.8v3.4H4.2z" fill="none" stroke="currentColor" stroke-width="1.1"/>
+          <path d="M7.4 2.5v1.7" stroke="currentColor" stroke-width="1.1"/>
+          <path class="label" d="M3.5 7.6h7v4.75h-7z" fill="none" stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+        <span class="txt">[s]</span>
+      </button>
       <button class="btn" id="btn-settings" title="Settings" aria-label="Settings" aria-haspopup="menu">
         <svg class="ico" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
           <circle cx="7" cy="7" r="1.7" fill="none" stroke="currentColor" stroke-width="1.3"/>

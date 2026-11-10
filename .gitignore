@@ -2,6 +2,7 @@ node_modules/
 dist/
 smoke-out/
 scroll-out/
+save-out/
 shots-out/
 *.log
 .DS_Store

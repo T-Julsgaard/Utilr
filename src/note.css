@@ -76,6 +76,41 @@ body.focused .frame {
 .btn[aria-expanded="true"] { color: var(--accent); }
 .btn .txt { display: none; }
 
+/* save (floppy): filled in once the note is saved */
+#btn-save .shutter, #btn-save .label { transition: fill-opacity .15s; fill-opacity: 0; }
+#btn-save.saved { color: var(--accent); opacity: 1; }
+#btn-save.saved .shutter, #btn-save.saved .label { fill: currentColor; fill-opacity: .35; }
+#btn-save.saved.pop .ico { animation: pop .28s ease-out; }
+#btn-save[aria-disabled="true"] { opacity: .35; cursor: default; }
+#btn-save[aria-disabled="true"]:hover { background: transparent; }
+@keyframes pop { 40% { transform: scale(1.3); } }
+
+/* saved notes: one small numbered tab each, next to the + */
+.bar-left { min-width: 0; }
+.bar-right { flex: none; }
+.tabs { display: flex; align-items: center; gap: 1px; min-width: 0; overflow: hidden; }
+.tabs:empty { display: none; }
+.tab {
+  flex: none;
+  height: calc(var(--bar-h) - 10px);
+  min-width: 18px;
+  padding: 0 5px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  color: var(--btn, var(--text));
+  opacity: var(--btn-opacity, 1);
+  font-size: var(--menu-size);
+  line-height: 1;
+  cursor: pointer;
+  transition: background .12s, color .12s, opacity .12s;
+}
+.tab:hover { background: var(--hover); color: var(--btn-hover, var(--text)); opacity: 1; }
+.tab.closed { opacity: .45; }
+.tab.current { color: var(--accent); border-bottom-color: currentColor; opacity: 1; cursor: default; }
+.tab.current:hover { background: transparent; color: var(--accent); }
+.tab.fresh { animation: pop .28s ease-out; }
+
 .dot {
   display: none;
   width: 8px;

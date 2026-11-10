@@ -72,7 +72,8 @@ Or build it yourself from source (see below).
 | Do this | To |
 |---|---|
 | `+` (top left) or `Ctrl+S` | new note, placed beside the current one |
-| `×` (top right) or `Ctrl+D` | delete the note; if it has text: `delete note? [y]es [n]o [d]ont show again` |
+| `×` (top right) or `Ctrl+D` | delete the note; if it has text: `delete note? [y]es [n]o [d]ont show again`. A saved note is only closed |
+| 💾 (top right, next to ⚙) | save the note: it gets a numbered tab (`1`, `2`, …) next to the `+` in every note. Closing it with `×` or `Ctrl+D` keeps it, and clicking its tab opens it again. Delete all its text and it's no longer saved |
 | `Tab` / `Shift+Tab` | jump to the next / previous note (left to right) |
 | `Ctrl+N` (from any program) | bring notr's notes to the front |
 | hold `Ctrl` + arrows | resize: → / ↓ grow, ← / ↑ shrink |
@@ -173,7 +174,7 @@ Bump `version` in `package.json` and update the release notes first.
 npm test
 ```
 
-This runs two end-to-end tests that drive the real app, using a throwaway data folder:
+This runs three end-to-end tests that drive the real app, using a throwaway data folder:
 
 - `scripts/smoke.js` types, formats, opens, switches and deletes notes, switches
   themes, edits shortcuts, copies and pastes separators, resizes and moves with the
@@ -181,6 +182,9 @@ This runs two end-to-end tests that drive the real app, using a throwaway data f
 - `scripts/scroll-test.js` checks that the view follows the caret in three themes:
   Enter above existing text, inside bold or sized text, around separators, arrow keys,
   Ctrl+Home/End, PageDown and Backspace.
+- `scripts/save-test.js` saves notes, closes them with `×` and `Ctrl+D`, opens them
+  again from their tabs, empties one to unsave it, then relaunches to check the tabs
+  come back.
 
 ### The website
 
