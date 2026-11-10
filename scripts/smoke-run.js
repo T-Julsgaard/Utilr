@@ -4,7 +4,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { app, clipboard, screen, nativeImage } = require('electron');
+const { app, clipboard, screen, nativeImage, BrowserWindow } = require('electron');
 
 // size of the image on the clipboard, or null
 // fingerprint of the clipboard image's pixels, or null
@@ -298,6 +298,76 @@ module.exports = async (h) => {
     await shot(h.settingsWin(), '11-settings');
     const sh = await js(h.settingsWin(), "(() => { const c = document.querySelector('.content'); return [c.scrollHeight, c.clientHeight]; })()");
     check(sh[0] <= sh[1], `settings fit without scrolling (${sh[0]} / ${sh[1]})`);
+    h.settingsWin().destroy();
+
+    // --- 11. copy text (windows) -------------------------------------------
+    if (process.platform === 'win32') {
+      // a snip of known text: rendered offscreen, then opened like a capture
+      const page = new BrowserWindow({ show: false, width: 520, height: 210, webPreferences: { offscreen: true } });
+      await page.loadURL('data:text/html,' + encodeURIComponent(
+        '<body style="margin:0;padding:14px 16px;background:#1e1e1e;color:#dddddd;font:16px \'Segoe UI\'">' +
+        '<div>snipr reads the text</div><div>in a snip, line by line.</div><br>' +
+        '<div style="font:15px Consolas;white-space:pre">if (ready) {\n    copy(text);\n}</div></body>'));
+      await wait(400);
+      const img = await page.capturePage();
+      page.destroy();
+      const sz = img.getSize();
+      h.openSnip({ png: img.toPNG(), width: sz.width, height: sz.height, scale: 1, at: new Date() }, primary, { x: 200, y: 200, width: sz.width, height: sz.height }, []);
+      await until(() => h.snips.size === 1, 6000, 'text snip window');
+      const ts = [...h.snips.values()][0];
+      await until(() => ts.win.isVisible() && ts.win.getOpacity() > 0.99, 6000, 'text snip fade-in');
+      check(await js(ts.win, "!document.getElementById('btn-text').hidden"), 'copy text button shown');
+      await clipboard.writeText('');
+      let t1 = Date.now();
+      await js(ts.win, "document.getElementById('btn-text').click()");
+      await until(async () => /snipr/.test(await clipboard.readText()), 8000, 'text on the clipboard');
+      const got = (await clipboard.readText()).split('\r\n');
+      console.log('      ' + got.map((l) => JSON.stringify(l)).join('\n      '));
+      check(true, `text copied in ${Date.now() - t1} ms`);
+      check(got[0] === 'snipr reads the text' && got[1] === 'in a snip, line by line.', 'prose lines read back exactly');
+      check(got[2] === '', 'a blank line between paragraphs');
+      check(/^if \(ready\) \{$/.test(got[3] || ''), 'code line read back');
+      // (the engine reads "copy(text)" as two words, "copy (text)": only the indent is ours)
+      check(/^ {3,5}copy ?\(text\);$/.test(got[4] || ''), 'code indentation kept');
+      await wait(200);
+      await js(ts.win, "document.body.classList.add('hover')");
+      await wait(320);
+      await shot(ts.win, '12-copy-text');
+      // a blur over the first line: the copied text is read again without it
+      const tr = await js(ts.win, "(() => { const r = document.getElementById('canvas').getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; })()");
+      await js(ts.win, `document.querySelector('button[data-tool="blur"]').click()`);
+      await drag(ts.win, { x: tr.x + 4, y: tr.y + 4 }, { x: tr.x + tr.w - 4, y: tr.y + tr.h * 0.2 });
+      await until(async () => !/reads/.test(await clipboard.readText()), 8000, 'copied text to follow the blur');
+      const after = await clipboard.readText();
+      check(!/reads/.test(after) && /line by line/.test(after), 'a blur re-reads the copied text without what it hides');
+      // ctrl+shift+c reads the blurred version too
+      await clipboard.writeText('');
+      key(ts.win, 'C', ['control', 'shift']);
+      await until(async () => /line by line/.test(await clipboard.readText()), 8000, 'ctrl+shift+c');
+      check(!/reads/.test(await clipboard.readText()), 'ctrl+shift+c copies text, skipping blurred parts');
+      // the extra button still fits the bar at the smallest snip width
+      ts.win.setBounds({ ...ts.win.getBounds(), width: 310 });
+      await wait(250);
+      const fit = await js(ts.win, "(() => { const l = document.querySelector('.bar-left').getBoundingClientRect(), r = document.querySelector('.bar-right').getBoundingClientRect(); return [Math.round(l.right), Math.round(r.left), innerWidth]; })()");
+      check(fit[0] <= fit[1] && fit[2] <= 312, `bar fits at the smallest snip (${fit[0]} ≤ ${fit[1]}, width ${fit[2]})`);
+      ts.win.destroy();
+      await until(() => h.snips.size === 0, 3000, 'text snip closed');
+
+      // snip text: the text key's capture opens nothing and leaves no image
+      await clipboard.writeText('before');
+      h.startCapture('key', 'text');
+      const o5 = h.overlays.get(primary.id);
+      await until(() => o5.isVisible() && o5.getOpacity() > 0.99, 6000, 'text overlay');
+      check(await js(o5, "document.querySelector('#hint .d').textContent") === 'copy text', 'overlay hint says copy text');
+      t1 = Date.now();
+      await js(o5, `window.snipr.overlayDone(${h.session().sid}, { x: 0, y: 0, width: 900, height: 500 })`);
+      await until(async () => (await js(h.toastWin(), "document.getElementById('text').textContent")).match(/text copied|no text found/), 10000, 'text toast');
+      const msg = await js(h.toastWin(), "document.getElementById('text').textContent + ' ' + document.getElementById('detail').textContent");
+      check(true, `snip text: "${msg}" after ${Date.now() - t1} ms`);
+      check(h.snips.size === 0, 'snip text opens no window');
+      check(!(await clipSize()), 'snip text puts no image on the clipboard');
+      await shot(h.toastWin(), '13-text-toast');
+    }
   } catch (err) {
     fails.push(String(err && err.stack || err));
     console.log('FAIL  ' + (err && err.stack || err));

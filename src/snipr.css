@@ -97,6 +97,7 @@ body.toast { background: transparent; justify-content: flex-end; align-items: fl
    snip window
    -------------------------------------------------------------------------- */
 .bar .btn.sm { min-width: 26px; padding: 0 6px; }
+.bar .btn[hidden] { display: none; }
 .bar .btn.on { color: var(--strong); }
 .bar .btn.on::after {
   content: '';

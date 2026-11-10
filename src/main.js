@@ -10,6 +10,7 @@ const os = require('os');
 const crypto = require('crypto');
 const Keys = require('./keys');
 const Fonts = require('./fonts/list');
+const Ocr = require('./ocr');
 
 // ---------------------------------------------------------------------------
 // constants
@@ -57,7 +58,8 @@ const SETTINGS_FILE = () => path.join(app.getPath('userData'), 'snipr-settings.j
 const defaultFolder = () => path.join(app.getPath('pictures'), 'snipr');
 
 // key:          the system-wide "snip" shortcut
-// copy:         every snip goes to the clipboard right away
+// textKey:      the system-wide "snip text" shortcut (windows): drag, and the text is on the clipboard
+// copy:        every snip goes to the clipboard right away
 // open:         show the snip in its own window after capture
 // autoSave:     also save every snip to the folder right away
 // folder:       where snips are saved (null = Pictures/snipr)
@@ -69,6 +71,7 @@ const defaultFolder = () => path.join(app.getPath('pictures'), 'snipr');
 // startup:      start (in the tray) when you log in
 const defaults = () => ({
   key: Keys.DEFAULT,
+  textKey: Keys.TEXT_DEFAULT,
   copy: true,
   open: true,
   autoSave: false,
@@ -93,6 +96,8 @@ function loadSettings() {
       if (raw && typeof raw === 'object') {
         settings = { ...defaults(), ...raw };
         settings.key = Keys.normalize(settings.key) || Keys.DEFAULT;
+        settings.textKey = Keys.normalize(settings.textKey) || Keys.TEXT_DEFAULT;
+        if (settings.textKey === settings.key) settings.textKey = settings.key === Keys.TEXT_DEFAULT ? Keys.DEFAULT : Keys.TEXT_DEFAULT;
         if (!INKS.includes(settings.ink)) settings.ink = 'ghost';
         if (!Fonts.FONTS.includes(settings.font)) settings.font = Fonts.DEFAULT;
         // v2: snips no longer stay on top unless you turn it on
@@ -138,6 +143,9 @@ function shortPath(p) {
 
 const publicSettings = () => ({
   key: settings.key,
+  textKey: settings.textKey,
+  textKeyOk: registered.textKey !== null || keyPaused || !Ocr.available,
+  ocr: Ocr.available,
   copy: settings.copy,
   open: settings.open,
   autoSave: settings.autoSave,
@@ -148,7 +156,7 @@ const publicSettings = () => ({
   onTop: settings.onTop,
   confirmDiscard: settings.confirmDiscard,
   startup: settings.startup,
-  keyOk: registeredKey !== null || keyPaused,
+  keyOk: registered.key !== null || keyPaused,
   platform: process.platform,
   version: app.getVersion(),
 });
@@ -276,10 +284,12 @@ function syncOverlays() {
   for (const d of displays) if (!overlays.has(d.id)) overlays.set(d.id, makeOverlay(d));
 }
 
-async function startCapture(origin = 'key') {
+// mode 'image': the snip (clipboard, window, folder, as set); 'text': only its text, to the clipboard
+async function startCapture(origin = 'key', mode = 'image') {
   if (session) return;
+  if (mode === 'text' && !Ocr.available) return;
   const sid = ++sessionSeq;
-  session = { sid, origin, shots: null, displays: null, ready: new Set() };
+  session = { sid, origin, mode, shots: null, displays: null, ready: new Set() };
   const t0 = Date.now();
   try {
     hideToast();
@@ -309,6 +319,7 @@ async function startCapture(origin = 'key') {
         active: d.id === active.id,
         cursor: { x: cursor.x - d.bounds.x, y: cursor.y - d.bounds.y },
         key: Keys.label(settings.key),
+        mode,
       });
     }
     // Shown invisible first (a hidden window doesn't paint), then made opaque
@@ -378,6 +389,7 @@ async function finishCapture(win, rect) {
   const d = session.displays.find((x) => x.id === entry[0]);
   const shot = session.shots.get(entry[0]);
   if (!d || !shot) return;
+  const { mode } = session;
   endSession();
 
   const s = d.scaleFactor;
@@ -391,6 +403,17 @@ async function finishCapture(win, rect) {
   const img = shot.crop(px);
   const png = img.toPNG();
   const snip = { png, width: px.width, height: px.height, scale: s, at: new Date() };
+
+  // snip text: no window, no image on the clipboard, nothing saved; just the text
+  if (mode === 'text') {
+    hideOverlays(false);
+    const slow = setTimeout(() => toast('reading text…', '', 0), 250);
+    const r = await copyText(png, snip);
+    clearTimeout(slow);
+    if (r.lines) toast('text copied', r.lines === 1 ? '1 line' : `${r.lines} lines`);
+    else toast(r.error ? textError(r.error) : 'no text found', '', 2200);
+    return;
+  }
 
   const done = [];
   if (settings.copy) { copyPng(png); snip.clipHash = pixelHash(img); done.push('copied'); } // not awaited: the snip opens at once
@@ -437,6 +460,24 @@ async function copyPng(buf) {
     return false;
   }
 }
+
+// The text in a png, laid out like it was on screen, onto the clipboard.
+// -> { lines, text } (lines 0 = none found) or { error }
+async function copyText(png, size) {
+  const t0 = Date.now();
+  try {
+    const r = await Ocr.textOf(png, size);
+    logLine(`text ${size.width}×${size.height}: ${r.lines} lines in ${Date.now() - t0} ms`);
+    if (!r.lines) return { lines: 0 };
+    await clipboard.writeText(r.text);
+    return { lines: r.lines, text: r.text };
+  } catch (err) {
+    logLine('text failed: ' + err.message);
+    return { error: err.message };
+  }
+}
+
+const textError = (msg) => (msg === 'no-language' ? 'no ocr language in windows' : 'could not read the text');
 
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -614,7 +655,7 @@ let settingsWin = null;
 function openSettings() {
   if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
   const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-  const width = 320, height = 548;
+  const width = 320, height = 548 + (Ocr.available ? 34 : 0); // + the text key row
   settingsWin = new BrowserWindow({
     x: Math.round(wa.x + (wa.width - width) / 2),
     y: Math.round(wa.y + (wa.height - height) / 3),
@@ -645,27 +686,37 @@ function broadcast(channel, ...args) {
 // the snip key (system-wide)
 // ---------------------------------------------------------------------------
 
-let registeredKey = null;
+// two keys: key = snip, textKey = snip text (windows only)
+const registered = { key: null, textKey: null };
+const KEY_NAMES = { key: 'snip key', textKey: 'text key' };
+const KEY_ACTIONS = { key: () => startCapture('key'), textKey: () => startCapture('key', 'text') };
 let keyPaused = false;
 
-function registerKey() {
-  if (registeredKey) {
-    try { globalShortcut.unregister(registeredKey); } catch (_) {}
-    registeredKey = null;
+// (re)registers one of the keys; false when another program has it
+function registerOne(field) {
+  if (registered[field]) {
+    try { globalShortcut.unregister(registered[field]); } catch (_) {}
+    registered[field] = null;
   }
-  if (keyPaused) return true;
-  const accel = Keys.toAccelerator(settings.key);
+  if (keyPaused || (field === 'textKey' && !Ocr.available)) return true;
+  const accel = Keys.toAccelerator(settings[field]);
   try {
-    if (globalShortcut.register(accel, () => startCapture('key'))) {
-      registeredKey = accel;
-      logLine(`snip key ready: ${accel}`);
+    if (globalShortcut.register(accel, KEY_ACTIONS[field])) {
+      registered[field] = accel;
+      logLine(`${KEY_NAMES[field]} ready: ${accel}`);
       return true;
     }
-    logLine(`snip key NOT available (another program has it): ${accel}`);
+    logLine(`${KEY_NAMES[field]} NOT available (another program has it): ${accel}`);
   } catch (err) {
-    logLine(`snip key failed: ${accel} ${err.message}`);
+    logLine(`${KEY_NAMES[field]} failed: ${accel} ${err.message}`);
   }
   return false;
+}
+
+function registerKey() {
+  const ok = registerOne('key');
+  registerOne('textKey');
+  return ok;
 }
 
 // ---------------------------------------------------------------------------
@@ -677,6 +728,7 @@ let tray = null;
 function trayMenu() {
   return Menu.buildFromTemplate([
     { label: 'Snip', accelerator: Keys.toAccelerator(settings.key), registerAccelerator: false, click: () => setTimeout(() => startCapture('tray'), 180) },
+    ...(Ocr.available ? [{ label: 'Snip text', accelerator: Keys.toAccelerator(settings.textKey), registerAccelerator: false, click: () => setTimeout(() => startCapture('tray', 'text'), 180) }] : []),
     { label: 'Snip in 3 seconds', click: () => delayedCapture(3) },
     { type: 'separator' },
     { label: 'Open folder', click: openFolder },
@@ -763,14 +815,16 @@ ipcMain.on('settings:set', (_e, patch) => {
     for (const { win } of snips.values()) applyOnTop(win);
   }
   if (typeof patch.startup === 'boolean' && patch.startup !== s.startup) { s.startup = patch.startup; syncLoginItem(); }
-  if (typeof patch.key === 'string') {
-    const combo = Keys.normalize(patch.key);
-    if (combo && combo !== s.key) {
-      const old = s.key;
-      s.key = combo;
-      if (!registerKey()) { s.key = old; registerKey(); broadcast('settings:key-taken', Keys.label(combo)); }
-      if (tray) tray.setContextMenu(trayMenu());
-    }
+  for (const field of ['key', 'textKey']) {
+    if (typeof patch[field] !== 'string') continue;
+    const combo = Keys.normalize(patch[field]);
+    if (!combo || combo === s[field]) continue;
+    const other = field === 'key' ? 'textKey' : 'key';
+    if (combo === s[other]) { broadcast('settings:key-taken', Keys.label(combo), field); continue; } // the other snip key has it
+    const old = s[field];
+    s[field] = combo;
+    if (!registerOne(field)) { s[field] = old; registerOne(field); broadcast('settings:key-taken', Keys.label(combo), field); }
+    if (tray) tray.setContextMenu(trayMenu());
   }
   broadcast('settings:changed', publicSettings());
   scheduleSave();
@@ -837,6 +891,16 @@ ipcMain.handle('snip:copy', async (e, png) => {
   return true;
 });
 
+// copy text: png is the snip with only its blurs (null = no blurs, the original),
+// so blurred text stays unreadable and drawn marks don't garble the rest
+ipcMain.handle('snip:text', async (e, png) => {
+  const s = snipOf(e);
+  if (!s) return { error: 'gone' };
+  const r = await copyText(toBuffer(s, png), s.snip);
+  if (r.text) s.snip.textClip = r.text;
+  return { lines: r.lines || 0, error: r.error && textError(r.error) };
+});
+
 ipcMain.handle('snip:save', async (e, png, ask) => {
   const s = snipOf(e);
   if (!s) return null;
@@ -869,8 +933,9 @@ ipcMain.handle('snip:save', async (e, png, ask) => {
 // on the clipboard (auto copy) and maybe in the folder (auto save) the moment
 // the snip was taken; both get the blurred version. The clipboard only if it
 // still holds exactly what this snip put there (compared pixel for pixel), so
-// anything you copied since is left alone.
-ipcMain.handle('snip:secure', async (e, png) => {
+// anything you copied since is left alone. The same goes for text copied from
+// the snip: it is read again from the blurred version (textPng: only the blurs).
+ipcMain.handle('snip:secure', async (e, png, textPng) => {
   const s = snipOf(e);
   if (!s || !png || !png.length) return [];
   const buf = Buffer.from(png);
@@ -878,6 +943,15 @@ ipcMain.handle('snip:secure', async (e, png) => {
   if (s.snip.clipHash && (await clipboardHash()) === s.snip.clipHash) {
     if (await copyPng(buf)) {
       s.snip.clipHash = pixelHash(nativeImage.createFromBuffer(buf));
+      done.push('clipboard');
+    }
+  } else if (s.snip.textClip && textPng && textPng.length) {
+    let now = null;
+    try { now = await clipboard.readText(); } catch (_) {}
+    if (now === s.snip.textClip) {
+      const r = await copyText(Buffer.from(textPng), s.snip);
+      if (r.text) s.snip.textClip = r.text;
+      else { await clipboard.writeText(''); s.snip.textClip = null; } // nothing readable left
       done.push('clipboard');
     }
   }

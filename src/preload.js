@@ -26,7 +26,8 @@ contextBridge.exposeInMainWorld('snipr', {
   // snip window
   snipInit: () => ipcRenderer.invoke('snip:init'),
   copy: (png) => ipcRenderer.invoke('snip:copy', png || null),
-  secure: (png) => ipcRenderer.invoke('snip:secure', png),
+  copyText: (png) => ipcRenderer.invoke('snip:text', png || null),
+  secure: (png, textPng) => ipcRenderer.invoke('snip:secure', png, textPng || null),
   save: (png, ask) => ipcRenderer.invoke('snip:save', png || null, !!ask),
   startDrag: (png) => ipcRenderer.send('snip:drag', png || null),
   closeSnip: () => ipcRenderer.send('snip:close'),

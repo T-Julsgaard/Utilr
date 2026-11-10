@@ -5,7 +5,7 @@
 // the right, size and messages in the status line.
 //
 //   p pen   a arrow   b box   t text   x blur   v / esc  hand (drag the snip out)
-//   ctrl+c copy   ctrl+s save   ctrl+shift+s save as   ctrl+z undo   ctrl+y redo
+//   ctrl+c copy   ctrl+shift+c copy text (windows)   ctrl+s save   ctrl+shift+s save as   ctrl+z undo   ctrl+y redo
 //   ctrl+n new snip   esc / ctrl+w close
 (async () => {
   const api = window.snipr;
@@ -269,7 +269,7 @@
 
   // a blur replaces the unblurred original wherever snipr already put it
   async function secure() {
-    const done = await api.secure(await png());
+    const done = await api.secure(await png(), await textPng());
     if (done && done.length) flash((done.includes('clipboard') ? 'clipboard' : 'file') + (done.length > 1 ? ' + file' : '') + ' updated');
   }
   function undo() {
@@ -302,6 +302,22 @@
     return bytes;
   }
 
+  // what copy text reads: the snip with only its blurs, so blurred text stays
+  // unreadable and arrows, boxes and pen strokes don't garble the rest.
+  // null = no blurs: main reads the original capture.
+  async function textPng() {
+    const blurs = shapes.filter((s) => s.type === 'blur');
+    if (!blurs.length) return null;
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const k = c.getContext('2d');
+    k.drawImage(base, 0, 0, W, H);
+    for (const s of blurs) drawShape(k, s);
+    const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+    return new Uint8Array(await blob.arrayBuffer());
+  }
+
   function pngNow() {
     if (!shapes.length) return null;
     if (cache.v === version) return cache.bytes;
@@ -321,6 +337,21 @@
     dirty = false;
     flash('copied');
     if (S.closeAfterCopy) setTimeout(() => api.closeSnip(), 350); // long enough to see "copied"
+  }
+
+  let reading = false;
+  async function copyText() {
+    if (!S.ocr || reading) return;
+    commitText();
+    reading = true;
+    flash('reading text…', 20000);
+    try {
+      const r = await api.copyText(await textPng());
+      if (r.lines) flash('text copied · ' + (r.lines === 1 ? '1 line' : r.lines + ' lines'));
+      else flash(r.error || 'no text found', 2400);
+    } finally {
+      reading = false;
+    }
   }
 
   async function save(ask) {
@@ -530,6 +561,7 @@
     closeMenus();
     ctxEl.innerHTML =
       ctxRow('copy', 'copy', 'ctrl+c') +
+      (S.ocr ? ctxRow('copyText', 'copy text', 'ctrl+shift+c') : '') +
       ctxRow('save', 'save', 'ctrl+s') +
       ctxRow('saveAs', 'save as…', 'ctrl+shift+s') +
       '<div class="sep"></div>' +
@@ -553,6 +585,7 @@
     closeMenus();
     const a = b.dataset.act;
     if (a === 'copy') copy();
+    else if (a === 'copyText') copyText();
     else if (a === 'save') save(false);
     else if (a === 'saveAs') save(true);
     else if (a === 'undo') undo();
@@ -601,6 +634,8 @@
     b.addEventListener('click', () => setTool(b.dataset.tool));
   }
   $('btn-copy').addEventListener('click', copy);
+  $('btn-text').hidden = !S.ocr;
+  $('btn-text').addEventListener('click', copyText);
   $('btn-save').addEventListener('click', (e) => save(e.shiftKey));
   $('btn-close').addEventListener('click', requestClose);
 
@@ -629,7 +664,8 @@
     }
     if (mod && !e.altKey) {
       const c = e.code;
-      if (c === 'KeyC') { e.preventDefault(); copy(); }
+      if (c === 'KeyC' && e.shiftKey && S.ocr) { e.preventDefault(); copyText(); }
+      else if (c === 'KeyC') { e.preventDefault(); copy(); }
       else if (c === 'KeyS') { e.preventDefault(); save(e.shiftKey); }
       else if (c === 'KeyZ') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
       else if (c === 'KeyY') { e.preventDefault(); redo(); }

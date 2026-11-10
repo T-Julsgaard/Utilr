@@ -194,6 +194,7 @@
     sid = o.sid;
     scale = o.scale || 1;
     paint(o.bitmap, o.width, o.height);
+    hint.querySelector('.d').textContent = o.mode === 'text' ? 'copy text' : 'snip';
     if (o.active) {
       guides(o.cursor);
       hint.hidden = false;

@@ -18,8 +18,8 @@
   function create({ el, api, inline = false, onClose = () => {} }) {
     let S = null;
     let page = 'main';      // 'main' | 'ink' | 'font'
-    let recording = false;
-    let keyNote = null;     // { text, bad } shown in place of the key for a moment
+    let recording = null;   // 'key' | 'textKey' while a new shortcut is being recorded
+    let keyNote = null;     // { field, text, bad } shown in place of the key for a moment
     let noteTimer = null;
 
     const loginLabel = () => (S && S.platform === 'win32' ? 'start with windows' : 'start at login');
@@ -31,6 +31,14 @@
         `<span class="mi-r ${valueCls}">${esc(value)}</span></button>`;
     }
     const toggle = (act, label, on) => row({ act, label, value: on ? 'on' : 'off', mark: on ? '&gt;' : '' });
+    // a shortcut row: click, then press the new keys
+    function keyRow(field, label) {
+      const ok = field === 'key' ? S.keyOk : S.textKeyOk;
+      const n = keyNote && keyNote.field === field ? keyNote : null;
+      const value = recording === field ? 'press keys…' : n ? n.text : Keys.label(S[field]) + (ok ? '' : ' (taken)');
+      const valueCls = recording === field ? 'rec' : (n && n.bad) || !ok ? 'bad' : '';
+      return row({ act: field, label, value, valueCls });
+    }
     const sep = '<div class="sep"></div>';
 
     function render() {
@@ -45,8 +53,6 @@
         html += sep;
         for (const f of FONTS) html += row({ act: 'font:' + f, label: f.toLowerCase(), mark: S.font === f ? '&gt;' : '', font: f });
       } else {
-        const keyVal = recording ? 'press keys…' : keyNote ? keyNote.text : Keys.label(S.key) + (S.keyOk ? '' : ' (taken)');
-        const keyCls = recording ? 'rec' : (keyNote && keyNote.bad) || !S.keyOk ? 'bad' : '';
         html += toggle('copy', 'auto copy to clipboard', S.copy);
         html += toggle('open', 'auto open', S.open);
         html += toggle('autoSave', 'auto save', S.autoSave);
@@ -55,7 +61,8 @@
         html += row({ act: 'folder', label: 'folder', value: S.folder });
         html += row({ act: 'ink', label: 'ink', value: S.ink + ' ›' });
         html += row({ act: 'font', label: 'font', value: S.font.toLowerCase() + ' ›' });
-        html += row({ act: 'key', label: 'snip key', value: keyVal, valueCls: keyCls });
+        html += keyRow('key', 'snip key');
+        if (S.ocr) html += keyRow('textKey', 'text key');
         html += sep;
         html += toggle('onTop', 'keep snips on top', S.onTop);
         html += toggle('confirmDiscard', 'ask before discard', S.confirmDiscard);
@@ -74,16 +81,16 @@
       }
     }
 
-    function note(text, bad) {
+    function note(field, text, bad) {
       clearTimeout(noteTimer);
-      keyNote = { text, bad };
+      keyNote = { field, text, bad };
       render();
       noteTimer = setTimeout(() => { keyNote = null; render(); }, 1600);
     }
 
     function stopRecording() {
       if (!recording) return;
-      recording = false;
+      recording = null;
       api.recordKey(false);
       render();
     }
@@ -99,10 +106,10 @@
         return;
       }
       if (a === 'folder') { await api.chooseFolder(); return; }
-      if (a === 'key') {
-        if (recording) { stopRecording(); return; }
-        recording = true;
-        api.recordKey(true);
+      if (a === 'key' || a === 'textKey') {
+        if (recording === a) { stopRecording(); return; }
+        if (!recording) api.recordKey(true);
+        recording = a;
         render();
         return;
       }
@@ -113,7 +120,7 @@
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
       if (!b || b.disabled) return;
-      if (recording && b.dataset.act !== 'key') stopRecording();
+      if (recording && b.dataset.act !== 'key' && b.dataset.act !== 'textKey') stopRecording();
       act(b.dataset.act);
     });
     if (!inline) el.addEventListener('mousedown', (e) => e.preventDefault());
@@ -125,18 +132,19 @@
         if (e.key === 'Escape') { stopRecording(); return true; }
         if (['Control', 'Alt', 'Shift', 'Meta', 'AltGraph'].includes(e.key)) return true;
         const combo = Keys.normalize(Keys.fromEvent(e));
-        recording = false;
+        const field = recording;
+        recording = null;
         api.recordKey(false);
-        if (!combo) { note('add ctrl or alt', true); return true; }
-        if (combo === S.key) { render(); return true; }
-        api.setSettings({ key: combo });
+        if (!combo) { note(field, 'add ctrl or alt', true); return true; }
+        if (combo === S[field]) { render(); return true; }
+        api.setSettings({ [field]: combo });
         return true;
       }
       if (e.key === 'Escape' && page !== 'main') { e.preventDefault(); page = 'main'; render(); return true; }
       return false;
     }
 
-    api.onKeyTaken((label) => note(label + ' is taken', true));
+    api.onKeyTaken((label, field) => note(field || 'key', label + ' is taken', true));
 
     return {
       set(settings) { S = settings; render(); },

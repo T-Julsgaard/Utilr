@@ -12,6 +12,7 @@ same idea. Nothing on screen until you ask for it.
 | | |
 |---|---|
 | `alt+shift+s` | snip (from anywhere; change it in settings) |
+| `alt+shift+t` | snip text, on Windows: drag, and the text is on your clipboard (no image, no window) |
 | drag | select an area. Release takes it |
 | click | the whole screen |
 | `shift` while dragging | square |
@@ -20,7 +21,7 @@ same idea. Nothing on screen until you ask for it.
 | `esc` / right click | cancel |
 
 Opening snipr from the start menu (or starting it a second time) also takes a snip. After that
-it waits in the tray: click the tray icon to snip, right-click for *snip in 3 seconds*, the
+it waits in the tray: click the tray icon to snip, right-click for *snip text*, *snip in 3 seconds*, the
 folder, settings and quit. At login it starts quietly in the tray.
 
 ### The snip
@@ -35,6 +36,7 @@ ghost window. At rest it's just the image. Hover for the chrome.
 | hand + drag the image | drag the snip into a chat, a folder or a document |
 | `shift` while drawing | arrows snap to 45°, boxes go square, circles go round |
 | `ctrl+c` | copy, with your marks |
+| `ctrl+shift+c` | copy the text in the snip (Windows; also the lines button in the bar) |
 | `ctrl+s` / `ctrl+shift+s` | save to the folder (again = update that same file) / save as… |
 | `ctrl+z` / `ctrl+y` | undo / redo |
 | `ctrl+n` | new snip |
@@ -48,6 +50,16 @@ secure random source (`crypto.getRandomValues`). A snip goes to the clipboard (a
 save, to the folder) the moment you take it, before you blur; so each blur also replaces that
 unblurred original with the blurred version. The clipboard only if it still holds exactly what
 snipr put there, so anything you copied since is left alone.
+
+**Copy text** (Windows) reads the snip with the OCR engine built into Windows 10 and 11, the
+same one PowerToys' Text Extractor uses. Nothing to install and nothing leaves your machine. It
+takes about a third of a second. The text keeps the snip's layout: rows top to bottom, columns
+lined up, indentation kept (for code), a blank line between paragraphs, bullets as `- `. It reads
+the snip without your arrows, boxes and pen strokes, but with your blurs, so blurred text stays
+unreadable; and a blur after you copied the text re-reads it, the same way a blur replaces the
+image on the clipboard. It reads the languages Windows has OCR for (Settings → Time & language →
+Language, add the language). Like any OCR it can slip on very small text and lone symbols: a
+line with only `}` gets dropped, and `l` can come back as `1`.
 
 Marks use the ink set in settings: **ghost** (white with a dark halo, so it reads on anything),
 **red** or **black**. Text uses the font set in settings, from notr's font list: JetBrains Mono,
@@ -65,7 +77,7 @@ Tray → settings, or the gear on any snip.
 - close after copy: a snip window closes once you copy it (off)
 - folder: where snips are saved, `Pictures\snipr` (made when snipr starts), as
   `snip-2026-11-10-142233.png`
-- ink, font, snip key
+- ink, font, snip key, text key (Windows)
 - keep snips on top (off), ask before discard (on), start with windows (on)
 
 Settings live in `%APPDATA%\snipr\snipr-settings.json`, with a small log next to it.
