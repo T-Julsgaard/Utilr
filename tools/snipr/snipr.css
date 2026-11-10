@@ -1,0 +1,181 @@
+/* ==========================================================================
+   snipr — the surfaces notr doesn't have, built from the ghost tokens.
+   Load after theme/ghost.css. New values live here under snipr's own names;
+   theme/ is a straight copy of notr's ghost kit and is never edited.
+   ========================================================================== */
+
+:root {
+  --shade: rgba(8, 8, 8, .56);           /* overlay dim outside the selection */
+  --sel-line: rgba(255, 255, 255, .5);   /* selection edge */
+  --sel-tick: #ffffff;                   /* selection corner marks */
+  --guide: rgba(255, 255, 255, .13);     /* crosshair before you drag */
+  --panel-pad: 4px 8px;                  /* readouts, hints, toast */
+  --halo: rgba(0, 0, 0, .55);            /* ghost ink outline */
+  --matte: 0px;                          /* border round a snip's image (settings → border) */
+  --edge: rgba(255, 255, 255, .09);      /* hairline round a snip's image */
+}
+
+/* No focus rings. Chromium draws them in the system accent colour (an orange
+   square on some setups); ghost has no colour, and nothing here is tabbed to. */
+button:focus, button:focus-visible, canvas:focus, [tabindex]:focus { outline: none; }
+
+/* small square panel: the ghost menu surface, used for readouts and notices */
+.panel {
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  box-shadow: var(--menu-shadow);
+  color: var(--text);
+  font-size: var(--status-size);
+  padding: var(--panel-pad);
+  white-space: nowrap;
+}
+.panel .d { color: var(--dim); }
+
+/* --------------------------------------------------------------------------
+   capture overlay
+   -------------------------------------------------------------------------- */
+body.overlay { cursor: crosshair; background: #000; }
+body.overlay * { cursor: crosshair; }
+#shot { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#shade { position: fixed; inset: 0; background: var(--shade); }
+#shade[hidden] { display: none; }
+
+#sel {
+  position: fixed;
+  outline: 1px solid var(--sel-line);
+  box-shadow: 0 0 0 100vmax var(--shade);
+  pointer-events: none;
+}
+#sel[hidden] { display: none; }
+/* the logo's two crop corners, 4px thick, just outside the selection so they cover nothing */
+#sel i { position: absolute; width: 18px; height: 18px; border: 0 solid var(--sel-tick); }
+#sel .tl { left: -5px; top: -5px; border-left-width: 4px; border-top-width: 4px; }
+#sel .br { right: -5px; bottom: -5px; border-right-width: 4px; border-bottom-width: 4px; }
+
+.guide { position: fixed; background: var(--guide); pointer-events: none; }
+.guide.x { top: 0; bottom: 0; width: 1px; }
+.guide.y { left: 0; right: 0; height: 1px; }
+.guide[hidden] { display: none; }
+
+#readout { position: fixed; pointer-events: none; }
+#readout[hidden] { display: none; }
+
+#hint {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--menu-size);
+  padding: 6px 12px;
+  pointer-events: none;
+  transition: opacity var(--fade);
+  animation: ghost-drop var(--quick) ease-out;
+}
+#hint.gone { opacity: 0; }
+#hint[hidden] { display: none; }
+#hint .sep-dot { margin: 0 10px; color: var(--border-focus); }
+
+/* --------------------------------------------------------------------------
+   toast
+   -------------------------------------------------------------------------- */
+body.toast { background: transparent; justify-content: flex-end; align-items: flex-end; }
+.toast-panel {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 140px;
+  font-size: var(--menu-size);
+  padding: 7px 12px;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .14s ease-out, transform .14s ease-out;
+}
+.toast-panel.on { opacity: 1; transform: none; }
+.toast-panel .d { font-size: var(--status-size); }
+
+/* --------------------------------------------------------------------------
+   snip window
+   -------------------------------------------------------------------------- */
+.bar .btn.sm { min-width: 26px; padding: 0 6px; }
+.bar .btn[hidden] { display: none; }
+.bar .btn.on { color: var(--strong); }
+.bar .btn.on::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  background: var(--strong);
+}
+.bar .btn { position: relative; }
+.bar-gap { width: 6px; }
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: var(--matte);
+}
+#canvas { display: block; image-rendering: auto; }
+/* with a border: a hairline keeps a dark image apart from the border, and the
+   window edge stays drawn at rest so the border doesn't melt into a dark screen */
+body.matte #canvas { box-shadow: 0 0 0 1px var(--edge); }
+body.ghost.snip.matte .frame { opacity: 1; }
+body[data-tool="none"] #canvas { cursor: grab; }
+body[data-tool="pen"] #canvas,
+body[data-tool="arrow"] #canvas,
+body[data-tool="box"] #canvas,
+body[data-tool="blur"] #canvas { cursor: crosshair; }
+body[data-tool="text"] #canvas { cursor: text; }
+
+.text-layer { position: absolute; overflow: hidden; z-index: 5; pointer-events: none; }
+.text-input {
+  position: absolute;
+  pointer-events: auto;
+  min-width: 2ch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 1px dashed rgba(255, 255, 255, .45);
+  outline-offset: 0;
+  background: transparent;
+  font-family: var(--font);
+  font-weight: 400;
+  white-space: pre;
+  line-height: 1.25;
+  z-index: 5;
+}
+
+.status .st-msg { color: var(--text); }
+body.ghost.flash .status { opacity: 1; }
+
+/* the settings menu dropping from a snip's gear sits under the bar */
+.menu .mi-r.rec { color: var(--strong); }
+.menu .mi-r.bad { color: var(--danger); }
+
+/* --------------------------------------------------------------------------
+   settings window: the same menu, standing on its own
+   -------------------------------------------------------------------------- */
+body.settings .content { padding: 0; overflow-y: auto; }
+body.settings .menu.inline {
+  position: static;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 2px 0 8px;
+  animation: none;
+}
+body.settings .menu.inline .mi { padding: 6px 18px; }
+body.settings .menu.inline .sep { margin: 6px 18px; }
+body.settings .bar-title { padding-left: 10px; }

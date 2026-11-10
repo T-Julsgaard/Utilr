@@ -1,0 +1,10 @@
+{
+  "id": "notr",
+  "name": "notr",
+  "version": "1.1.1",
+  "description": "tiny notes that stay on top",
+  "main": "main.js",
+  "glyph": "glyph.svg",
+  "order": 1,
+  "import": { "from": "notr", "files": ["notr-state.json"] }
+}

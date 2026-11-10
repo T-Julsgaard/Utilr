@@ -1,0 +1,76 @@
+{
+  "name": "utilr",
+  "productName": "utilr",
+  "version": "0.1.0",
+  "description": "One quiet launcher for small tools. notr, snipr and what comes next, in one tray icon.",
+  "main": "src/main.js",
+  "author": "T_J",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/T-Julsgaard/Utilr.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "icons": "electron scripts/icons.js",
+    "test": "electron scripts/smoke.js",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "build": {
+    "appId": "app.utilr",
+    "productName": "utilr",
+    "executableName": "utilr",
+    "files": [
+      "src/**/*",
+      "tools/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "src/assets/utilr.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "utilr",
+      "createStartMenuShortcut": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "installerIcon": "src/assets/utilr.ico",
+      "uninstallerIcon": "src/assets/utilr.ico",
+      "uninstallDisplayName": "utilr",
+      "include": "build/installer.nsh",
+      "artifactName": "utilr-setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [{ "target": "dmg", "arch": ["universal"] }],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "extendInfo": {
+        "NSScreenCaptureUsageDescription": "snipr (in utilr) needs to see the screen to take screenshots."
+      },
+      "artifactName": "utilr-${version}-mac.${ext}"
+    },
+    "dmg": { "title": "utilr" },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "build/icon.png",
+      "category": "Utility",
+      "synopsis": "One quiet launcher for small tools",
+      "maintainer": "T-Julsgaard <T-Julsgaard@users.noreply.github.com>",
+      "executableName": "utilr"
+    },
+    "appImage": { "artifactName": "utilr-${version}-linux-x86_64.${ext}" },
+    "deb": { "artifactName": "utilr-${version}-linux-amd64.${ext}" }
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "^26.18.0"
+  }
+}

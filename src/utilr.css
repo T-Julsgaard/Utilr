@@ -1,0 +1,276 @@
+/* ==========================================================================
+   utilr: the launcher and the quick view, in ghost.
+
+   Everything here is built from ghost's tokens (theme/ghost.css), so utilr,
+   notr and snipr read as one family. The only new names are layout ones.
+   Load order: theme/fonts.css → theme/ghost.css → utilr.css
+   ========================================================================== */
+
+:root {
+  /* quick view: keep in step with QUICK in main.js */
+  --q-tile: 56px;
+  --q-gap: 10px;
+  --q-pad: 14px;
+  --q-label: 30px;
+  --q-glyph: 22px;
+
+  --row-hover: var(--menu-bg);   /* one grey step up from --bg */
+}
+
+button { font: inherit; }
+
+/* ---------- 1. launcher frame -------------------------------------------- */
+
+body.launcher .content { padding: 0 18px 14px; }
+body.launcher .content::-webkit-scrollbar-thumb { border-color: var(--bg); }
+
+/* The tabs. The active one is white and carries a block caret: the same
+   block notr types with, and the one in notr's mark. */
+.nav {
+  flex: none;
+  display: flex;
+  gap: 22px;
+  padding: 0 18px 12px;
+  font-size: var(--menu-size);
+  -webkit-app-region: drag;     /* the bar is invisible at rest: drag from here too */
+}
+.tab {
+  -webkit-app-region: no-drag;
+  position: relative;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: color var(--quick);
+}
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--strong); }
+.tab[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  right: -9px;
+  top: 50%;
+  width: 6px;
+  height: 12px;
+  margin-top: -6px;
+  background: var(--strong);
+  animation: caret-in .18s ease-out;
+}
+.tab:focus-visible { outline: none; color: var(--strong); }
+@keyframes caret-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* a page change: the content drops in like a ghost menu */
+.page { animation: ghost-drop var(--quick) ease-out; }
+
+/* small dim headings: "installed  2" */
+.sect {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 14px 0 6px;
+  font-size: var(--status-size);
+  color: var(--dim);
+}
+.sect:first-child { padding-top: 4px; }
+
+.empty, .note {
+  padding: 6px 0;
+  font-size: var(--status-size);
+  color: var(--dim);
+  line-height: 1.7;
+}
+
+/* ---------- 2. tool rows --------------------------------------------------- */
+
+.tool {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  column-gap: 14px;
+  margin: 0 -10px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background var(--quick);
+}
+.tool:hover, .tool.sel, .tool.expanded { background: var(--row-hover); }
+
+.tile {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  transition: border-color var(--quick), color var(--quick);
+}
+.tile svg { display: block; width: 18px; height: 18px; }
+.tool:hover .tile, .tool.sel .tile, .tool.expanded .tile { border-color: var(--dim); color: var(--strong); }
+.tool.available .tile { border-style: dashed; }   /* an empty slot, waiting */
+
+.tool .txt { min-width: 0; }
+.tool .name { font-size: var(--size); color: var(--text); line-height: 1.35; }
+.tool .desc {
+  font-size: var(--status-size);
+  color: var(--dim);
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tool:hover .name, .tool.sel .name { color: var(--strong); }
+
+.side { display: flex; align-items: center; gap: 2px; font-size: var(--status-size); color: var(--dim); }
+.side .hint { padding: 0 6px; }
+.side .go { display: none; }
+.tool:hover .side .hint, .tool.sel .side .hint { display: none; }
+.tool:hover .side .go, .tool.sel .side .go { display: inline-block; }
+
+/* text buttons: no fill at rest, like ghost's bar buttons */
+.act {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color var(--quick), background var(--quick);
+}
+.act:hover, .act:focus-visible { color: var(--strong); background: var(--menu-hover); outline: none; }
+.act:disabled { color: var(--dim); background: transparent; cursor: default; }
+.act.chev { color: var(--dim); width: 24px; padding: 3px 0; transition: transform var(--quick), color var(--quick); }
+.act.chev:hover { color: var(--strong); }
+.tool.expanded .act.chev { transform: rotate(90deg); color: var(--strong); background: transparent; }
+.act.install { border: 1px solid var(--border); padding: 3px 10px; }
+.act.install:hover { border-color: var(--dim); }
+
+/* a tool's actions, folded out under its row */
+.more {
+  margin: 0 -10px 6px;
+  padding: 2px 0 6px 54px;
+  background: var(--row-hover);
+  animation: ghost-drop var(--quick) ease-out;
+}
+body.launcher .more .mi { padding: 4px 10px; margin: 0 0 0 -10px; width: calc(100% + 10px); }
+
+/* ---------- 3. menu-style rows in the content (keys, settings) ------------ */
+
+body.launcher .mi {
+  font-size: var(--menu-size);
+  line-height: 1.5;
+  padding: 6px 10px;
+  margin: 0 -10px;
+  width: calc(100% + 20px);
+}
+body.launcher .mi:hover, body.launcher .mi:focus-visible { background: var(--row-hover); outline: none; }
+body.launcher .more .mi:hover { background: var(--menu-hover); }
+body.launcher .mi.plain { cursor: default; }
+body.launcher .mi.plain:hover { background: transparent; }
+.mi-r.rec { color: var(--strong); }
+.mi-r.rec::after { content: ''; display: inline-block; width: 6px; height: 11px; margin-left: 3px; vertical-align: -1px; background: var(--strong); animation: blink 1.06s steps(1) infinite; }
+.mi-r.bad { color: var(--danger); }
+.mi-r.on { color: var(--text); }
+@keyframes blink { 50% { opacity: 0; } }
+body.launcher .sep { margin: 8px 0; }
+
+/* ---------- 4. quick view page -------------------------------------------- */
+
+.qpage { display: grid; grid-template-columns: auto 1fr; column-gap: 26px; align-items: start; padding-top: 4px; }
+
+/* the preview: the real quick view, a little smaller */
+.preview {
+  --q-tile: 40px;
+  --q-gap: 8px;
+  --q-pad: 10px;
+  --q-label: 26px;
+  --q-glyph: 16px;
+  position: sticky;
+  top: 0;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.pin {
+  display: grid;
+  grid-template-columns: 2ch 24px 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  margin: 0 -10px;
+  padding: 3px 4px 3px 10px;
+  font-size: var(--menu-size);
+  transition: background var(--quick);
+}
+.pin:hover { background: var(--row-hover); }
+.pin .num { color: var(--dim); font-size: var(--status-size); }
+.pin .mini { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); color: var(--dim); }
+.pin .mini svg { width: 11px; height: 11px; display: block; }
+.pin:hover .mini { color: var(--strong); border-color: var(--dim); }
+.pin .ctl { display: flex; }
+.pin .ctl .act { padding: 3px 6px; color: var(--dim); }
+.pin .ctl .act:hover { color: var(--strong); }
+.pin .ctl .act:disabled { opacity: .3; }
+
+/* ---------- 5. the quick view (its own window, and the preview above) ----- */
+
+body.quick { background: var(--bg); }
+body.quick .frame { opacity: 1; border-color: var(--border); }   /* always: it floats over anything */
+
+.dock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--q-gap);
+  padding: var(--q-pad) var(--q-pad) 0;
+}
+.qt {
+  position: relative;
+  width: var(--q-tile);
+  height: var(--q-tile);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: border-color var(--quick), color var(--quick), background var(--quick);
+}
+.qt svg { display: block; width: var(--q-glyph); height: var(--q-glyph); }
+.qt .n {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--dim);
+  opacity: .55;
+  transition: opacity var(--quick);
+}
+.qt.sel { border-color: var(--text); color: var(--strong); }
+.qt.sel .n { opacity: 1; color: var(--text); }
+.qt.add { border-color: var(--divider); color: var(--border); }
+.qt.add.sel { border-color: var(--border); color: var(--dim); }
+.qt:focus-visible { outline: none; }
+.preview .qt { cursor: default; }
+.preview .qt .n { font-size: 8px; top: 2px; left: 4px; }
+
+.qlabel {
+  height: var(--q-label);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--status-size);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* every time it opens, the tiles fall in, one after the other */
+.dock.in .qt { animation: ghost-drop .14s ease-out both; animation-delay: calc(var(--i, 0) * 16ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .page, .more, .dock.in .qt, .tab[aria-selected="true"]::after { animation: none; }
+  .mi-r.rec::after { animation: none; }
+}

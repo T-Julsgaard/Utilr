@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; script-src 'self'">
+<title>utilr</title>
+<link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="theme/ghost.css">
+<link rel="stylesheet" href="utilr.css">
+</head>
+<body class="launcher" data-theme="ghost">
+  <header class="bar">
+    <div class="bar-left"><span class="bar-title">utilr</span></div>
+    <div class="bar-right">
+      <button class="btn" id="btn-min" title="Minimize" aria-label="Minimize">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6.5h10" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </button>
+      <button class="btn" id="btn-close" title="Close" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav" role="tablist" aria-label="utilr">
+    <button class="tab" role="tab" data-tab="tools">tools</button>
+    <button class="tab" role="tab" data-tab="quick">quick view</button>
+    <button class="tab" role="tab" data-tab="keys">keys</button>
+    <button class="tab" role="tab" data-tab="settings">settings</button>
+  </nav>
+
+  <main class="content" id="view" role="tabpanel"></main>
+
+  <footer class="status">
+    <span class="st-left" id="st-left"></span>
+    <span class="st-right" id="st-right"></span>
+  </footer>
+
+  <div class="confirm" id="confirm" role="alertdialog" hidden>
+    <span class="confirm-label" id="confirm-label"></span>
+    <span class="confirm-actions">
+      <button class="cbtn danger" id="confirm-yes">[y]es</button>
+      <button class="cbtn" id="confirm-no">[n]o</button>
+    </span>
+  </div>
+
+  <div class="frame" aria-hidden="true"></div>
+
+  <script src="theme/ghost.js"></script>
+  <script src="keys.js"></script>
+  <script src="dock.js"></script>
+  <script src="launcher.js"></script>
+</body>
+</html>

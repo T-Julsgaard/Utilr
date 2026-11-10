@@ -1,0 +1,10 @@
+{
+  "id": "snipr",
+  "name": "snipr",
+  "version": "1.2.2",
+  "description": "press, drag, it's on your clipboard",
+  "main": "main.js",
+  "glyph": "glyph.svg",
+  "order": 2,
+  "import": { "from": "snipr", "files": ["snipr-settings.json"] }
+}

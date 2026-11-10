@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; script-src 'self'">
+<title>snipr</title>
+<link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="theme/ghost.css">
+<link rel="stylesheet" href="snipr.css">
+</head>
+<body class="ghost overlay" data-theme="ghost">
+  <canvas id="shot"></canvas>
+  <div id="shade"></div>
+  <div id="sel" hidden><i class="tl"></i><i class="br"></i></div>
+  <div class="guide x" id="gx" hidden></div>
+  <div class="guide y" id="gy" hidden></div>
+  <div class="panel" id="readout" hidden></div>
+  <div class="panel" id="hint" hidden>
+    drag <span class="d">snip</span><span class="sep-dot">·</span>click <span class="d">whole screen</span><span class="sep-dot">·</span>esc <span class="d">cancel</span>
+  </div>
+  <script src="overlay.js"></script>
+</body>
+</html>
