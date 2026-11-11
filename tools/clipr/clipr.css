@@ -1,0 +1,102 @@
+/* ==========================================================================
+   clipr: the popup, built from the ghost tokens.
+   Load after theme/ghost.css. theme/ is a straight copy of notr's ghost kit
+   and is never edited; anything new lives here under clipr's own names.
+   ========================================================================== */
+
+:root {
+  --clip-size: 12px;       /* a clip's text: a list, so menu-sized */
+  --clip-lh: 1.6;
+  --clip-pad: 7px 10px;
+}
+
+/* No focus rings: Chromium draws them in the system accent colour. */
+button:focus, button:focus-visible, input:focus { outline: none; }
+
+/* ---------- bar: the title, or what you're looking for -------------------- */
+
+body.popup .bar-left { flex: 1; min-width: 0; padding-left: 10px; gap: 8px; }
+.find {
+  -webkit-app-region: no-drag;
+  field-sizing: content;     /* only as wide as what you typed: the rest of the bar still drags */
+  min-width: 1ch;
+  max-width: 280px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--strong);
+  font: inherit;
+  font-size: var(--menu-size);
+}
+/* typing: the bar's left side stays up, at rest too */
+body.ghost.finding .bar > .bar-left { opacity: 1; }
+
+/* ---------- the list -------------------------------------------------------- */
+
+body.popup .content { padding: 0 6px 4px; line-height: var(--clip-lh); }
+body.popup .content.in { animation: ghost-drop var(--quick) ease-out; }
+
+.clip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 14px;
+  align-items: start;
+  padding: var(--clip-pad);
+  cursor: pointer;
+  transition: background var(--quick);
+}
+.clip.sel { background: var(--menu-hover); }
+
+.clip .ct {
+  min-width: 0;
+  font-size: var(--clip-size);
+  line-height: var(--clip-lh);
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  transition: color var(--quick);
+}
+.clip.sel .ct { color: var(--strong); }
+.clip .ct mark { background: var(--sel); color: var(--strong); }
+
+.clip .cm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--status-size);
+  line-height: calc(var(--clip-size) * var(--clip-lh));
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 28px 10px;
+  text-align: center;
+  font-size: var(--status-size);
+  color: var(--dim);
+  line-height: 1.9;
+}
+
+/* ---------- status: hints on hover; "paused" stays up ---------------------- */
+
+body.ghost.paused .status { opacity: 1; }
+.status .on { color: var(--text); }
+
+/* ---------- the settings menu, dropped from the gear ----------------------- */
+
+body.popup .menu { top: calc(var(--bar-h) - 2px); right: 6px; min-width: 240px; }
+.menu .mi-r.rec { color: var(--strong); }
+.menu .mi-r.rec::after { content: ''; display: inline-block; width: 6px; height: 11px; margin-left: 3px; vertical-align: -1px; background: var(--strong); animation: blink 1.06s steps(1) infinite; }
+.menu .mi-r.bad { color: var(--danger); }
+@keyframes blink { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  body.popup .content.in { animation: none; }
+  .menu .mi-r.rec::after { animation: none; }
+}

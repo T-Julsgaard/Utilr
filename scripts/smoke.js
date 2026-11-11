@@ -159,6 +159,124 @@ async function pickPaletr(u) {
   const saved = JSON.parse(fs.readFileSync(path.join(u.Host.dataDir('paletr'), 'paletr.json'), 'utf8'));
   check(saved.colors.join() === BLUE && saved.format === 'hex', 'and its palette');
 }
+// clipr: install, record, find, pick, private clips, keys, remove, reinstall.
+// It uses the real clipboard, so what was on it is put back at the end. Enter
+// (paste) is never pressed here: it would paste into whatever you have open.
+async function clipr(u) {
+  const { clipboard, ClipboardItem } = require('electron');
+  let saved = null;
+  try { saved = await clipboard.readText(); } catch (_) {}
+  const copy = async (text) => { await clipboard.writeText(text); await wait(650); };
+  const popup = () => BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'clipr');
+  try {
+    u.openLauncher('tools');
+    await wait(700);
+    const L = u.launcherWin();
+    await js(L, `document.querySelector('[data-act="install"][data-id="clipr"]').click()`);
+    await wait(500);
+    check(u.Host.isRunning('clipr'), 'clipr installed from the tools page');
+    check(u.Store.get().pinned.includes('clipr'), 'clipr is in the quick view');
+    check(u.Shortcuts.ownerOf('Alt+Shift+V') === 'clipr', 'clipr has alt+shift+v');
+    check(!popup(), 'no clipr window until you open it');
+    await js(L, `document.body.classList.add('hover')`);
+    await shot(L, '20-clipr-tools');
+    L.webContents.send('utilr:tab', 'keys');
+    await wait(300);
+    await shot(L, '21-clipr-keys');
+    u.closeLauncher();
+    await wait(300);
+    u.showQuick();
+    await wait(450);
+    await shot(u.quickWin(), '22-clipr-quick');
+    u.hideQuick();
+    await wait(200);
+
+    const one = 'clipr smoke one', two = 'clipr smoke two\n  second line\n  third line', three = 'clipr smoke three: https://example.com/a/b';
+    await copy(one);
+    await copy(two);
+    await copy(three);
+    const EX = 'electron application/osclipboard;format="ExcludeClipboardContentFromMonitorProcessing"';
+    if (process.platform === 'win32') {
+      await clipboard.write([new ClipboardItem({ 'text/plain': 'clipr smoke secret', [EX]: new Blob([new Uint8Array(4)]) })]);
+      await wait(650);
+    }
+    await copy(one); // again: back to the top, not twice
+
+    u.Host.open('clipr');
+    await wait(700);
+    const C = popup();
+    check(!!C && C.isVisible(), 'clipr opens');
+    const texts = await js(C, `window.clipr.list('').then((r) => r.items.map((i) => i.text))`);
+    const mine = texts.filter((t) => t.startsWith('clipr smoke'));
+    check(mine.join('|') === [one, three, two].join('|'), 'newest first, a copy made again moves to the top');
+    if (process.platform === 'win32') check(!texts.includes('clipr smoke secret'), 'a clip a password manager marks private is left out');
+    await shot(C, '23-clipr');
+    await js(C, `document.body.classList.add('hover')`);
+    await shot(C, '24-clipr-hover');
+
+    C.webContents.insertText('example');
+    await wait(300);
+    const rows = await js(C, `document.querySelectorAll('.clip').length`);
+    check(rows === 1, `find "example": ${rows} clip`);
+    await shot(C, '25-clipr-find');
+    key(C, 'Escape');
+    await wait(250);
+    check((await js(C, `document.getElementById('find').value`)) === '' && (await js(C, `document.querySelectorAll('.clip').length`)) >= 3, 'esc clears the find');
+    await js(C, `document.getElementById('btn-menu').click()`);
+    await wait(250);
+    await shot(C, '26-clipr-menu');
+    const menu = await js(C, `[...document.querySelectorAll('#menu .mi')].map((m) => m.textContent.trim().replace(/\\s+/g, ' '))`);
+    check(!menu.some((t) => /start with|quit/.test(t)), 'clipr menu: no start-at-login / quit rows');
+    key(C, 'Escape');
+    await wait(150);
+    key(C, 'Delete', ['control', 'shift']);
+    await wait(200);
+    await shot(C, '27-clipr-confirm');
+    key(C, 'n');
+    await wait(150);
+    key(C, 'Escape');
+    await wait(300);
+    check(!C.isVisible(), 'esc closes it');
+
+    // shift+enter on the second clip: copied (not pasted), on top, popup gone
+    u.Host.open('clipr');
+    await wait(500);
+    key(C, 'Down');
+    key(C, 'Return', ['shift']);
+    await wait(500);
+    const got = await clipboard.readText();
+    const which = [one, two, three].indexOf(got);
+    check(got === three && !C.isVisible(), `shift+enter copies the clip and closes (got ${which < 0 ? 'something else' : ['one', 'two', 'three'][which]}, popup ${C.isVisible() ? 'still up' : 'gone'})`);
+    const top = await js(C, `window.clipr.list('').then((r) => r.items[0].text)`);
+    check(top === three, 'and it is on top now');
+
+    // keys: one owner, like every other tool
+    let r = u.setKey('clipr', 'key', 'ctrl+n');
+    check(!r.ok && /notr/.test(r.error), `clipr can't take notr's key (${r.error})`);
+    r = u.setKey('clipr', 'key', 'ctrl+alt+shift+7');
+    check(r.ok && u.Shortcuts.ownerOf('Control+Alt+Shift+7') === 'clipr', 'clipr takes a free key');
+
+    // remove: window closed, key free, settings stay; the history (memory only) goes
+    u.remove('clipr');
+    await wait(300);
+    check(!u.Host.isRunning('clipr'), 'clipr removed');
+    check(C.isDestroyed(), "clipr's window closed");
+    check(u.Shortcuts.ownerOf('Control+Alt+Shift+7') === null, "clipr's key is free again");
+    check(fs.existsSync(path.join(u.Host.dataDir('clipr'), 'clipr-settings.json')), "clipr's settings stay on disk");
+    u.install('clipr');
+    await wait(400);
+    check(u.publicState().tools.find((t) => t.id === 'clipr').keys[0].combo === 'ctrl+alt+shift+7', 'reinstalled clipr remembers its key');
+    u.Host.open('clipr');
+    await wait(700);
+    const after = await js(popup(), `window.clipr.list('').then((r) => r.items.map((i) => i.text))`);
+    check(after.length === 1 && after[0] === got, `a fresh history: only what is on the clipboard now (${after.length} clip${after.length === 1 ? '' : 's'})`);
+    await js(popup(), `window.clipr.hide()`);
+    u.setKey('clipr', 'key', 'alt+shift+v');
+    await wait(300);
+  } finally {
+    if (saved) { try { await clipboard.writeText(saved); } catch (_) {} }
+  }
+}
 
 module.exports = async (u) => {
   try {
@@ -274,6 +392,8 @@ module.exports = async (u) => {
 
     // paletr, end to end
     await testPaletr(u);
+
+    await clipr(u);
 
     // idle footprint: no tool windows open
     u.Host.run('notr', 'close');

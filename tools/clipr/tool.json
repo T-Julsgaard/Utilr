@@ -1,0 +1,9 @@
+{
+  "id": "clipr",
+  "name": "clipr",
+  "version": "1.0.0",
+  "description": "everything you copied today",
+  "main": "main.js",
+  "glyph": "glyph.svg",
+  "order": 3
+}
