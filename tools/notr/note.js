@@ -513,6 +513,14 @@
   }
   const inkSvg = (make) => { const l = inkLayer(make); return l && l.querySelector('svg'); };
 
+  // While drawing, the layer grows to the lowest point so far. An svg with no
+  // height draws nothing at all, so without this a new layer's first stroke
+  // only showed once it was finished.
+  function growInk(y) {
+    const layer = inkLayer(false);
+    if (layer && y + 4 > (parseFloat(layer.style.height) || 0)) layer.style.height = Math.ceil(y + 4) + 'px';
+  }
+
   // The layer is as tall as its lowest stroke, so the note scrolls to it.
   // No strokes: no layer.
   function fitInk() {
@@ -582,6 +590,7 @@
     const path = document.createElementNS(SVGNS, 'path');
     inkSvg(true).appendChild(path);
     stroke = { path, pts: [inkPoint(e)] };
+    growInk(stroke.pts[0][1]);
     path.setAttribute('d', strokePath(stroke.pts));
   });
 
@@ -591,7 +600,7 @@
     for (const ev of evs.length ? evs : [e]) {
       const [x, y] = inkPoint(ev);
       const [px, py] = stroke.pts[stroke.pts.length - 1];
-      if (Math.hypot(x - px, y - py) >= 1.5) stroke.pts.push([x, y]);
+      if (Math.hypot(x - px, y - py) >= 1.5) { stroke.pts.push([x, y]); growInk(y); }
     }
     stroke.path.setAttribute('d', strokePath(stroke.pts));
   });
