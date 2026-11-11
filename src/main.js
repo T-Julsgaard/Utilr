@@ -206,7 +206,7 @@ let quickShownAt = 0;
 
 function quickSize() {
   const pinned = S().pinned.filter((id) => Host.isRunning(id)).length;
-  const n = pinned + (pinned < Store.MAX_PINNED ? 1 : 0); // + the "pin a tool" tile
+  const n = Math.max(pinned, 1); // nothing pinned: just the "pin a tool" tile
   return {
     width: QUICK.tile + QUICK.pad * 2,
     height: QUICK.pad + n * QUICK.tile + (n - 1) * QUICK.gap + QUICK.label,

@@ -12,7 +12,7 @@
 
   let st = null;
   let sel = 0;
-  let count = 0;   // tiles, the "pin a tool" one included
+  let count = 0;   // tiles (just a "pin a tool" one when nothing is pinned)
 
   function render() {
     if (!st) return;

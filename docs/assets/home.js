@@ -143,13 +143,6 @@ measr → copy as tailwind</div>
     b.addEventListener('mouseleave', () => { qlabel.textContent = TOOLS[sel].id; });
     dock.appendChild(b);
   });
-  const add = document.createElement('a');
-  add.className = 'qt add';
-  add.href = '#launcher';
-  add.style.setProperty('--i', TOOLS.length);
-  add.setAttribute('aria-label', 'pin a tool (the launcher)');
-  add.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>';
-  dock.appendChild(add);
 
   function typeInto(el) {
     clearInterval(typing);
@@ -279,7 +272,7 @@ measr → copy as tailwind</div>
   const PAGES = {
     tools: () => `<div class="sect"><span>installed</span><span>${TOOLS.length}</span></div>` +
       TOOLS.map((t) => `<div class="lrow"><span class="tile">${svg(t)}</span><span><div class="nm">${t.id}</div><div class="ds">${t.desc}</div></span><span class="sd">${t.key} &nbsp;›</span></div>`).join(''),
-    quick: () => `<div class="qpage"><div class="quick"><div class="dock">${TOOLS.map((t, i) => `<span class="qt${i === 0 ? ' sel' : ''}"><span class="n">${i + 1}</span>${svg(t)}</span>`).join('')}<span class="qt add"><svg width="12" height="12" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"/></svg></span></div><div class="qlabel">notr</div></div>
+    quick: () => `<div class="qpage"><div class="quick"><div class="dock">${TOOLS.map((t, i) => `<span class="qt${i === 0 ? ' sel' : ''}"><span class="n">${i + 1}</span>${svg(t)}</span>`).join('')}</div><div class="qlabel">notr</div></div>
       <div><div class="sect"><span>pinned</span><span>${TOOLS.length} / 8</span></div>
       ${TOOLS.map((t, i) => `<div class="pinrow"><span class="num">${i + 1}</span><span class="mini">${svg(t)}</span><span>${t.id}</span><span class="ctl">↑↓×</span></div>`).join('')}
       <div class="sep"></div>

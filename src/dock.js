@@ -16,8 +16,10 @@
     const tiles = list.map((t, i) =>
       `<button class="qt" data-i="${i}" style="--i:${i}" role="option" aria-label="${esc(t.name)}" tabindex="-1">` +
       `<span class="n">${i + 1}</span>${t.glyph}</button>`);
-    if (list.length < st.maxPinned) {
-      tiles.push(`<button class="qt add" data-i="${list.length}" style="--i:${list.length}" role="option" aria-label="pin a tool" tabindex="-1">${PLUS}</button>`);
+    // Pinning happens in the launcher. The "+" tile shows only when nothing is
+    // pinned, so the column is never empty and still leads somewhere.
+    if (!list.length) {
+      tiles.push(`<button class="qt add" data-i="0" style="--i:0" role="option" aria-label="pin a tool" tabindex="-1">${PLUS}</button>`);
     }
     return tiles.join('');
   }
