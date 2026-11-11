@@ -2,7 +2,7 @@
 
 // utilr: one tray icon, one process, every tool.
 //
-//   launcher    a small ghost window: install tools, pin them, set their keys
+//   launcher    a small ghost window: pin tools to the quick view, set their keys
 //   quick view  a narrow column of pinned tools, on a key from anywhere
 //   tray        the only tray icon; every tool's actions are in its menu
 //
@@ -378,9 +378,12 @@ function setKey(owner, keyId, raw) {
 }
 
 // ---------------------------------------------------------------------------
-// install / remove / pin
+// start / stop / pin
 // ---------------------------------------------------------------------------
 
+// Every tool comes with utilr and runs from the start (see the lifecycle
+// below), so these two are only for the smoke test, which starts and stops
+// each tool itself.
 function install(id) {
   if (!Host.find(id)) return { ok: false, error: 'not found' };
   if (isInstalled(id) && Host.isRunning(id)) return { ok: true };
@@ -548,8 +551,6 @@ const fromQuick = (e) => quickWin && !quickWin.isDestroyed() && e.sender === qui
 const fromUs = (e) => fromLauncher(e) || fromQuick(e);
 
 ipcMain.handle('utilr/state', (e) => (fromUs(e) ? publicState() : null));
-ipcMain.handle('utilr/install', (e, id) => (fromLauncher(e) ? install(String(id)) : null));
-ipcMain.handle('utilr/remove', (e, id) => (fromLauncher(e) ? remove(String(id)) : null));
 ipcMain.handle('utilr/key:set', (e, owner, keyId, combo) => (fromLauncher(e) ? setKey(String(owner), String(keyId), String(combo)) : null));
 ipcMain.on('utilr/key:record', (e, on) => { if (fromLauncher(e)) { Shortcuts.suspend(!!on); if (!on) refresh(); } });
 ipcMain.on('utilr/pin', (e, id, on) => { if (fromLauncher(e)) pin(String(id), !!on); });
@@ -557,9 +558,6 @@ ipcMain.on('utilr/pin:move', (e, id, dir) => { if (fromLauncher(e)) movePin(Stri
 ipcMain.on('utilr/open', (e, id) => {
   if (fromQuick(e)) launchFromQuick(String(id));
   else if (fromLauncher(e)) launchFromLauncher(() => Host.open(String(id)));
-});
-ipcMain.on('utilr/action', (e, id, actionId) => {
-  if (fromLauncher(e)) launchFromLauncher(() => Host.run(String(id), String(actionId)));
 });
 ipcMain.on('utilr/settings', (e, patch) => {
   if (!fromLauncher(e) || !patch || typeof patch !== 'object') return;
@@ -600,30 +598,31 @@ if (!app.requestSingleInstanceLock()) {
     Store.load();
     logLine(`start ${VERSION} ${process.platform} args=${JSON.stringify(process.argv.slice(1))}`);
 
-    // One download, every tool: the very first start (no utilr.json yet)
-    // installs and pins every tool there is. Remove what you don't want on
-    // the launcher's tools page. (Not in the smoke test, which installs each
-    // tool itself.)
+    // One download, every tool: every tool utilr ships is installed and
+    // running. One that's new here (the first start, or an update that
+    // brings it) is also pinned to the quick view while there's room; what
+    // you see there is picked on the launcher's quick view page. (Not in the
+    // smoke test, which installs each tool itself.)
     const firstRun = Store.fresh() && !process.env.UTILR_SMOKE;
-    if (firstRun) {
+    const added = new Set();
+    if (!process.env.UTILR_SMOKE) {
       const s = S();
       for (const t of Host.list()) {
+        if (s.installed.includes(t.id)) continue;
         s.installed.push(t.id);
-        if (s.pinned.length < Store.MAX_PINNED) s.pinned.push(t.id);
+        added.add(t.id);
+        if (!s.pinned.includes(t.id) && s.pinned.length < Store.MAX_PINNED) s.pinned.push(t.id);
       }
-      logLine(`first start: installing ${s.installed.join(', ')}`);
+      if (added.size) logLine(`new here: ${[...added].join(', ')}`);
     }
 
-    // every installed tool, in the background (no windows until you ask)
+    // every tool, in the background (no windows until you ask)
     for (const id of [...S().installed]) {
       if (!Host.find(id)) continue; // a tool that's no longer shipped
-      const r = Host.start(id, { firstRun });
-      if (!r.ok) {
-        logLine(`${id} did not start: ${r.error}`);
-        if (firstRun) { S().installed = S().installed.filter((x) => x !== id); S().pinned = S().pinned.filter((x) => x !== id); }
-      }
+      const r = Host.start(id, { firstRun: added.has(id) });
+      if (!r.ok) logLine(`${id} did not start: ${r.error}`);
     }
-    if (firstRun) Store.saveNow();
+    if (added.size) Store.saveNow();
     for (const id of Object.keys(KEY_RUN)) registerOwn(id);
     createTray();
     syncLoginItem();
@@ -638,7 +637,7 @@ if (!app.requestSingleInstanceLock()) {
         launcherWin: () => launcherWin, quickWin: () => quickWin, logLine,
       });
     } else if (!startedHidden()) {
-      openLauncher(firstRun || !S().installed.length ? 'tools' : null);
+      if (firstRun) openLauncher('quick');
     }
 
     screen.on('display-removed', () => { if (quickShown) hideQuick(); });

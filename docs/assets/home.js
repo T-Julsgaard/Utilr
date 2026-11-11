@@ -270,8 +270,6 @@ measr → copy as tailwind</div>
   let clash = null;
 
   const PAGES = {
-    tools: () => `<div class="sect"><span>installed</span><span>${TOOLS.length}</span></div>` +
-      TOOLS.map((t) => `<div class="lrow"><span class="tile">${svg(t)}</span><span><div class="nm">${t.id}</div><div class="ds">${t.desc}</div></span><span class="sd">${t.key} &nbsp;›</span></div>`).join(''),
     quick: () => `<div class="qpage"><div class="quick"><div class="dock">${TOOLS.map((t, i) => `<span class="qt${i === 0 ? ' sel' : ''}"><span class="n">${i + 1}</span>${svg(t)}</span>`).join('')}</div><div class="qlabel">notr</div></div>
       <div><div class="sect"><span>pinned</span><span>${TOOLS.length} / 8</span></div>
       ${TOOLS.map((t, i) => `<div class="pinrow"><span class="num">${i + 1}</span><span class="mini">${svg(t)}</span><span>${t.id}</span><span class="ctl">↑↓×</span></div>`).join('')}
@@ -296,14 +294,14 @@ measr → copy as tailwind</div>
       ${TOOLS.map((t) => `<div class="mi"><span>&nbsp; ${t.id}</span><span class="r">${VERSIONS[t.id]}</span></div>`).join('')}`,
   };
 
-  let tab = 'tools';
+  let tab = 'quick';
   function show(name) {
     tab = name;
     if (name !== 'keys') { recording = null; clash = null; }
     tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
     points.forEach((li) => li.classList.toggle('on', li.dataset.tab === name));
     view.innerHTML = `<div class="page">${PAGES[name]()}</div>`;
-    status.textContent = name === 'keys' ? 'one owner per key' : `${TOOLS.length} tools, all on`;
+    status.textContent = name === 'keys' ? 'one owner per key' : `${TOOLS.length} tools`;
   }
   const rerender = () => { view.innerHTML = `<div class="page" style="animation:none">${PAGES[tab]()}</div>`; };
   tabs.forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));
@@ -340,5 +338,5 @@ measr → copy as tailwind</div>
     rerender();
   });
 
-  show('tools');
+  show('quick');
 })();

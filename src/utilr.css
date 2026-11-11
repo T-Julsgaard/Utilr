@@ -63,7 +63,7 @@ body.launcher .content::-webkit-scrollbar-thumb { border-color: var(--bg); }
 /* a page change: the content drops in like a ghost menu */
 .page { animation: ghost-drop var(--quick) ease-out; }
 
-/* small dim headings: "installed  2" */
+/* small dim headings: "pinned  3 / 8" */
 .sect {
   display: flex;
   justify-content: space-between;
@@ -81,51 +81,7 @@ body.launcher .content::-webkit-scrollbar-thumb { border-color: var(--bg); }
   line-height: 1.7;
 }
 
-/* ---------- 2. tool rows --------------------------------------------------- */
-
-.tool {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
-  align-items: center;
-  column-gap: 14px;
-  margin: 0 -10px;
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: background var(--quick);
-}
-.tool:hover, .tool.sel, .tool.expanded { background: var(--row-hover); }
-
-.tile {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  color: var(--dim);
-  transition: border-color var(--quick), color var(--quick);
-}
-.tile svg { display: block; width: 18px; height: 18px; }
-.tool:hover .tile, .tool.sel .tile, .tool.expanded .tile { border-color: var(--dim); color: var(--strong); }
-.tool.available .tile { border-style: dashed; }   /* an empty slot, waiting */
-
-.tool .txt { min-width: 0; }
-.tool .name { font-size: var(--size); color: var(--text); line-height: 1.35; }
-.tool .desc {
-  font-size: var(--status-size);
-  color: var(--dim);
-  line-height: 1.6;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.tool:hover .name, .tool.sel .name { color: var(--strong); }
-
-.side { display: flex; align-items: center; gap: 2px; font-size: var(--status-size); color: var(--dim); }
-.side .hint { padding: 0 6px; }
-.side .go { display: none; }
-.tool:hover .side .hint, .tool.sel .side .hint { display: none; }
-.tool:hover .side .go, .tool.sel .side .go { display: inline-block; }
+/* ---------- 2. text buttons ---------------------------------------------- */
 
 /* text buttons: no fill at rest, like ghost's bar buttons */
 .act {
@@ -139,20 +95,6 @@ body.launcher .content::-webkit-scrollbar-thumb { border-color: var(--bg); }
 }
 .act:hover, .act:focus-visible { color: var(--strong); background: var(--menu-hover); outline: none; }
 .act:disabled { color: var(--dim); background: transparent; cursor: default; }
-.act.chev { color: var(--dim); width: 24px; padding: 3px 0; transition: transform var(--quick), color var(--quick); }
-.act.chev:hover { color: var(--strong); }
-.tool.expanded .act.chev { transform: rotate(90deg); color: var(--strong); background: transparent; }
-.act.install { border: 1px solid var(--border); padding: 3px 10px; }
-.act.install:hover { border-color: var(--dim); }
-
-/* a tool's actions, folded out under its row */
-.more {
-  margin: 0 -10px 6px;
-  padding: 2px 0 6px 54px;
-  background: var(--row-hover);
-  animation: ghost-drop var(--quick) ease-out;
-}
-body.launcher .more .mi { padding: 4px 10px; margin: 0 0 0 -10px; width: calc(100% + 10px); }
 
 /* ---------- 3. menu-style rows in the content (keys, settings) ------------ */
 
@@ -164,7 +106,6 @@ body.launcher .mi {
   width: calc(100% + 20px);
 }
 body.launcher .mi:hover, body.launcher .mi:focus-visible { background: var(--row-hover); outline: none; }
-body.launcher .more .mi:hover { background: var(--menu-hover); }
 body.launcher .mi.plain { cursor: default; }
 body.launcher .mi.plain:hover { background: transparent; }
 .mi-r.rec { color: var(--strong); }
@@ -271,6 +212,6 @@ body.quick .frame { opacity: 1; border-color: var(--border); }   /* always: it f
 .dock.in .qt { animation: ghost-drop .14s ease-out both; animation-delay: calc(var(--i, 0) * 16ms); }
 
 @media (prefers-reduced-motion: reduce) {
-  .page, .more, .dock.in .qt, .tab[aria-selected="true"]::after { animation: none; }
+  .page, .dock.in .qt, .tab[aria-selected="true"]::after { animation: none; }
   .mi-r.rec::after { animation: none; }
 }

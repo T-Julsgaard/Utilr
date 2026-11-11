@@ -169,17 +169,16 @@ async function clipr(u) {
   const copy = async (text) => { await clipboard.writeText(text); await wait(650); };
   const popup = () => BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'clipr');
   try {
-    u.openLauncher('tools');
+    u.install('clipr');
+    u.openLauncher('quick');
     await wait(700);
     const L = u.launcherWin();
-    await js(L, `document.querySelector('[data-act="install"][data-id="clipr"]').click()`);
-    await wait(500);
-    check(u.Host.isRunning('clipr'), 'clipr installed from the tools page');
+    check(u.Host.isRunning('clipr'), 'clipr installed and running');
     check(u.Store.get().pinned.includes('clipr'), 'clipr is in the quick view');
     check(u.Shortcuts.ownerOf('Alt+Shift+V') === 'clipr', 'clipr has alt+shift+v');
     check(!popup(), 'no clipr window until you open it');
     await js(L, `document.body.classList.add('hover')`);
-    await shot(L, '20-clipr-tools');
+    await shot(L, '20-clipr-quick-page');
     L.webContents.send('utilr:tab', 'keys');
     await wait(300);
     await shot(L, '21-clipr-keys');
@@ -301,12 +300,9 @@ async function findr(u) {
   const typeIn = (W, q) => js(W, `(() => { const f = document.getElementById('find'); f.value = ${JSON.stringify(q)}; f.dispatchEvent(new Event('input')); })()`);
   const names = (W) => js(W, `[...document.querySelectorAll('.hit .hn')].map((e) => e.textContent)`);
   try {
-    u.openLauncher('tools');
-    await wait(700);
-    const L = u.launcherWin();
-    await js(L, `document.querySelector('[data-act="install"][data-id="findr"]').click()`);
+    u.install('findr');
     await wait(500);
-    check(u.Host.isRunning('findr'), 'findr installed from the tools page');
+    check(u.Host.isRunning('findr'), 'findr installed and running');
     check(u.Store.get().pinned.includes('findr'), 'findr is in the quick view');
     check(u.Shortcuts.ownerOf('Alt+Shift+D') === 'findr', 'findr has alt+shift+d');
     check(wins().length === 0, 'no findr window until you open it');
@@ -453,17 +449,18 @@ module.exports = async (u) => {
     check(st0.tools.length >= 2, `catalog has ${st0.tools.map((t) => t.id).join(', ')}`);
     check(st0.tools.every((t) => !t.installed), 'fresh start: nothing installed');
 
-    u.openLauncher('tools');
+    u.openLauncher();
     await wait(700);
     const L = u.launcherWin();
-    await shot(L, '01-tools-empty');
+    check(await js(L, `[...document.querySelectorAll('.tab')].map((b) => b.dataset.tab).join()`) === 'quick,keys,settings', 'launcher pages: quick view, keys, settings');
+    await shot(L, '01-quick-empty');
 
-    // install both, from the page itself
-    await js(L, `document.querySelector('[data-act="install"][data-id="notr"]').click()`);
-    await wait(500);
-    await js(L, `document.querySelector('[data-act="install"][data-id="snipr"]').click()`);
-    await wait(500);
-    await js(L, `document.querySelector('[data-act="install"][data-id="paletr"]').click()`);
+    // (the app starts every tool itself; the test starts them one by one)
+    u.install('notr');
+    await wait(300);
+    u.install('snipr');
+    await wait(300);
+    u.install('paletr');
     await wait(700);
     check(u.Host.isRunning('notr') && u.Host.isRunning('snipr'), 'notr and snipr installed and running');
     check(u.Host.isRunning('paletr'), 'paletr installed and running');
@@ -472,11 +469,7 @@ module.exports = async (u) => {
     check(pk && pk.combo === 'alt+shift+p' && pk.ok, `paletr holds its pick key (${pk && pk.combo})`);
     check(paletrWins().length === 0, 'paletr starts with no windows');
     await js(L, `document.body.classList.add('hover')`);
-    await shot(L, '02-tools');
-
-    await js(L, `document.querySelector('[data-act="more"][data-id="snipr"]').click()`);
-    await wait(250);
-    await shot(L, '03-tools-actions');
+    await shot(L, '02-quick');
 
     for (const [i, tab] of [['04', 'quick'], ['05', 'keys'], ['06', 'settings']]) {
       L.webContents.send('utilr:tab', tab);

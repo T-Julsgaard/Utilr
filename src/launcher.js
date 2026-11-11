@@ -1,5 +1,5 @@
-// The launcher: four pages.
-//   tools       what's installed (click to open, › for its actions) and what isn't
+// The launcher: three pages. Every tool comes with utilr and is always there;
+// the quick view page is where you pick the ones you see.
 //   quick view  which tools sit in the quick view, in what order
 //   keys        every system-wide key in utilr, utilr's own and each tool's
 //   settings    start with windows, where the quick view appears, quit
@@ -13,16 +13,13 @@
   const $ = (id) => document.getElementById(id);
   const view = $('view');
 
-  const TABS = ['tools', 'quick', 'keys', 'settings'];
+  const TABS = ['quick', 'keys', 'settings'];
   const PLACES = { center: 'center', cursor: 'at the pointer', left: 'left edge', right: 'right edge' };
   const PLACE_ORDER = ['center', 'cursor', 'left', 'right'];
 
   let S = null;              // state from utilr
   let tab = new URLSearchParams(location.search).get('tab');
-  if (!TABS.includes(tab)) tab = 'tools';
-  let expanded = null;       // tool whose actions are folded out
-  let selected = -1;         // keyboard selection on the tools page
-  const busy = new Set();    // tools being installed right now
+  if (!TABS.includes(tab)) tab = 'quick';
   let recording = null;      // { owner, id } while a key is being recorded
   let keyNote = null;        // { owner, id, text } said in place of a key for a moment
   let noteTimer = null;
@@ -30,9 +27,7 @@
   let flash = null;          // a message in the status line
   let flashTimer = null;
 
-  const tool = (id) => S.tools.find((t) => t.id === id);
-  const installed = () => S.tools.filter((t) => t.running);
-  const available = () => S.tools.filter((t) => !t.running);
+  const running = () => S.tools.filter((t) => t.running);
 
   // -------------------------------------------------------------------------
   // status line
@@ -41,7 +36,7 @@
   function renderStatus() {
     if (!S) return;
     const left = $('st-left');
-    left.textContent = flash ? flash.text : `${installed().length} of ${S.tools.length} installed`;
+    left.textContent = flash ? flash.text : `${S.tools.length} tools`;
     left.style.color = flash && flash.bad ? 'var(--danger)' : '';
     $('st-right').textContent = 'utilr ' + S.version;
   }
@@ -58,47 +53,6 @@
   // -------------------------------------------------------------------------
   // pages
   // -------------------------------------------------------------------------
-
-  const keyHint = (t) => (t.keys[0] ? Keys.label(t.keys[0].combo) : '');
-
-  function toolRow(t, i) {
-    const on = t.running;
-    const isBusy = busy.has(t.id);
-    const cls = ['tool', on ? 'installed' : 'available', expanded === t.id ? 'expanded' : '', selected === i ? 'sel' : ''].join(' ');
-    const side = on
-      ? `<span class="hint">${esc(keyHint(t))}</span>` +
-        `<button class="act go" data-act="open" data-id="${t.id}" tabindex="-1">open</button>` +
-        `<button class="act chev" data-act="more" data-id="${t.id}" aria-label="${esc(t.name)} actions" aria-expanded="${expanded === t.id}" tabindex="-1">›</button>`
-      : `<button class="act install" data-act="install" data-id="${t.id}"${isBusy ? ' disabled' : ''}>${isBusy ? 'installing…' : 'install'}</button>`;
-    let html =
-      `<div class="${cls}" data-act="${on ? 'open' : 'install'}" data-id="${t.id}" data-i="${i}">` +
-      `<div class="tile">${t.glyph}</div>` +
-      `<div class="txt"><div class="name">${esc(t.name)}</div><div class="desc">${esc(t.description)}</div></div>` +
-      `<div class="side">${side}</div></div>`;
-    if (on && expanded === t.id) {
-      html += '<div class="more">';
-      for (const a of t.actions) {
-        const k = t.keys.find((x) => x.id === a.key);
-        html += row({ act: 'action', id: t.id, extra: `data-action="${esc(a.id)}"`, label: a.label, value: k ? Keys.label(k.combo) : '' });
-      }
-      html += row({ act: 'remove', id: t.id, label: 'remove', value: '', cls: 'danger' });
-      html += '</div>';
-    }
-    return html;
-  }
-
-  function pageTools() {
-    const inst = installed(), avail = available();
-    let html = `<div class="sect"><span>installed</span><span>${inst.length}</span></div>`;
-    html += inst.length
-      ? inst.map((t, i) => toolRow(t, i)).join('')
-      : '<div class="empty">nothing yet. install a tool below, it takes a second.</div>';
-    html += `<div class="sect"><span>available</span><span>${avail.length}</span></div>`;
-    html += avail.length
-      ? avail.map((t, i) => toolRow(t, inst.length + i)).join('')
-      : '<div class="empty">everything is installed. more tools come with updates.</div>';
-    return html;
-  }
 
   function row({ act, id = '', label, value = '', cls = '', valueCls = '', mark = '', extra = '', plain = false }) {
     return `<button class="mi ${cls}${plain ? ' plain' : ''}" data-act="${act}" data-id="${esc(id)}" ${extra}${plain ? ' tabindex="-1"' : ''}>` +
@@ -117,7 +71,7 @@
 
   function pageQuick() {
     const pinned = Dock.items(S);
-    const rest = installed().filter((t) => !S.pinned.includes(t.id));
+    const rest = running().filter((t) => !S.pinned.includes(t.id));
     let side = `<div class="sect"><span>pinned</span><span>${pinned.length} / ${S.maxPinned}</span></div>`;
     side += pinned.length ? pinned.map((t, i) =>
       `<div class="pin"><span class="num">${i + 1}</span><span class="mini">${t.glyph}</span><span>${esc(t.name)}</span>` +
@@ -133,7 +87,6 @@
         `<div class="pin"><span class="num"></span><span class="mini">${t.glyph}</span><span>${esc(t.name)}</span>` +
         `<span class="ctl"><button class="act" data-act="pin" data-id="${t.id}"${pinned.length >= S.maxPinned ? ' disabled' : ''}>pin</button></span></div>`).join('');
     }
-    if (!installed().length) side += '<div class="note">install a tool and it shows up here.</div>';
     side += '<div class="sep"></div>';
     side += keyRow('utilr', { ...S.keys.find((k) => k.id === 'quick'), label: 'key' });
     side += row({ act: 'place', label: 'appears', value: PLACES[S.settings.quickAt] + ' ›' });
@@ -148,7 +101,7 @@
   function pageKeys() {
     let html = '<div class="sect"><span>utilr</span></div>';
     for (const k of S.keys) html += keyRow('utilr', k);
-    for (const t of installed()) {
+    for (const t of running()) {
       if (!t.keys.length) continue;
       html += `<div class="sect"><span>${esc(t.name)}</span></div>`;
       for (const k of t.keys) html += keyRow(t.id, k);
@@ -165,13 +118,13 @@
     html += row({ act: 'data', label: 'data folder', value: 'open ›' });
     html += '<div class="sect"><span>versions</span></div>';
     html += row({ act: 'none', label: 'utilr', value: S.version, plain: true });
-    for (const t of S.tools) html += row({ act: 'none', label: t.name, value: t.running ? t.version : 'not installed', plain: true });
+    for (const t of S.tools) html += row({ act: 'none', label: t.name, value: t.running ? t.version : 'did not start', plain: true });
     html += '<div class="sep"></div>';
     html += row({ act: 'quit', label: 'quit utilr', value: 'closes every tool' });
     return html;
   }
 
-  const PAGES = { tools: pageTools, quick: pageQuick, keys: pageKeys, settings: pageSettings };
+  const PAGES = { quick: pageQuick, keys: pageKeys, settings: pageSettings };
 
   function render(animate = false) {
     if (!S) return;
@@ -186,8 +139,6 @@
     if (!TABS.includes(next) || next === tab) return;
     stopRecording();
     tab = next;
-    expanded = null;
-    selected = -1;
     view.scrollTop = 0;
     render(true);
   }
@@ -195,32 +146,6 @@
   // -------------------------------------------------------------------------
   // actions
   // -------------------------------------------------------------------------
-
-  async function install(id) {
-    const t = tool(id);
-    if (!t || t.running || busy.has(id)) return;
-    const willPin = Dock.items(S).length < S.maxPinned; // utilr pins new tools while there is room
-    busy.add(id);
-    render();
-    const r = await api.install(id);
-    busy.delete(id);
-    if (r && r.ok) {
-      say(`${t.name} installed${r.imported ? ', your ' + t.name + ' data came along' : willPin ? ', pinned to the quick view' : ''}`);
-    } else {
-      say(`could not install ${t.name}${r && r.error ? ': ' + r.error : ''}`, true, 4000);
-    }
-    render();
-  }
-
-  function askRemove(id) {
-    const t = tool(id);
-    if (!t) return;
-    confirm(`remove ${t.name}? its data stays for next time`, async () => {
-      if (expanded === id) expanded = null;
-      await api.remove(id);
-      say(`${t.name} removed`);
-    });
-  }
 
   function confirm(text, yes) {
     $('confirm-label').textContent = text;
@@ -288,11 +213,6 @@
     if (!el || el.disabled) return;
     const { act, id } = el.dataset;
     switch (act) {
-      case 'open': api.open(id); break;
-      case 'install': install(id); break;
-      case 'more': e.stopPropagation(); expanded = expanded === id ? null : id; render(); break;
-      case 'action': api.action(id, el.dataset.action); break;
-      case 'remove': askRemove(id); break;
       case 'pin': api.pin(id, true); break;
       case 'unpin': api.pin(id, false); break;
       case 'up': api.movePin(id, -1); break;
@@ -315,7 +235,7 @@
   $('btn-min').addEventListener('click', () => api.minimize());
 
   // -------------------------------------------------------------------------
-  // keyboard: ctrl+tab between pages, ↑ ↓ enter on the tools page, esc closes
+  // keyboard: ctrl+tab between pages, esc closes
   // -------------------------------------------------------------------------
 
   document.addEventListener('keydown', (e) => {
@@ -332,25 +252,7 @@
     }
     if (e.key === 'Escape') {
       e.preventDefault();
-      if (expanded) { expanded = null; render(); } else api.close();
-      return;
-    }
-    if (tab !== 'tools' || e.ctrlKey || e.altKey || e.metaKey) return;
-    const n = S.tools.length;
-    const rowTool = () => { const r = view.querySelector(`.tool[data-i="${selected}"]`); return r && tool(r.dataset.id); };
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      selected = selected < 0 ? (e.key === 'ArrowDown' ? 0 : n - 1) : (selected + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
-      render();
-      const r = view.querySelector('.tool.sel');
-      if (r) r.scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'Enter' && selected >= 0) {
-      e.preventDefault();
-      const t = rowTool();
-      if (t) (t.running ? api.open(t.id) : install(t.id));
-    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && selected >= 0) {
-      const t = rowTool();
-      if (t && t.running) { e.preventDefault(); expanded = e.key === 'ArrowRight' ? t.id : null; render(); }
+      api.close();
     }
   });
 

@@ -14,10 +14,7 @@ contextBridge.exposeInMainWorld('utilr', {
   onState: (cb) => on('utilr:state', cb),
 
   // tools
-  install: (id) => invoke('install', id),
-  remove: (id) => invoke('remove', id),
   open: (id) => send('open', id),
-  action: (id, actionId) => send('action', id, actionId),
   pin: (id, on) => send('pin', id, on),
   movePin: (id, dir) => send('pin:move', id, dir),
 

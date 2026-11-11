@@ -28,7 +28,7 @@
   function label(st, i) {
     const list = items(st);
     if (list[i]) return list[i].name;
-    return st.tools.some((t) => t.installed) ? 'pin a tool' : 'install a tool';
+    return 'pin a tool';
   }
 
   root.UtilrDock = { items, html, label, esc };

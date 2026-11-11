@@ -31,7 +31,7 @@
   function launch(i) {
     const t = Dock.items(st)[i];
     if (t) api.open(t.id);
-    else api.openLauncher(st.tools.some((x) => x.installed) ? 'quick' : 'tools');
+    else api.openLauncher('quick');
   }
 
   api.onState((s) => { st = s; render(); });

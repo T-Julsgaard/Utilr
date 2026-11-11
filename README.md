@@ -34,8 +34,8 @@ They all share the ghost look: grey on near-black, DM Mono, chrome only while yo
 ## Install
 
 Get `utilr-setup-<version>.exe` from the [latest release](https://github.com/T-Julsgaard/Utilr/releases/latest)
-and run it. It installs for your user (no admin) and opens on the *tools* page with all six
-tools on. From then on it lives in the tray and starts with Windows.
+and run it. It installs for your user (no admin) with all six tools installed and ready, and
+opens on the *quick view* page. From then on it lives in the tray and starts with Windows.
 
 utilr isn't signed with a paid certificate yet: if SmartScreen says *"Windows protected your
 PC"*, click **More info → Run anyway**. There are macOS (`.dmg`) and Linux (`.AppImage`,
@@ -67,11 +67,9 @@ The last tile (`+`) opens the launcher so you can pin something. Where the colum
 
 ### The launcher
 
-A small ghost window with four pages. At rest it shows the content and nothing else. Hover
+A small ghost window with three pages. At rest it shows the content and nothing else. Hover
 for the chrome (title, close, status line).
 
-- **tools**: what's installed and what isn't. Click a tool to open it, `›` for its actions
-  (new note, snip in 3 seconds, open folder, …) and *remove*. `↑` `↓` `enter` work too.
 - **quick view**: which tools are pinned and in what order, with a live preview of the column.
 - **keys**: every system-wide key in utilr, both utilr's own and each tool's, in one place. Click
   one and press the new combo. A key belongs to one tool only: utilr says who has it
@@ -81,12 +79,12 @@ for the chrome (title, close, status line).
 
 `ctrl+tab` moves between pages, `esc` closes the launcher.
 
-### Turning tools on and off
+### Every tool, ready
 
-Every tool ships with utilr, and the very first start turns them all on: each gets its keys, a
-tile in the quick view and its actions in the tray. *Remove* (on the tools page, under `›`)
-stops a tool and frees its keys; a tool that's off is never loaded and costs nothing. Its data
-stays, so *install* brings everything back.
+Every tool ships with utilr and is installed and running from the first start: each gets its
+keys and its actions in the tray (new note, snip in 3 seconds, open folder, …). What you see in
+the quick view is up to you: pin, unpin and reorder tools on the launcher's *quick view* page. A
+tool that comes with an update is pinned for you while there's room.
 
 On the first start, utilr brings over the data of the stand-alone apps if it finds it
 (`%APPDATA%\notr\notr-state.json`, `%APPDATA%\snipr\snipr-settings.json`). Your notes and snipr

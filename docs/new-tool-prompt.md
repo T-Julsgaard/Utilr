@@ -17,10 +17,9 @@ follow. Read it fully before you start.
 
 - utilr (`C:\Users\T_J\Documents\GitHub\Utilr`, public repo `T-Julsgaard/Utilr`) is one
   Electron app with **one tray icon and one process** that hosts every tool. I plan for roughly
-  8–10 tools in total. The user downloads utilr once and gets every tool: the first start turns
-  them all on, and each can be removed (and installed again) from inside it.
-- The launcher (`src/`) gives every tool the same things: a row on the *tools* page
-  (install / open / actions / remove), a tile in the **quick view** (a narrow column of square
+  8–10 tools in total. The user downloads utilr once and gets every tool, installed and running
+  from the first start; they only pick which ones to pin to the quick view.
+- The launcher (`src/`) gives every tool the same things: a tile in the **quick view** (a narrow column of square
   tiles on `alt+shift+space`), a submenu in the tray, and its keys on the *keys* page.
 - Six tools already exist (notr, snipr, clipr, measr, paletr, findr). notr and snipr are the
   reference implementations. **Study them before writing anything:**
@@ -61,7 +60,7 @@ follow. Read it fully before you start.
 `platforms` is optional: leave it out if the tool runs everywhere, or list only the platforms it
 supports. `order` sets its position in lists; use the next free number.
 
-`tools/<id>/main.js` exports one function. utilr calls it on install and on every start:
+`tools/<id>/main.js` exports one function. utilr calls it on every start:
 
 ```js
 module.exports = function mytool(host) {
@@ -75,9 +74,9 @@ module.exports = function mytool(host) {
   return {
     start() {},  // load settings, register keys, pre-warm windows if needed. Show NO UI.
     stop() {},   // save now, destroy every window, unregister every key, clear timers and
-                 // screen listeners. Called on remove and when utilr quits.
-    open() {},   // the main action: quick view tile, tray click, launcher row click
-    actions: () => [{ id, label, key, run }],   // tray submenu + launcher; `key` = id of a key
+                 // screen listeners. Called when utilr quits (and by the smoke test).
+    open() {},   // the main action: quick view tile, tray click
+    actions: () => [{ id, label, key, run }],   // tray submenu; `key` = id of a key
     keys: () => [{ id, label, combo, ok }],     // its system-wide keys; ok = actually registered
     setKey(id, combo) { return { ok: true } },  // or { ok: false, error: 'lowercase reason' }
   };
@@ -158,11 +157,11 @@ What I want: **minimalist, almost futuristic, sleek, modern, and it works well.*
 
 1. Read the references above, then tell me your plan in a few lines: windows, keys, actions, data,
    and anything you're unsure about.
-2. Build it in `tools/<id>/`. Run it with `npm start`, install it from the launcher's tools page
-   (use a throwaway data folder: set `UTILR_USER_DATA` to a temp dir), and check it in the quick
+2. Build it in `tools/<id>/`. Run it with `npm start` (use a throwaway data folder: set
+   `UTILR_USER_DATA` to a temp dir; every tool in `tools/` starts on its own), and check it in the quick
    view, the tray and the keys page.
-3. Extend `scripts/smoke.js` with checks for the new tool (install, open, its key, remove frees
-   its key and closes its windows, data survives a reinstall) and run `npm test` until it's all
+3. Extend `scripts/smoke.js` with checks for the new tool (start, open, its key, stopping it frees
+   its key and closes its windows, data survives a restart) and run `npm test` until it's all
    `ok`. Look at the screenshots in `smoke-out/` and make sure they look right.
 4. Add the tool to the root `README.md` (the tools table and the folder tree) and to the website:
    a card, scene and key on the home page (`TOOLS` in `docs/assets/site.js`, `SCENES` / `LONG` /
