@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ghost preview</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="ghost.css">
+<!-- Live specimen of a ghost window. Open it at roughly 300 x 300 to see it the way
+     Notr shows a note. Move the pointer in and out to watch the chrome fade.
+     Add ?pin to the URL to keep the chrome visible (for screenshots). -->
+</head>
+<body data-theme="ghost">
+  <header class="bar">
+    <div class="bar-left">
+      <button class="btn" id="btn-new" title="New" aria-label="New">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </button>
+    </div>
+    <span class="bar-title">thought.txt</span>
+    <div class="bar-right">
+      <button class="btn" id="btn-settings" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+          <circle cx="7" cy="7" r="1.7" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <circle cx="7" cy="7" r="4.1" fill="none" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7 .9v2M7 11.1v2M.9 7h2M11.1 7h2M2.7 2.7l1.4 1.4M9.9 9.9l1.4 1.4M2.7 11.3l1.4-1.4M9.9 4.1l1.4-1.4" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        </svg>
+      </button>
+      <button class="btn" id="btn-close" title="Close" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="content" contenteditable="true" spellcheck="false"><b>today</b><hr>the app should feel like<br>a thought, not a program.<br><br><span style="color:var(--dim)">nothing on screen<br>until you ask for it.</span></main>
+
+  <footer class="status">
+    <span class="st-left">ln 1, col 1</span>
+    <span class="st-right">87 chars</span>
+  </footer>
+
+  <div class="confirm" id="confirm" hidden>
+    <span class="confirm-label">delete?</span>
+    <span class="confirm-actions">
+      <button class="cbtn danger" id="yes">[y]es</button>
+      <button class="cbtn" id="no">[n]o</button>
+    </span>
+  </div>
+
+  <div class="menu" id="menu" role="menu" hidden>
+    <button class="mi" role="menuitem"><span class="mi-l"><span class="mi-mark"></span>theme</span><span class="mi-r">ghost ›</span></button>
+    <button class="mi" role="menuitem"><span class="mi-l"><span class="mi-mark"></span>font</span><span class="mi-r">theme default ›</span></button>
+    <div class="stepper"><span><span class="mi-mark"></span>size</span><span class="st-ctrl"><button aria-label="Smaller">−</button><button class="val">13</button><button aria-label="Bigger">+</button></span></div>
+    <div class="sep"></div>
+    <button class="mi" role="menuitem"><span class="mi-l"><span class="mi-mark">&gt;</span>always on top</span><span class="mi-r">on</span></button>
+    <button class="mi" role="menuitem"><span class="mi-l"><span class="mi-mark"></span>sound</span><span class="mi-r">off</span></button>
+    <button class="mi" role="menuitem" disabled><span class="mi-l"><span class="mi-mark"></span>disabled row</span><span class="mi-r"></span></button>
+    <div class="sep"></div>
+    <button class="mi danger" role="menuitem"><span class="mi-l"><span class="mi-mark"></span>delete</span><span class="mi-r">ctrl+d</span></button>
+  </div>
+
+  <div class="frame" aria-hidden="true"></div>
+
+  <script src="ghost.js"></script>
+  <script src="preview.js"></script>
+</body>
+</html>
