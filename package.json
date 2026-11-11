@@ -30,6 +30,8 @@
       "src/**/*",
       "tools/**/*"
     ],
+    "electronLanguages": ["en-US"],
+    "compression": "maximum",
     "win": {
       "target": "nsis",
       "icon": "src/assets/utilr.ico"
