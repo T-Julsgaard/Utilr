@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; script-src 'self'">
+<title>paletr</title>
+<link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="theme/ghost.css">
+<link rel="stylesheet" href="paletr.css">
+</head>
+<body class="ghost overlay" data-theme="ghost">
+  <canvas id="shot"></canvas>
+  <canvas id="loupe" hidden></canvas>
+  <div class="panel" id="readout" hidden><i class="chip" id="chip"></i><span id="value"></span><span class="d" id="note"></span></div>
+  <div class="panel" id="hint" hidden>
+    click <span class="d">copy</span><span class="sep-dot">·</span>shift+click <span class="d">keep picking</span><span class="sep-dot">·</span>scroll <span class="d">zoom</span><span class="sep-dot">·</span>tab <span class="d">format</span><span class="sep-dot">·</span>esc <span class="d">cancel</span>
+  </div>
+  <script src="color.js"></script>
+  <script src="overlay.js"></script>
+</body>
+</html>

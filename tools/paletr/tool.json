@@ -1,0 +1,9 @@
+{
+  "id": "paletr",
+  "name": "paletr",
+  "version": "1.0.0",
+  "description": "click any pixel, copy its color",
+  "main": "main.js",
+  "glyph": "glyph.svg",
+  "order": 3
+}

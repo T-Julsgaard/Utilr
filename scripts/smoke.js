@@ -10,7 +10,7 @@ const os = require('os');
 const root = path.join(__dirname, '..');
 const out = path.join(root, 'smoke-out');
 
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, screen, clipboard } = require('electron');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const lines = [];
 let failed = 0;
@@ -28,6 +28,138 @@ async function shot(win, name) {
 // run a line of script in a window and return its value
 const js = (win, code) => win.webContents.executeJavaScript(code);
 
+// paletr's windows: the pick overlays (one per screen), the toast, the palette
+const paletrWins = () => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && w.getTitle() === 'paletr');
+const paletrPage = (page) => paletrWins().find((w) => w.isVisible() && w.webContents.getURL().endsWith(`/${page}.html`));
+const overlayOn = (d) => paletrWins().find((w) => w.isVisible() && JSON.stringify(w.getBounds()) === JSON.stringify(d.bounds));
+const clipText = async () => String(await clipboard.readText());
+
+// click in a window at (x, y), its own coordinates
+async function click(win, x, y, modifiers = []) {
+  win.webContents.sendInputEvent({ type: 'mouseMove', x, y, modifiers });
+  await wait(60);
+  win.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1, modifiers });
+  await wait(30);
+  win.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1, modifiers });
+}
+const key = (win, keyCode, modifiers = []) => win.webContents.sendInputEvent({ type: 'keyDown', keyCode, modifiers });
+
+// Pick a color we know off the real screen: a window painted #3c78d8 goes up,
+// paletr's overlay freezes the screens, the test clicks in the middle of it.
+async function testPaletr(u) {
+  let keepClip = null;
+  try { keepClip = await clipText(); } catch (_) {}
+  try { await pickPaletr(u); } finally {
+    if (keepClip) { try { await clipboard.writeText(keepClip); } catch (_) {} }
+  }
+}
+async function pickPaletr(u) {
+  const BLUE = '#3c78d8';
+  const wa = screen.getPrimaryDisplay().workArea;
+  const target = new BrowserWindow({
+    x: wa.x + 60, y: wa.y + 60, width: 160, height: 120,
+    frame: false, show: false, skipTaskbar: true, focusable: false, alwaysOnTop: true, backgroundColor: BLUE,
+  });
+  await target.loadURL('data:text/html,' + encodeURIComponent(`<title>target</title><body style="margin:0;background:${BLUE}"></body>`));
+  target.showInactive();
+  await wait(400);
+  const tb = target.getBounds();
+  const d = screen.getDisplayMatching(tb);
+  const at = { x: tb.x + 80 - d.bounds.x, y: tb.y + 60 - d.bounds.y };
+
+  // open it from the quick view, by its number
+  const n = String(u.Store.get().pinned.indexOf('paletr') + 1);
+  u.showQuick();
+  await wait(400);
+  key(u.quickWin(), n);
+  await wait(1300);
+  let ov = overlayOn(d);
+  check(!!ov, `"${n}" in the quick view opens paletr's overlay (${paletrWins().filter((w) => w.isVisible()).length} window(s))`);
+  if (!ov) { target.destroy(); return; }
+  ov.webContents.sendInputEvent({ type: 'mouseMove', x: at.x, y: at.y });
+  await wait(250);
+  const shotImg = await ov.webContents.capturePage({ x: Math.max(0, at.x - 160), y: Math.max(0, at.y - 120), width: 360, height: 300 });
+  fs.writeFileSync(path.join(out, '30-paletr-loupe.png'), shotImg.toPNG());
+  check((await js(ov, `document.getElementById('value').textContent`)) === BLUE, 'the readout under the loupe says ' + BLUE);
+
+  // tab: rgb; shift+click copies and keeps the overlay up
+  key(ov, 'Tab');
+  await wait(150);
+  await click(ov, at.x, at.y, ['shift']);
+  await wait(400);
+  check((await clipText()) === 'rgb(60, 120, 216)', `shift+click copied ${await clipText()}`);
+  check(ov.isVisible(), 'and the overlay stays up');
+  key(ov, 'Escape');
+  await wait(400);
+  check(!paletrWins().some((w) => w.isVisible() && JSON.stringify(w.getBounds()) === JSON.stringify(d.bounds)), 'esc closes the overlay');
+  const toastWin = paletrPage('toast');
+  check(!!toastWin, 'a toast says what was copied');
+  if (toastWin) await shot(toastWin, '31-paletr-toast');
+
+  // again, from paletr's action, back to hex, and a plain click
+  u.Host.open('paletr');
+  await wait(1300);
+  ov = overlayOn(d);
+  check(!!ov, 'second pick opens at once (overlays kept warm)');
+  if (ov) {
+    key(ov, 'Tab'); await wait(60); key(ov, 'Tab'); await wait(60); // rgb → hsl → hex
+    await click(ov, at.x, at.y);
+    await wait(400);
+    check((await clipText()) === BLUE, `click copied ${await clipText()}`);
+    check(!ov.isVisible(), 'and the overlay is gone');
+  }
+  target.destroy();
+  const logTxt = fs.readFileSync(path.join(app.getPath('userData'), 'utilr.log'), 'utf8');
+  for (const m of logTxt.match(/paletr: pick \(.*$/gm) || []) log('     ' + m);
+
+  // the palette: one swatch (the same color twice is one swatch)
+  u.Host.run('paletr', 'palette');
+  await wait(800);
+  const pw = paletrPage('palette');
+  check(!!pw, 'the palette opens');
+  if (pw) {
+    check((await js(pw, `document.querySelectorAll('.tile').length`)) === 1, 'it holds the picked color, once');
+    await js(pw, `document.body.classList.add('hover')`);
+    await click(pw, 14 + 17, 30 + 10 + 17);
+    await wait(250);
+    check((await clipText()) === BLUE, 'clicking a swatch copies it');
+    await shot(pw, '32-paletr-palette');
+    await js(pw, `document.getElementById('btn-menu').click()`);
+    await wait(200);
+    await shot(pw, '33-paletr-menu');
+    const rows = await js(pw, `[...document.querySelectorAll('.mi')].map((m) => m.textContent.trim().replace(/\\s+/g, ' '))`);
+    check(!rows.some((t) => /start with|quit/.test(t)), 'palette menu: no start-at-login / quit rows in utilr');
+  }
+
+  // keys: paletr can't take the one snipr holds, takes a free one
+  const sniprKey = u.publicState().tools.find((x) => x.id === 'snipr').keys.find((k) => k.ok);
+  let r;
+  if (sniprKey) {
+    r = u.setKey('paletr', 'pick', sniprKey.combo);
+    check(!r.ok && /snipr/.test(r.error), `paletr can't take snipr's key (${r.error})`);
+  } else {
+    log("     (skipped: snipr holds no key here, another program has them)");
+  }
+  r = u.setKey('paletr', 'pick', 'ctrl+alt+shift+6');
+  check(r.ok && u.Shortcuts.ownerOf('Control+Alt+Shift+6') === 'paletr', 'paletr takes a free key: ctrl+alt+shift+6');
+
+  // remove: windows close, key is free, data stays
+  u.remove('paletr');
+  await wait(300);
+  check(!u.Host.isRunning('paletr'), 'paletr removed');
+  check(paletrWins().length === 0, "paletr's windows closed");
+  check(u.Shortcuts.ownerOf('Control+Alt+Shift+6') === null, "paletr's key is free again");
+  check(fs.existsSync(path.join(u.Host.dataDir('paletr'), 'paletr.json')), "paletr's data stays on disk");
+
+  // and back: key and palette remembered
+  u.install('paletr');
+  await wait(300);
+  const t = u.publicState().tools.find((x) => x.id === 'paletr');
+  check(t.keys[0].combo === 'ctrl+alt+shift+6', 'reinstalled paletr remembers its key');
+  const saved = JSON.parse(fs.readFileSync(path.join(u.Host.dataDir('paletr'), 'paletr.json'), 'utf8'));
+  check(saved.colors.join() === BLUE && saved.format === 'hex', 'and its palette');
+}
+
 module.exports = async (u) => {
   try {
     await wait(400);
@@ -44,9 +176,15 @@ module.exports = async (u) => {
     await js(L, `document.querySelector('[data-act="install"][data-id="notr"]').click()`);
     await wait(500);
     await js(L, `document.querySelector('[data-act="install"][data-id="snipr"]').click()`);
+    await wait(500);
+    await js(L, `document.querySelector('[data-act="install"][data-id="paletr"]').click()`);
     await wait(700);
     check(u.Host.isRunning('notr') && u.Host.isRunning('snipr'), 'notr and snipr installed and running');
-    check(u.Store.get().pinned.join() === 'notr,snipr', 'both pinned, in install order');
+    check(u.Host.isRunning('paletr'), 'paletr installed and running');
+    check(u.Store.get().pinned.join() === 'notr,snipr,paletr', 'all three pinned, in install order');
+    const pk = u.publicState().tools.find((t) => t.id === 'paletr').keys[0];
+    check(pk && pk.combo === 'alt+shift+p' && pk.ok, `paletr holds its pick key (${pk && pk.combo})`);
+    check(paletrWins().length === 0, 'paletr starts with no windows');
     await js(L, `document.body.classList.add('hover')`);
     await shot(L, '02-tools');
 
@@ -133,6 +271,9 @@ module.exports = async (u) => {
     u.install('snipr');
     await wait(300);
     check(u.publicState().tools.find((t) => t.id === 'snipr').keys[0].combo === free, 'reinstalled snipr remembers its key');
+
+    // paletr, end to end
+    await testPaletr(u);
 
     // idle footprint: no tool windows open
     u.Host.run('notr', 'close');

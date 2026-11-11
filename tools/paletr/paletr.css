@@ -1,0 +1,157 @@
+/* ==========================================================================
+   paletr — the surfaces ghost doesn't have, built from the ghost tokens.
+   Load after theme/ghost.css. New values live here under paletr's own names;
+   theme/ is a straight copy of the ghost kit and is never edited.
+   ========================================================================== */
+
+:root {
+  --loupe-edge: rgba(255, 255, 255, .5);   /* the loupe's hairline, on any screen */
+  --loupe-halo: rgba(0, 0, 0, .55);        /* and the dark ring outside it */
+  --chip-edge: rgba(255, 255, 255, .22);   /* a color chip's hairline, so #111 still shows */
+  --tile: 34px;                            /* a swatch in the palette */
+  --tile-gap: 6px;
+  --edge: rgba(255, 255, 255, .08);        /* hairline inside a swatch */
+  --panel-pad: 4px 8px;                    /* readouts, hints, toast */
+}
+
+/* No focus rings: Chromium draws them in the system accent colour, and ghost has none. */
+button:focus, button:focus-visible, canvas:focus, [tabindex]:focus { outline: none; }
+
+/* small square panel: the ghost menu surface, used for readouts and notices */
+.panel {
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  box-shadow: var(--menu-shadow);
+  color: var(--text);
+  font-size: var(--status-size);
+  padding: var(--panel-pad);
+  white-space: nowrap;
+}
+.panel .d { color: var(--dim); }
+
+/* a square of the color itself: the only colour paletr shows is yours */
+.chip {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  box-shadow: 0 0 0 1px var(--chip-edge);
+}
+.chip[hidden] { display: none; }
+
+/* --------------------------------------------------------------------------
+   pick overlay
+   -------------------------------------------------------------------------- */
+body.overlay { background: #000; }
+body.overlay, body.overlay * { cursor: none; }
+#shot { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+#loupe {
+  position: fixed;
+  display: block;
+  pointer-events: none;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 1px var(--loupe-edge), 0 0 0 2px var(--loupe-halo), var(--menu-shadow);
+}
+#loupe[hidden] { display: none; }
+
+#readout {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--menu-size);
+  padding: 4px 9px;
+  pointer-events: none;
+}
+#readout[hidden] { display: none; }
+#readout #note:empty { display: none; }
+#readout.noted #value { color: var(--strong); }
+
+#hint {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--menu-size);
+  padding: 6px 12px;
+  pointer-events: none;
+  transition: opacity var(--fade);
+  animation: ghost-drop var(--quick) ease-out;
+}
+#hint.gone { opacity: 0; }
+#hint[hidden] { display: none; }
+#hint .sep-dot { margin: 0 10px; color: var(--border-focus); }
+
+/* --------------------------------------------------------------------------
+   toast
+   -------------------------------------------------------------------------- */
+body.toast { background: transparent; justify-content: flex-end; align-items: flex-end; }
+.toast-panel {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 160px;
+  font-size: var(--menu-size);
+  padding: 7px 12px;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .14s ease-out, transform .14s ease-out;
+}
+.toast-panel.on { opacity: 1; transform: none; }
+.toast-panel .tl { display: flex; align-items: center; gap: 9px; }
+.toast-panel .d { font-size: var(--status-size); }
+
+/* --------------------------------------------------------------------------
+   palette window
+   -------------------------------------------------------------------------- */
+body.palette .content { padding: 10px 14px; }
+body.palette .bar-title { padding-left: 10px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--tile));
+  gap: var(--tile-gap);
+}
+.tile {
+  width: var(--tile);
+  height: var(--tile);
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px var(--edge);
+  outline: 1px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--quick);
+  animation: tile-in .22s ease-out backwards;
+}
+.tile:hover { outline-color: var(--border-focus); }
+.tile.sel, .tile.sel:hover { outline-color: rgba(255, 255, 255, .6); }
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text);
+}
+.empty[hidden] { display: none; }
+.empty .d { color: var(--dim); font-size: var(--status-size); }
+
+/* the status says "copied" even when the pointer is elsewhere */
+body.ghost.flash .status { opacity: 1; }
+
+.menu .mi-r.rec { color: var(--strong); }
+.menu .mi-r.bad { color: var(--danger); }
+
+@keyframes tile-in { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  #hint, .tile { animation: none; }
+  .toast-panel { transition: none; }
+}
