@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>measr: point at it, know its size in px · utilr</title>
+<meta name="description" content="A pixel ruler that reads the screen, part of utilr. It finds the edges itself: sizes, gaps and padding, copied as plain, css or tailwind.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="measr: point at it, know its size in px">
+<meta property="og:description" content="A pixel ruler that reads the screen, part of utilr. It finds the edges itself: sizes, gaps and padding, copied as plain, css or tailwind. Try it in your browser.">
+<meta property="og:url" content="https://t-julsgaard.github.io/Utilr/measr/">
+<meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../assets/utilr.svg">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="demo.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="nav wrap">
+  <a class="brand" href="../" aria-label="utilr home"><img src="../assets/utilr.svg" alt="" width="24" height="24"><span>utilr</span><span class="crumb">/</span><span class="here">measr</span></a>
+  <nav class="switcher" aria-label="Tools">
+    <a href="../notr/" data-glyph="notr" title="notr" aria-label="notr"></a>
+    <a href="../snipr/" data-glyph="snipr" title="snipr" aria-label="snipr"></a>
+    <a href="../clipr/" data-glyph="clipr" title="clipr" aria-label="clipr"></a>
+    <a href="../measr/" data-glyph="measr" title="measr" aria-label="measr" aria-current="page"></a>
+    <a href="../paletr/" data-glyph="paletr" title="paletr" aria-label="paletr"></a>
+    <a href="../findr/" data-glyph="findr" title="findr" aria-label="findr"></a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="thero wrap">
+    <div>
+      <div class="mark" data-glyph="measr"></div>
+      <p class="name"><b>measr</b> · pixel ruler · in utilr</p>
+      <h1>point at it.<br><span class="soft">know its size.</span></h1>
+      <p class="lede">A pixel ruler that reads the screen. It finds the edges itself, so <b>moving the pointer tells you the space you're in</b> and a loose drag closes in on what you meant. For checking a UI, or telling an AI exactly what to change.</p>
+    </div>
+    <div class="keybox">measure, from anywhere<div class="k" data-keys="alt+shift+m"></div></div>
+  </section>
+
+  <section class="wrap" id="try" aria-labelledby="try-title">
+    <div class="try-head">
+      <h2 class="section-title" id="try-title"><span>01</span>try it: move over the page below</h2>
+      <div class="chips" role="group" aria-label="Copy as">
+        <button data-as="plain" aria-pressed="true">plain</button>
+        <button data-as="css" aria-pressed="false">css</button>
+        <button data-as="tailwind" aria-pressed="false">tailwind</button>
+      </div>
+    </div>
+    <div class="desk mdesk" id="desk" tabindex="0" aria-label="Demo: a pretend page to measure. Move, click, drag or double-click.">
+      <canvas id="screen" aria-hidden="true"></canvas>
+      <canvas id="overlay" aria-hidden="true"></canvas>
+      <div class="toast panel" id="toast"></div>
+    </div>
+    
+    <div class="desk-foot">
+      <span>move · click: pin · drag: a box · dbl-click: an element · <kbd>ctrl</kbd><span class="plus">+</span><kbd>c</kbd> copy · <kbd>backspace</kbd> undo</span>
+      <span class="hide-s">two boxes: their gap, or the padding</span>
+    </div>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="what-title">
+    <h2 class="label" id="what-title"><span>02</span> what it does</h2>
+    <p class="statement">it reads the pixels. <span class="soft">so you never have to line up a ruler.</span></p>
+    <div class="grid">
+      <article><h3><span>&gt;</span>edges, found for you</h3><p>Lines run out from the pointer to the nearest edge each way. The space you're in, as you move: <code>16 × 48</code>.</p></article>
+      <article><h3><span>&gt;</span>boxes that close in</h3><p>Drag a box loosely round something and it snaps to what's inside. <kbd>alt</kbd>+drag keeps it exactly as drawn.</p></article>
+      <article><h3><span>&gt;</span>elements in a click</h3><p>Double-click and measr boxes the element under the pointer: a button's fill, a card's inside.</p></article>
+      <article><h3><span>&gt;</span>gaps and padding</h3><p>Two boxes give you the gap between them, or the padding when one sits inside the other.</p></article>
+      <article><h3><span>&gt;</span>copy it your way</h3><p>Plain (<code>240 × 48</code>), css (<code>width: 240px; …</code>) or tailwind (<code>w-60 h-12</code>). <kbd>s</kbd> copies an image with the measures drawn on.</p></article>
+      <article><h3><span>&gt;</span>true pixels</h3><p>Worked out on the screenshot's own pixels, in css px or screen px. A line is always exactly one screen pixel.</p></article>
+    </div>
+  </section>
+
+
+  <section class="section wrap rise" aria-labelledby="keys-title">
+    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <dl class="keylist">
+      <div><dt><span data-keys="alt+shift+m"></span></dt><dd>measure, from anywhere</dd></div>
+      <div><dt>move · click · drag</dt><dd>the space you're in · pin it · a box</dd></div>
+      <div><dt>dbl-click</dt><dd>a box round the element under the pointer</dd></div>
+      <div><dt><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>move the crosshair 1 px <span class="dim">(shift: 10)</span></dd></div>
+      <div><dt><span data-keys="ctrl+c"></span></dt><dd>copy the white number <span class="dim">(enter: copy and close)</span></dd></div>
+      <div><dt><kbd>c</kbd> · <kbd>s</kbd> · <kbd>a</kbd></dt><dd>the colour under the pointer · an image of it · everything as text</dd></div>
+      <div><dt><kbd>z</kbd></dt><dd>loupe on / off</dd></div>
+      <div><dt><kbd>backspace</kbd> · <kbd>del</kbd></dt><dd>undo · clear</dd></div>
+      <div><dt><kbd>?</kbd> · <kbd>esc</kbd></dt><dd>every key · close</dd></div>
+    </dl>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="more-title">
+    <h2 class="label" id="more-title"><span>04</span> the details</h2>
+    <ul class="details">
+      <li><h3>edges, tuned</h3><p><b>exact</b> (any change), <b>soft</b> (ignores compression noise and soft shadows; the default) or <b>loose</b> (only strong lines).</p></li>
+      <li><h3>units</h3><p>css px (screen pixels ÷ the display's scale, what you write in code; the default) or screen px. On a 100% display they're the same.</p></li>
+      <li><h3>a pointer you can see on anything</h3><p>Your pointer is hidden while you measure. The crosshair sits on the exact pixel, with a dark halo, so it reads on light and dark screens alike.</p></li>
+      <li><h3>ready at once</h3><p>One hidden overlay per display is kept warm, so the key opens instantly. Measures aren't saved: they're gone when measr closes.</p></li>
+    </ul>
+  </section>
+
+  <section class="section wrap rise">
+    <div class="band">
+      <div><h2>measr comes with utilr.</h2><p>One download, five more tools, all on from the first start.</p></div>
+      <a class="btn primary" data-dl-main href="https://github.com/T-Julsgaard/Utilr/releases/latest"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg><span>download utilr <span class="os"></span></span></a>
+    </div>
+  </section>
+
+  <div class="wrap section tight">
+    <nav class="next" aria-label="More tools">
+      <a href="../clipr/"><span>← previous</span><b>clipr</b></a>
+      <a href="../paletr/"><span>next →</span><b>paletr</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="../"><img src="../assets/utilr.svg" alt="" width="18" height="18"> utilr</a>
+  <span>MIT licence · <a href="https://github.com/T-Julsgaard/Utilr/tree/main/tools/measr">measr on github</a></span>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notr: a note, nothing else · utilr</title>
+<meta name="description" content="Tiny notes that float above every window and save every keystroke. Part of utilr.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="notr: a note, nothing else">
+<meta property="og:description" content="Tiny notes that float above every window and save every keystroke. Part of utilr. Try it in your browser.">
+<meta property="og:url" content="https://t-julsgaard.github.io/Utilr/notr/">
+<meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../assets/utilr.svg">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="demo.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="nav wrap">
+  <a class="brand" href="../" aria-label="utilr home"><img src="../assets/utilr.svg" alt="" width="24" height="24"><span>utilr</span><span class="crumb">/</span><span class="here">notr</span></a>
+  <nav class="switcher" aria-label="Tools">
+    <a href="../notr/" data-glyph="notr" title="notr" aria-label="notr" aria-current="page"></a>
+    <a href="../snipr/" data-glyph="snipr" title="snipr" aria-label="snipr"></a>
+    <a href="../clipr/" data-glyph="clipr" title="clipr" aria-label="clipr"></a>
+    <a href="../measr/" data-glyph="measr" title="measr" aria-label="measr"></a>
+    <a href="../paletr/" data-glyph="paletr" title="paletr" aria-label="paletr"></a>
+    <a href="../findr/" data-glyph="findr" title="findr" aria-label="findr"></a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="thero wrap">
+    <div>
+      <div class="mark" data-glyph="notr"></div>
+      <p class="name"><b>notr</b> · notes · in utilr</p>
+      <h1>a note.<br><span class="soft">nothing else.</span></h1>
+      <p class="lede">Tiny notes that float above every other window and remember everything by themselves. No home screen, no folders, no save button: <b>press the key and you get a note.</b></p>
+    </div>
+    <div class="keybox">your notes, from anywhere<div class="k" data-keys="ctrl+n"></div></div>
+  </section>
+
+  <section class="wrap" id="try" aria-labelledby="try-title">
+    <div class="try-head">
+      <h2 class="section-title" id="try-title"><span>01</span>try it: the real note, in your browser</h2>
+      <div class="chips" role="group" aria-label="Theme">
+        <button data-set-theme="ghost" aria-pressed="true"><i style="--sw:#8a8a8a"></i>ghost</button>
+        <button data-set-theme="mono" aria-pressed="false"><i style="--sw:#f2f2f2"></i>bare mono</button>
+        <button data-set-theme="paper" aria-pressed="false"><i style="--sw:#f4f4f0"></i>paper</button>
+        <button data-set-theme="dots" aria-pressed="false"><i style="--sw:#39ff88"></i>dots</button>
+        <button data-set-theme="gutter" aria-pressed="false"><i style="--sw:#5fd7ff"></i>gutter</button>
+        <button data-set-theme="green" aria-pressed="false"><i style="--sw:#39ff88"></i>green</button>
+        <button data-set-theme="amber" aria-pressed="false"><i style="--sw:#ffb000"></i>amber crt</button>
+      </div>
+    </div>
+    <div class="desk" id="desk">
+      <div class="bgwin" aria-hidden="true">
+        <div class="bgwin-bar"><span>untitled · some other app</span><span class="bgwin-ctl">─ ☐ ✕</span></div>
+        <div class="bgwin-body">
+          <i style="width:42%"></i><i style="width:78%"></i><i style="width:64%"></i><i style="width:71%"></i>
+          <i style="width:30%; margin-top:22px"></i><i style="width:82%"></i><i style="width:58%"></i><i style="width:74%"></i><i style="width:48%"></i>
+        </div>
+      </div>
+      <div class="desk-empty" id="desk-empty" hidden>
+        <p>no notes open.</p>
+        <button class="btn" id="desk-open">[open notr]</button>
+      </div>
+    </div>
+    <div class="drag-shield" id="drag-shield" hidden></div>
+    <div class="desk-foot">
+      <span>type, drag the top, drag an edge, <b>+</b> for a new note, the floppy to keep one as a tab. Saved in this browser only.</span>
+      <span class="hide-s"><button class="link" id="desk-reset">reset demo</button></span>
+    </div>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="what-title">
+    <h2 class="label" id="what-title"><span>02</span> what it does</h2>
+    <p class="statement">a sticky note that stays on top. <span class="soft">and remembers everything by itself.</span></p>
+    <div class="grid">
+      <article><h3><span>&gt;</span>always on top</h3><p>Notes float above every other program, so what you're writing down never gets buried. Turn it off in ⚙.</p></article>
+      <article><h3><span>&gt;</span>nothing to save</h3><p>Every keystroke is saved. Quit and notr comes back with the same notes, in the same places.</p></article>
+      <article><h3><span>&gt;</span>new notes go beside</h3><p>A new note slides in right next to the one you're in, never on top of another note.</p></article>
+      <article><h3><span>&gt;</span>keyboard first</h3><p><kbd>tab</kbd> jumps between notes. <kbd>ctrl</kbd><span class="plus">+</span><kbd>arrows</kbd> resizes, <kbd>alt</kbd><span class="plus">+</span><kbd>arrows</kbd> moves: tap to nudge, hold to glide.</p></article>
+      <article><h3><span>&gt;</span>keep one as a tab</h3><p>The floppy saves a note as a numbered tab. Close it and it stays; its tab opens it again.</p></article>
+      <article><h3><span>&gt;</span>seven themes</h3><p>ghost, bare mono, paper, dots, gutter, green and amber crt. Font, size, bold and italic are kept per theme.</p></article>
+    </div>
+  </section>
+
+  <section class="section wrap rise" id="themes" aria-labelledby="themes-title">
+    <h2 class="label" id="themes-title"><span>›</span> seven themes</h2>
+    <div class="gallery">
+      <button data-set-theme="ghost" data-scroll="1"><img src="assets/themes/ghost.png" alt="ghost theme" loading="lazy" width="300" height="300"><span><b>ghost</b>buttons appear on hover</span></button>
+      <button data-set-theme="mono" data-scroll="1"><img src="assets/themes/mono.png" alt="bare mono theme" loading="lazy" width="300" height="300"><span><b>bare mono</b>black, white, nothing else</span></button>
+      <button data-set-theme="paper" data-scroll="1"><img src="assets/themes/paper.png" alt="paper theme" loading="lazy" width="300" height="300"><span><b>paper</b>the light one</span></button>
+      <button data-set-theme="dots" data-scroll="1"><img src="assets/themes/dots.png" alt="dots theme" loading="lazy" width="300" height="300"><span><b>dots</b>a colour dot per note</span></button>
+      <button data-set-theme="gutter" data-scroll="1"><img src="assets/themes/gutter.png" alt="gutter theme" loading="lazy" width="300" height="300"><span><b>gutter</b>quiet, a little vim</span></button>
+      <button data-set-theme="green" data-scroll="1"><img src="assets/themes/green.png" alt="green theme" loading="lazy" width="300" height="300"><span><b>green</b>terminal green</span></button>
+      <button data-set-theme="amber" data-scroll="1"><img src="assets/themes/amber.png" alt="amber crt theme" loading="lazy" width="300" height="300"><span><b>amber crt</b>scanlines and glow</span></button>
+      <a class="own" href="https://github.com/T-Julsgaard/Utilr/blob/main/tools/notr/themes.css"><span class="own-box"><span>+</span>each theme is a few lines of css</span><span><b>make your own</b>fork it on github →</span></a>
+    </div>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="keys-title">
+    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <dl class="keylist">
+      <div><dt><span data-keys="ctrl+n"></span></dt><dd>bring your notes to the front, from any program</dd></div>
+      <div><dt><span data-keys="ctrl+s"></span></dt><dd>new note, beside the current one</dd></div>
+      <div><dt><span data-keys="ctrl+d"></span></dt><dd>delete the note <span class="dim">(a saved note is only closed)</span></dd></div>
+      <div><dt><kbd>tab</kbd></dt><dd>the next note <span class="dim">(shift+tab: previous)</span></dd></div>
+      <div><dt><kbd>ctrl</kbd><span class="plus">+</span><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>resize the note</dd></div>
+      <div><dt><kbd>alt</kbd><span class="plus">+</span><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>move the note</dd></div>
+      <div><dt><kbd>ctrl</kbd><span class="plus">+</span><kbd>f</kbd><span class="plus">+</span><kbd>↑</kbd><kbd>↓</kbd></dt><dd>font size bigger / smaller</dd></div>
+      <div><dt><code>/line</code> + <kbd>enter</kbd></dt><dd>a separator line <span class="dim">(copies out as ────────)</span></dd></div>
+      <div><dt>right-click</dt><dd>bold, italic, underline, font, size</dd></div>
+    </dl>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="more-title">
+    <h2 class="label" id="more-title"><span>04</span> the details</h2>
+    <ul class="details">
+      <li><h3>shortcuts live in a note</h3><p>⚙ → shortcuts writes them into the note. Change a key by editing the text in its [brackets]; it takes effect a moment after you stop typing. The open key is also on utilr's keys page.</p></li>
+      <li><h3>where your notes live</h3><p><code>%APPDATA%\utilr\tools\notr\notr-state.json</code>, with a <code>.bak</code> of the previous save. Nothing leaves your computer.</p></li>
+      <li><h3>coming from the old notr</h3><p>The first start of utilr copies the stand-alone notr's notes over, so everything comes along. Uninstall the old app afterwards: it would hold the same key.</p></li>
+      <li><h3>the demo above</h3><p>It's notr's real note UI, running in your browser with a small stand-in for the desktop side. Keyboard shortcuts are off there, so your browser's keys keep working.</p></li>
+    </ul>
+  </section>
+
+  <section class="section wrap rise">
+    <div class="band">
+      <div><h2>notr comes with utilr.</h2><p>One download, five more tools, all on from the first start.</p></div>
+      <a class="btn primary" data-dl-main href="https://github.com/T-Julsgaard/Utilr/releases/latest"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg><span>download utilr <span class="os"></span></span></a>
+    </div>
+  </section>
+
+  <div class="wrap section tight">
+    <nav class="next" aria-label="More tools">
+      <a href="../findr/"><span>← previous</span><b>findr</b></a>
+      <a href="../snipr/"><span>next →</span><b>snipr</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="../"><img src="../assets/utilr.svg" alt="" width="18" height="18"> utilr</a>
+  <span>MIT licence · <a href="https://github.com/T-Julsgaard/Utilr/tree/main/tools/notr">notr on github</a></span>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script src="app/shortcuts.js"></script>
+<script src="desk.js"></script>
+</body>
+</html>

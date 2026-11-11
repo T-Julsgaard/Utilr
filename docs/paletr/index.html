@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>paletr: click any pixel, copy its color · utilr</title>
+<meta name="description" content="A quiet color picker, part of utilr. A loupe over the frozen screen: click a pixel and its hex, rgb or hsl is on your clipboard.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="paletr: click any pixel, copy its color">
+<meta property="og:description" content="A quiet color picker, part of utilr. A loupe over the frozen screen: click a pixel and its hex, rgb or hsl is on your clipboard. Try it in your browser.">
+<meta property="og:url" content="https://t-julsgaard.github.io/Utilr/paletr/">
+<meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../assets/utilr.svg">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="demo.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="nav wrap">
+  <a class="brand" href="../" aria-label="utilr home"><img src="../assets/utilr.svg" alt="" width="24" height="24"><span>utilr</span><span class="crumb">/</span><span class="here">paletr</span></a>
+  <nav class="switcher" aria-label="Tools">
+    <a href="../notr/" data-glyph="notr" title="notr" aria-label="notr"></a>
+    <a href="../snipr/" data-glyph="snipr" title="snipr" aria-label="snipr"></a>
+    <a href="../clipr/" data-glyph="clipr" title="clipr" aria-label="clipr"></a>
+    <a href="../measr/" data-glyph="measr" title="measr" aria-label="measr"></a>
+    <a href="../paletr/" data-glyph="paletr" title="paletr" aria-label="paletr" aria-current="page"></a>
+    <a href="../findr/" data-glyph="findr" title="findr" aria-label="findr"></a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="thero wrap">
+    <div>
+      <div class="mark" data-glyph="paletr"></div>
+      <p class="name"><b>paletr</b> · color picker · in utilr</p>
+      <h1>any pixel.<br><span class="soft">its color, copied.</span></h1>
+      <p class="lede">A color picker with a loupe over the frozen screen. Point, click, and <b><code>#3c78d8</code> is on your clipboard.</b> The colors you pick stay in a small palette.</p>
+    </div>
+    <div class="keybox">pick, from anywhere<div class="k" data-keys="alt+shift+p"></div></div>
+  </section>
+
+  <section class="wrap" id="try" aria-labelledby="try-title">
+    <div class="try-head">
+      <h2 class="section-title" id="try-title"><span>01</span>try it: point at the picture, click to copy</h2>
+      <div class="chips" role="group" aria-label="Copy as">
+        <button data-fmt="hex" aria-pressed="true">hex</button>
+        <button data-fmt="rgb" aria-pressed="false">rgb</button>
+        <button data-fmt="hsl" aria-pressed="false">hsl</button>
+      </div>
+    </div>
+    <div class="desk pdesk" id="desk" tabindex="0" aria-label="Demo: a picture to pick colors from. Click to copy a color.">
+      <canvas id="screen" aria-hidden="true"></canvas>
+      <div class="loupe-w" id="loupe" hidden><canvas id="lc" width="154" height="154"></canvas><div class="pchip panel" id="chip"><i></i><span></span></div></div>
+      <div class="gw pal pin" id="pal">
+        <div class="gw-bar"><span>palette</span><span id="fmtlabel">hex ›</span></div>
+        <div class="sw" id="sw"></div>
+        <div class="gw-status"><span id="pcount">pick a color</span><span>click: copy</span></div>
+      </div>
+      <div class="toast panel" id="toast"></div>
+    </div>
+    
+    <div class="desk-foot">
+      <span>click: copy it · <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> 1 px · scroll: zoom the loupe · <kbd>tab</kbd> hex → rgb → hsl</span>
+      <span class="hide-s">this one really copies</span>
+    </div>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="what-title">
+    <h2 class="label" id="what-title"><span>02</span> what it does</h2>
+    <p class="statement">the exact pixel, not a guess. <span class="soft">read from the screen itself.</span></p>
+    <div class="grid">
+      <article><h3><span>&gt;</span>a loupe, not a guess</h3><p>The pointer becomes a square loupe: the pixels round it, magnified, with the one in the middle ringed.</p></article>
+      <article><h3><span>&gt;</span>three formats</h3><p><code>#1e90ff</code>, <code>rgb(30, 144, 255)</code> or <code>hsl(210, 100%, 56%)</code>. <kbd>tab</kbd> switches, and it's remembered.</p></article>
+      <article><h3><span>&gt;</span>a palette that remembers</h3><p>The last 30 colors you picked, newest first. Click one to copy it again; the same color twice moves to the front.</p></article>
+      <article><h3><span>&gt;</span>full color</h3><p>Nothing is dimmed while you pick, because you're judging colors. One frozen overlay per display.</p></article>
+      <article><h3><span>&gt;</span>exact on any display</h3><p>Read from the screen grab in its own pixels, so on a scaled display you get the pixel you pointed at, not a blend.</p></article>
+      <article><h3><span>&gt;</span>pick a few in a row</h3><p><kbd>shift</kbd>+click copies and keeps picking. A click acts on release, so nothing reaches the app underneath.</p></article>
+    </div>
+  </section>
+
+
+  <section class="section wrap rise" aria-labelledby="keys-title">
+    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <dl class="keylist">
+      <div><dt><span data-keys="alt+shift+p"></span></dt><dd>pick a color, from anywhere</dd></div>
+      <div><dt>click · <kbd>enter</kbd></dt><dd>copy it and close</dd></div>
+      <div><dt>shift+click</dt><dd>copy it and keep picking</dd></div>
+      <div><dt><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></dt><dd>move the ringed pixel 1 px <span class="dim">(shift: 10)</span></dd></div>
+      <div><dt>scroll · <kbd>+</kbd> <kbd>-</kbd></dt><dd>zoom the loupe <span class="dim">(7 to 21 pixels across)</span></dd></div>
+      <div><dt><kbd>tab</kbd></dt><dd>hex → rgb → hsl</dd></div>
+      <div><dt><kbd>esc</kbd> · right click</dt><dd>cancel</dd></div>
+    </dl>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="more-title">
+    <h2 class="label" id="more-title"><span>04</span> the details</h2>
+    <ul class="details">
+      <li><h3>nothing runs until you pick</h3><p>Its start reads one small file and registers the key. The overlays are made on the first pick, stay warm for ten minutes, then close: an idle paletr has no windows at all.</p></li>
+      <li><h3>the palette</h3><p>Tray → paletr → palette. Square swatches; right-click to copy as another format or remove one. <kbd>p</kbd> picks another.</p></li>
+      <li><h3>data</h3><p><code>%APPDATA%\utilr\tools\paletr\paletr.json</code>: the key, the format, the palette. Remove paletr and it stays, so installing it again brings the palette back.</p></li>
+      <li><h3>macOS</h3><p>Picking needs screen recording permission for utilr.</p></li>
+    </ul>
+  </section>
+
+  <section class="section wrap rise">
+    <div class="band">
+      <div><h2>paletr comes with utilr.</h2><p>One download, five more tools, all on from the first start.</p></div>
+      <a class="btn primary" data-dl-main href="https://github.com/T-Julsgaard/Utilr/releases/latest"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg><span>download utilr <span class="os"></span></span></a>
+    </div>
+  </section>
+
+  <div class="wrap section tight">
+    <nav class="next" aria-label="More tools">
+      <a href="../measr/"><span>← previous</span><b>measr</b></a>
+      <a href="../findr/"><span>next →</span><b>findr</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="../"><img src="../assets/utilr.svg" alt="" width="18" height="18"> utilr</a>
+  <span>MIT licence · <a href="https://github.com/T-Julsgaard/Utilr/tree/main/tools/paletr">paletr on github</a></span>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

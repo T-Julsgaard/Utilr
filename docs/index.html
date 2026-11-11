@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>utilr: small tools, one key away</title>
+<meta name="description" content="One quiet launcher for six small desktop tools: notes, screenshots, clipboard history, a pixel ruler, a color picker and file search. One download, one tray icon, nothing on screen until you ask for it.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="utilr: small tools, one key away">
+<meta property="og:description" content="Six small desktop tools in one quiet launcher. One download, one tray icon, nothing on screen until you ask for it.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://t-julsgaard.github.io/Utilr/">
+<meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="assets/utilr.svg">
+<link rel="icon" type="image/png" href="assets/utilr-256.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="assets/site.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="nav wrap">
+  <a class="brand" href="./" aria-label="utilr home">
+    <img src="assets/utilr.svg" alt="" width="24" height="24">
+    <span>utilr</span>
+  </a>
+  <nav class="links" aria-label="Sections">
+    <a href="#tools">tools</a>
+    <a href="#launcher">how it works</a>
+    <a href="#keys">keys</a>
+    <a href="https://github.com/T-Julsgaard/Utilr">github</a>
+    <a class="cta-mini" href="#download">download</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero wrap">
+    <p class="eyebrow"><i></i>six small tools · one download</p>
+    <h1>small tools.<br>one key <span class="nowrap">away.<span class="caret" aria-hidden="true"></span></span></h1>
+    <p class="lede">utilr is one quiet launcher for six desktop tools: notes, screenshots, clipboard
+      history, a pixel ruler, a color picker and file search. <b>One download, one tray icon,</b>
+      and nothing on screen until you ask for it.</p>
+    <div class="cta">
+      <a class="btn primary" data-dl-main href="https://github.com/T-Julsgaard/Utilr/releases/latest">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg>
+        <span>download <span class="os">for windows</span></span>
+      </a>
+      <a class="btn" href="#tools">see the tools ↓</a>
+    </div>
+    <p class="meta">windows 10 / 11 · macos and linux early · free and open source</p>
+  </section>
+
+  <section class="wrap" aria-label="The quick view, live">
+    <div class="desk hero-desk" id="qdesk" tabindex="0" aria-label="Demo: utilr's quick view. Press 1 to 6 or click a tile.">
+      <div class="bgwin" aria-hidden="true">
+        <div class="bgwin-bar"><span>untitled · some other app</span><span class="bgwin-ctl">─ ☐ ✕</span></div>
+        <div class="bgwin-body">
+          <i style="width:42%"></i><i style="width:78%"></i><i style="width:64%"></i><i style="width:71%"></i>
+          <i style="width:30%; margin-top:22px"></i><i style="width:82%"></i><i style="width:58%"></i><i style="width:74%"></i><i style="width:48%"></i>
+        </div>
+      </div>
+      <div class="stage" id="stage" aria-hidden="true"></div>
+      <div class="quick" id="quick">
+        <div class="dock in" id="dock" role="listbox" aria-label="Quick view"></div>
+        <div class="qlabel" id="qlabel">notr</div>
+      </div>
+      <div class="caption" id="caption"></div>
+    </div>
+    <div class="desk-foot">
+      <span><kbd>alt</kbd><span class="plus">+</span><kbd>shift</kbd><span class="plus">+</span><kbd>space</kbd> &nbsp;the quick view: your tools in a slim column, from anywhere</span>
+      <span class="hide-s">1–6 · ↑ ↓ · enter</span>
+    </div>
+  </section>
+
+  <section class="section wrap rise" id="tools" aria-labelledby="tools-title">
+    <h2 class="label" id="tools-title"><span>01</span> the tools</h2>
+    <p class="statement">six tools, one family. <span class="soft">each does one thing well, then gets out of the way.</span></p>
+    <div class="tools" id="tool-grid"></div>
+  </section>
+
+  <section class="section wrap rise" id="launcher" aria-labelledby="launcher-title">
+    <h2 class="label" id="launcher-title"><span>02</span> how it works</h2>
+    <p class="statement">one launcher, four pages. <span class="soft">everything you need to run six tools, and nothing else.</span></p>
+    <div class="split">
+      <ul class="points" id="points">
+        <li data-tab="tools"><button class="pt"><h3><span>›</span>tools</h3><p>Every tool comes installed and switched on. Click one to open it, <code>›</code> for its actions. Remove the ones you don't use: a tool that's off is never loaded and costs nothing.</p></button></li>
+        <li data-tab="quick"><button class="pt"><h3><span>›</span>quick view</h3><p>Your tools as a slim column of square tiles, on <kbd>alt</kbd><span class="plus">+</span><kbd>shift</kbd><span class="plus">+</span><kbd>space</kbd>, wherever you are. Pick which tools are pinned, in which order, and where the column appears.</p></button></li>
+        <li data-tab="keys"><button class="pt"><h3><span>›</span>keys</h3><p>Every system-wide key, utilr's and each tool's, in one place. Click one and press the new combo. A key has one owner: utilr says who has it and never lets two tools fight over it.</p></button></li>
+        <li data-tab="settings"><button class="pt"><h3><span>›</span>settings</h3><p>Start with Windows, where the quick view appears, the data folder. One tray icon for all of it: click to open utilr, right-click for every tool's actions.</p></button></li>
+      </ul>
+      <div class="gw launcher" id="launcherwin">
+        <div class="gw-bar chrome"><span>utilr</span><span class="ico"><span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6.5h10" stroke="currentColor" stroke-width="1.4" fill="none"/></svg></span><span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"/></svg></span></span></div>
+        <div class="tabs" role="tablist" aria-label="utilr launcher">
+          <button class="tab" role="tab" data-tab="tools">tools</button>
+          <button class="tab" role="tab" data-tab="quick">quick view</button>
+          <button class="tab" role="tab" data-tab="keys">keys</button>
+          <button class="tab" role="tab" data-tab="settings">settings</button>
+        </div>
+        <div class="view" id="lview" role="tabpanel"></div>
+        <div class="gw-status chrome"><span id="lstatus">6 tools, all on</span><span>utilr <span data-version>0.1.0</span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section wrap rise" id="keys" aria-labelledby="keys-title">
+    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <p class="statement">every tool is one key away. <span class="soft">from any program, and all of them can be changed.</span></p>
+    <dl class="keylist" id="keylist"></dl>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="ghost-title">
+    <h2 class="label" id="ghost-title"><span>04</span> the idea</h2>
+    <p class="statement">nothing on screen until you ask for it. <span class="soft">a tool should feel like a thought, not a program.</span></p>
+    <div class="grid">
+      <article><h3><span>&gt;</span>light</h3><p>A tool that's off is never loaded. The ones that are on start in milliseconds and wait without a single window open.</p></article>
+      <article><h3><span>&gt;</span>private</h3><p>No accounts, no network, no telemetry. Notes, clips, palettes and the file index stay on your computer.</p></article>
+      <article><h3><span>&gt;</span>keyboard first</h3><p>Every main action has a key, and <kbd>esc</kbd> always backs out. The mouse is welcome, never required.</p></article>
+      <article><h3><span>&gt;</span>one look</h3><p>Ghost: grey on near-black, one light typeface, square edges. The chrome only shows while your pointer is there.</p></article>
+      <article><h3><span>&gt;</span>one process</h3><p>One tray icon instead of six. One place for every key, so two tools never fight over a combo.</p></article>
+      <article><h3><span>&gt;</span>open source</h3><p>MIT licensed. Each tool lives in its own folder with its own README. Read it, fork it, add your own.</p></article>
+    </div>
+  </section>
+
+  <section class="section wrap rise" id="download" aria-labelledby="dl-title">
+    <h2 class="label" id="dl-title"><span>05</span> download</h2>
+    <p class="statement">one download. <span class="soft">every tool inside, every tool on.</span></p>
+    <div class="platforms">
+      <div class="platform" data-os="windows">
+        <h3>windows</h3>
+        <p class="os-sub">10 and 11 · installs for your user, no admin</p>
+        <a class="btn primary" data-asset="exe" href="https://github.com/T-Julsgaard/Utilr/releases/latest">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg>
+          download .exe
+        </a>
+        <p class="small">If SmartScreen warns you, click <b>More info → Run anyway</b>. utilr opens on its tools page with all six on; it lives in the tray from then on.</p>
+      </div>
+      <div class="platform" data-os="mac">
+        <h3>macos <span class="tag">early</span></h3>
+        <p class="os-sub">Apple Silicon and Intel</p>
+        <a class="btn primary" data-asset="dmg" href="https://github.com/T-Julsgaard/Utilr/releases/latest">download .dmg</a>
+        <p class="small">First open: <b>System Settings → Privacy &amp; Security → Open Anyway</b>. snipr, measr and paletr need screen recording. findr is Windows only.</p>
+      </div>
+      <div class="platform" data-os="linux">
+        <h3>linux <span class="tag">early</span></h3>
+        <p class="os-sub">x64</p>
+        <a class="btn primary" data-asset="AppImage" href="https://github.com/T-Julsgaard/Utilr/releases/latest">download .AppImage</a>
+        <p class="small">or the <a data-asset="deb" href="https://github.com/T-Julsgaard/Utilr/releases/latest">.deb</a> for Debian and Ubuntu. Global keys depend on your desktop. findr is Windows only.</p>
+      </div>
+    </div>
+    <div class="included" id="included"></div>
+    <p class="dl-more">Already use the stand-alone notr or snipr? utilr brings your notes and settings over on the first start. · <a href="https://github.com/T-Julsgaard/Utilr/releases">all releases</a> · <a href="https://github.com/T-Julsgaard/Utilr">source</a></p>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="#top"><img src="assets/utilr.svg" alt="" width="18" height="18"> utilr</a>
+  <span>MIT licence · <a href="https://github.com/T-Julsgaard/Utilr">github</a> · made in ghost</span>
+</footer>
+
+<script src="assets/site.js"></script>
+<script src="assets/home.js"></script>
+</body>
+</html>

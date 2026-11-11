@@ -1,0 +1,25 @@
+/* paletr demo: a picture on a canvas, the loupe, the palette */
+.pdesk { height: 520px; outline: none; }
+.pdesk.picking { cursor: none; }
+.pdesk canvas#screen { position: absolute; left: 0; top: 0; display: block; }
+.pdesk:focus-visible { box-shadow: 0 0 0 1px var(--dim); }
+
+.loupe-w { position: absolute; left: 0; top: 0; z-index: 20; pointer-events: none; will-change: transform; }
+.loupe-w[hidden] { display: none; }
+.loupe-w canvas { display: block; width: 154px; height: 154px; image-rendering: pixelated; border: 1px solid #f2f2f2; box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), var(--shadow); }
+.pchip { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 4px 9px; font-size: 11px; white-space: nowrap; }
+.pchip i { width: 11px; height: 11px; display: block; box-shadow: 0 0 0 1px rgba(255, 255, 255, .2); }
+
+.pal { position: absolute; right: 18px; bottom: 18px; z-index: 10; width: 222px; }
+.pal .gw-bar { font-size: 10px; }
+.sw { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; min-height: 30px; padding: 2px 12px 6px; }
+.sw button { aspect-ratio: 1; padding: 0; border: 0; cursor: pointer; box-shadow: 0 0 0 1px rgba(255, 255, 255, .08); transition: transform var(--quick), box-shadow var(--quick); }
+.sw button:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px #fff; }
+.sw button:first-child { animation: drop .18s ease-out; }
+#toast { left: 18px; bottom: 18px; }
+#toast.on { transform: none; }
+
+@media (max-width: 720px) {
+  .pal { width: auto; left: 16px; right: 16px; bottom: 16px; }
+  #toast { top: 16px; bottom: auto; }
+}

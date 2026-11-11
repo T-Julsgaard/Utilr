@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>snipr: press, drag, it's on your clipboard · utilr</title>
+<meta name="description" content="A quiet screenshot tool, part of utilr. Press the key, drag, and the snip is on your clipboard: mark it up, blur it for good, copy its text.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="snipr: press, drag, it's on your clipboard">
+<meta property="og:description" content="A quiet screenshot tool, part of utilr. Press the key, drag, and the snip is on your clipboard: mark it up, blur it for good, copy its text. Try it in your browser.">
+<meta property="og:url" content="https://t-julsgaard.github.io/Utilr/snipr/">
+<meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../assets/utilr.svg">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="demo.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="nav wrap">
+  <a class="brand" href="../" aria-label="utilr home"><img src="../assets/utilr.svg" alt="" width="24" height="24"><span>utilr</span><span class="crumb">/</span><span class="here">snipr</span></a>
+  <nav class="switcher" aria-label="Tools">
+    <a href="../notr/" data-glyph="notr" title="notr" aria-label="notr"></a>
+    <a href="../snipr/" data-glyph="snipr" title="snipr" aria-label="snipr" aria-current="page"></a>
+    <a href="../clipr/" data-glyph="clipr" title="clipr" aria-label="clipr"></a>
+    <a href="../measr/" data-glyph="measr" title="measr" aria-label="measr"></a>
+    <a href="../paletr/" data-glyph="paletr" title="paletr" aria-label="paletr"></a>
+    <a href="../findr/" data-glyph="findr" title="findr" aria-label="findr"></a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="thero wrap">
+    <div>
+      <div class="mark" data-glyph="snipr"></div>
+      <p class="name"><b>snipr</b> · screenshots · in utilr</p>
+      <h1>press, drag.<br><span class="soft">it's on your clipboard.</span></h1>
+      <p class="lede">A quiet screenshot tool. The snip lifts off the screen right where you took it, in a small window you can <b>mark up, blur for good, copy the text out of</b> or drag straight into a chat.</p>
+    </div>
+    <div class="keybox">snip from anywhere<div class="k" data-keys="alt+shift+s"></div></div>
+  </section>
+
+  <section class="wrap" id="try" aria-labelledby="try-title">
+    <div class="try-head">
+      <h2 class="section-title" id="try-title"><span>01</span>try it: drag anywhere on the screen below</h2>
+      <button class="link" id="reset">clear snips</button>
+    </div>
+    <div class="desk" id="desk" tabindex="0" aria-label="Demo screen. Drag to take a snip.">
+      <div class="screen" id="screen">
+        <div class="app">
+          <div class="app-bar"><span>dashboard · q4</span><span class="bgwin-ctl">─ ☐ ✕</span></div>
+          <div class="app-body">
+            <div class="app-side"><i></i><i></i><i class="on"></i><i></i><i></i></div>
+            <div class="app-main">
+              <div class="kpis">
+                <div><span>visitors</span><b>48,210</b><em>+12%</em></div>
+                <div><span>signups</span><b>1,904</b><em>+4%</em></div>
+                <div><span>churn</span><b>2.1%</b><em class="down">−0.3</em></div>
+              </div>
+              <div class="chart">
+                <i style="height:38%"></i><i style="height:52%"></i><i style="height:44%"></i><i style="height:61%"></i><i style="height:57%"></i><i style="height:72%"></i><i style="height:66%"></i><i style="height:81%"></i><i style="height:76%"></i><i style="height:90%"></i>
+              </div>
+              <pre class="code"><span class="k">const</span> snip = <span class="f">await</span> capture(area);
+clipboard.<span class="f">write</span>(snip);   <span class="c">// done</span></pre>
+            </div>
+          </div>
+        </div>
+        <div class="chat">
+          <div class="chat-bar">#design</div>
+          <p><b>sam</b> can you send me that chart?</p>
+          <p><b>you</b> one sec</p>
+          <div class="drop" id="drop">drop a snip here</div>
+        </div>
+      </div>
+      <div class="toast panel" id="toast"></div>
+    </div>
+    
+    <div class="desk-foot">
+      <span>drag: a snip · shift: square · click: the whole screen · then <kbd>p</kbd> <kbd>a</kbd> <kbd>b</kbd> <kbd>x</kbd> to mark it up, <kbd>esc</kbd> closes</span>
+      <span class="hide-s">drag a snip by its image into the chat</span>
+    </div>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="what-title">
+    <h2 class="label" id="what-title"><span>02</span> what it does</h2>
+    <p class="statement">nothing on screen until you ask. <span class="soft">then the snip, right where you took it.</span></p>
+    <div class="grid">
+      <article><h3><span>&gt;</span>on the clipboard at once</h3><p>Release the mouse and the snip is already copied. Paste it anywhere, or keep going.</p></article>
+      <article><h3><span>&gt;</span>lifts off the screen</h3><p>The snip opens in a small ghost window exactly where you took it. Hover for the chrome; at rest it's just the image.</p></article>
+      <article><h3><span>&gt;</span>mark it up</h3><p>Pen, arrow, box, circle, text and blur, each on one key. Shift snaps arrows to 45° and makes boxes square.</p></article>
+      <article><h3><span>&gt;</span>blur for good</h3><p>Nothing of what's under a blur survives: one average colour plus secure random noise. The unblurred copy on the clipboard is replaced too.</p></article>
+      <article><h3><span>&gt;</span>copy the text</h3><p><kbd>alt</kbd><span class="plus">+</span><kbd>shift</kbd><span class="plus">+</span><kbd>t</kbd> drags out text instead of an image, with Windows' own OCR. Rows, columns and indentation kept.</p></article>
+      <article><h3><span>&gt;</span>drag it out</h3><p>Grab the image and drop it in a chat, a folder or a document. Or <kbd>ctrl</kbd><span class="plus">+</span><kbd>s</kbd> to save it to Pictures\snipr.</p></article>
+    </div>
+  </section>
+
+
+  <section class="section wrap rise" aria-labelledby="keys-title">
+    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <dl class="keylist">
+      <div><dt><span data-keys="alt+shift+s"></span></dt><dd>snip, from anywhere</dd></div>
+      <div><dt><span data-keys="alt+shift+t"></span></dt><dd>snip text: drag, and the text is on your clipboard <span class="dim">(windows)</span></dd></div>
+      <div><dt>drag · click</dt><dd>an area · the whole screen <span class="dim">(shift: square, space: move it)</span></dd></div>
+      <div><dt><kbd>p</kbd> <kbd>a</kbd> <kbd>b</kbd> <kbd>c</kbd> <kbd>t</kbd> <kbd>x</kbd></dt><dd>pen, arrow, box, circle, text, blur <span class="dim">(again, or v: the hand)</span></dd></div>
+      <div><dt><span data-keys="ctrl+c"></span></dt><dd>copy, with your marks</dd></div>
+      <div><dt><span data-keys="ctrl+shift+c"></span></dt><dd>copy the text in the snip <span class="dim">(windows)</span></dd></div>
+      <div><dt><span data-keys="ctrl+s"></span></dt><dd>save to the folder <span class="dim">(ctrl+shift+s: save as…)</span></dd></div>
+      <div><dt><span data-keys="ctrl+z"></span></dt><dd>undo <span class="dim">(ctrl+y: redo)</span></dd></div>
+      <div><dt><kbd>esc</kbd></dt><dd>cancel, or close the snip</dd></div>
+    </dl>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="more-title">
+    <h2 class="label" id="more-title"><span>04</span> the details</h2>
+    <ul class="details">
+      <li><h3>instant</h3><p>One hidden overlay per display is kept ready, so the key opens a snip at once. It's snipr's only cost while it waits.</p></li>
+      <li><h3>inks and fonts</h3><p>Marks in <b>ghost</b> (white with a dark halo, reads on anything), red or black. Text in JetBrains Mono, IBM Plex Mono, DM Mono, Martian Mono, Space Mono or VT323, or a system font.</p></li>
+      <li><h3>settings</h3><p>Auto copy, auto open, auto save, close after copy, the folder, a matte border, keep snips on top, ask before discard. Tray → snipr → settings, or the gear on any snip.</p></li>
+      <li><h3>private</h3><p>Copy text uses the OCR built into Windows 10 and 11. Nothing is uploaded, ever: snips go to your clipboard and, if you want, to <code>Pictures\snipr</code>.</p></li>
+      <li><h3>platforms</h3><p>Made on Windows. On macOS it needs screen recording permission; on Linux it works on X11, and Wayland asks each time. Snip text is Windows only.</p></li>
+    </ul>
+  </section>
+
+  <section class="section wrap rise">
+    <div class="band">
+      <div><h2>snipr comes with utilr.</h2><p>One download, five more tools, all on from the first start.</p></div>
+      <a class="btn primary" data-dl-main href="https://github.com/T-Julsgaard/Utilr/releases/latest"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg><span>download utilr <span class="os"></span></span></a>
+    </div>
+  </section>
+
+  <div class="wrap section tight">
+    <nav class="next" aria-label="More tools">
+      <a href="../notr/"><span>← previous</span><b>notr</b></a>
+      <a href="../clipr/"><span>next →</span><b>clipr</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="../"><img src="../assets/utilr.svg" alt="" width="18" height="18"> utilr</a>
+  <span>MIT licence · <a href="https://github.com/T-Julsgaard/Utilr/tree/main/tools/snipr">snipr on github</a></span>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

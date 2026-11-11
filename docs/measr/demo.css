@@ -1,0 +1,6 @@
+/* measr demo: a pretend page on a canvas, the measures on a second one */
+.mdesk { height: 520px; cursor: none; background: #f4f4f3; outline: none; }
+.mdesk canvas { position: absolute; left: 0; top: 0; display: block; }
+.mdesk:focus-visible { box-shadow: 0 0 0 1px var(--dim); }
+#toast { left: 50%; top: 66px; transform: translateX(-50%); }
+#toast.on { transform: translateX(-50%); }

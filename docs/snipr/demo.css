@@ -1,0 +1,79 @@
+/* snipr demo: a pretend screen, the capture, and snip windows */
+
+#desk { cursor: crosshair; }
+.screen { position: absolute; inset: 0; }
+
+/* the pretend screen */
+.app { position: absolute; left: 4%; top: 7%; width: 62%; height: 84%; background: #141414; border: 1px solid #1d1d1d; box-shadow: 0 30px 80px rgba(0, 0, 0, .45); font-family: var(--font); }
+.app-bar { display: flex; justify-content: space-between; align-items: center; height: 30px; padding: 0 14px; border-bottom: 1px solid #1b1b1b; font-size: 10.5px; color: #555; }
+.app-body { display: flex; height: calc(100% - 30px); }
+.app-side { width: 46px; flex: none; padding: 16px 13px; border-right: 1px solid #1b1b1b; }
+.app-side i { display: block; width: 20px; height: 20px; margin-bottom: 12px; background: #1d1d1d; }
+.app-side i.on { background: #3a3a3a; }
+.app-main { flex: 1; min-width: 0; display: grid; grid-template-rows: auto 1fr auto; gap: 14px; padding: 18px 20px; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.kpis div { background: #181818; padding: 10px 14px 12px; }
+.kpis span { display: block; font-size: 10.5px; color: #6a6a6a; }
+.kpis b { display: block; font-size: 20px; line-height: 1.4; color: #e8e8e8; font-weight: 400; }
+.kpis em { font-style: normal; font-size: 10.5px; color: #7bd88f; }
+.kpis em.down { color: #ff7a6b; }
+.chart { display: flex; align-items: flex-end; gap: 8px; min-height: 80px; padding: 14px; background: #161616; }
+.chart i { flex: 1; background: linear-gradient(#6b9bf2, #3c78d8); }
+.code { margin: 0; padding: 12px 14px; background: #0f0f0f; font: 300 12px/1.6 var(--font); color: #cfcfcf; white-space: pre; overflow: hidden; }
+.code .k { color: #c792ea; }
+.code .f { color: #82aaff; }
+.code .c { color: #5a5a5a; }
+.chat { position: absolute; right: 4%; top: 16%; width: 26%; height: 68%; display: flex; flex-direction: column; background: #141414; border: 1px solid #1d1d1d; font-size: 12px; overflow: hidden; }
+.chat-bar { height: 30px; flex: none; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #1b1b1b; font-size: 10.5px; color: #6a6a6a; }
+.chat p { padding: 6px 14px 0; color: #bdbdbd; }
+.chat p b { margin-right: 6px; color: #fff; }
+.chat .sent { margin: 8px 14px 0; display: flex; flex-direction: column; gap: 4px; }
+.chat .sent b { font-weight: 400; color: #fff; }
+.chat .thumb { position: relative; overflow: hidden; border: 1px solid #262626; }
+.chat .thumb > div { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.drop { margin: auto 14px 0; display: flex; align-items: center; justify-content: center; height: 64px; flex: none; border: 1px dashed #2a2a2a; color: #555; font-size: 11px; transition: border-color .15s, color .15s; }
+.drop.over { border-color: #d6d6d6; color: #fff; }
+
+/* the capture */
+.sel { position: absolute; z-index: 31; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .5); pointer-events: none; }
+.sel .corner { position: absolute; width: 16px; height: 16px; border: 0 solid #f2f2f2; filter: drop-shadow(0 0 1px rgba(0, 0, 0, .8)); }
+.sel .corner.tl { left: -3px; top: -3px; border-left-width: 3px; border-top-width: 3px; }
+.sel .corner.br { right: -3px; bottom: -3px; border-right-width: 3px; border-bottom-width: 3px; }
+.sel .size { position: absolute; right: 0; top: calc(100% + 8px); padding: 3px 7px; font-size: 10.5px; line-height: 1.3; white-space: nowrap; }
+
+/* a snip window: just the image at rest, the chrome on hover */
+.snip { position: absolute; z-index: 20; background: #111; cursor: default; animation: lift .35s var(--ease) both; }
+@keyframes lift { from { box-shadow: 0 0 0 rgba(0, 0, 0, 0); transform: none; } to { box-shadow: var(--float); transform: translate(-3px, -4px); } }
+.snip .shot { position: absolute; inset: 0; overflow: hidden; }
+.snip .shot > div { position: absolute; pointer-events: none; }
+.snip canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.snip .sbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 30px;
+  padding: 0 4px 0 8px;
+  background: rgba(17, 17, 17, .94);
+  opacity: 0;
+  transition: opacity var(--fade);
+  cursor: move;
+}
+.snip:hover .sbar, .snip.focus .sbar { opacity: 1; }
+.snip .sbar .sz { margin-right: auto; font-size: 10px; color: var(--dim); white-space: nowrap; }
+.snip .sbar button { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 0; background: transparent; color: var(--dim); font: 400 11px/1 var(--font); cursor: pointer; transition: color var(--quick); }
+.snip .sbar button:hover { color: var(--strong); }
+.snip .sbar button[aria-pressed="true"] { color: var(--strong); box-shadow: inset 0 -1px var(--strong); }
+.snip .shot[data-tool="hand"] { cursor: grab; }
+.snip .shot:not([data-tool="hand"]) { cursor: crosshair; }
+.snip::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border); opacity: 0; pointer-events: none; transition: opacity var(--fade); }
+.snip:hover::after, .snip.focus::after { opacity: 1; }
+
+.dragout { position: absolute; z-index: 70; pointer-events: none; overflow: hidden; opacity: .85; box-shadow: var(--float); border: 1px solid var(--border); }
+.dragout > div { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+#toast { right: 18px; top: 16px; }

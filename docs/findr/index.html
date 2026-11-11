@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>findr: every file on every drive, at once · utilr</title>
+<meta name="description" content="File search with its own index of every name on every drive, part of utilr. Found as you type, kept up to date as files change. Windows.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="findr: every file on every drive, at once">
+<meta property="og:description" content="File search with its own index of every name on every drive, part of utilr. Found as you type, kept up to date as files change. Windows. Try it in your browser.">
+<meta property="og:url" content="https://t-julsgaard.github.io/Utilr/findr/">
+<meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="../assets/utilr.svg">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="demo.css">
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+
+<header class="nav wrap">
+  <a class="brand" href="../" aria-label="utilr home"><img src="../assets/utilr.svg" alt="" width="24" height="24"><span>utilr</span><span class="crumb">/</span><span class="here">findr</span></a>
+  <nav class="switcher" aria-label="Tools">
+    <a href="../notr/" data-glyph="notr" title="notr" aria-label="notr"></a>
+    <a href="../snipr/" data-glyph="snipr" title="snipr" aria-label="snipr"></a>
+    <a href="../clipr/" data-glyph="clipr" title="clipr" aria-label="clipr"></a>
+    <a href="../measr/" data-glyph="measr" title="measr" aria-label="measr"></a>
+    <a href="../paletr/" data-glyph="paletr" title="paletr" aria-label="paletr"></a>
+    <a href="../findr/" data-glyph="findr" title="findr" aria-label="findr" aria-current="page"></a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="thero wrap">
+    <div>
+      <div class="mark" data-glyph="findr"></div>
+      <p class="name"><b>findr</b> · file search · in utilr</p>
+      <h1>every file.<br><span class="soft">as you type.</span></h1>
+      <p class="lede">File search with its own list of every name on every drive. Windows' search knows what its indexer got around to; <b>findr knows all of it</b>, and keeps up as files change. No admin, nothing leaves the computer.</p>
+    </div>
+    <div class="keybox">find, from anywhere<div class="k" data-keys="alt+shift+d"></div></div>
+  </section>
+
+  <section class="wrap" id="try" aria-labelledby="try-title">
+    <div class="try-head">
+      <h2 class="section-title" id="try-title"><span>01</span>try it: type a few letters of a name</h2>
+      <div class="chips" role="group" aria-label="Look">
+        <button data-look="window" aria-pressed="true">window</button>
+        <button data-look="bar" aria-pressed="false">bar</button>
+        <button data-look="line" aria-pressed="false">line</button>
+      </div>
+    </div>
+    <div class="desk fdesk" id="desk" aria-label="Demo: findr over a made-up drive">
+      <div class="bgwin" aria-hidden="true">
+        <div class="bgwin-bar"><span>untitled · some other app</span><span class="bgwin-ctl">─ ☐ ✕</span></div>
+        <div class="bgwin-body">
+          <i style="width:42%"></i><i style="width:78%"></i><i style="width:64%"></i><i style="width:71%"></i>
+          <i style="width:30%; margin-top:22px"></i><i style="width:82%"></i><i style="width:58%"></i><i style="width:74%"></i><i style="width:48%"></i>
+        </div>
+      </div>
+      <div class="fpop" id="pop" data-look="window" role="dialog" aria-label="findr">
+        <div class="fbar"><span class="mag"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h12v12H3zM5 5v8h8V5zM14 16l2-2 6 6-2 2z" fill="currentColor" fill-rule="evenodd"/></svg></span><input id="q" type="text" autocomplete="off" spellcheck="false" aria-label="find files"><span class="cnt" id="cnt"></span></div>
+        <div class="fres" id="res" role="listbox" aria-label="results"></div>
+        <div class="fstat"><span id="stat"></span><span>enter open · ctrl+enter folder</span></div>
+        <div class="sweep" aria-hidden="true"></div>
+      </div>
+      <div class="toast panel" id="toast"></div>
+    </div>
+    
+    <div class="desk-foot">
+      <span>try <code>invoice 2026</code>, <code>"dm mono"</code>, <code>*.pdf</code> or <code>notes\ todo</code> · <kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>enter</kbd> open</span>
+      <span class="hide-s">a made-up drive: names only, nothing real</span>
+    </div>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="what-title">
+    <h2 class="label" id="what-title"><span>02</span> what it does</h2>
+    <p class="statement">nine hundred thousand names. <span class="soft">a few milliseconds.</span></p>
+    <div class="grid">
+      <article><h3><span>&gt;</span>all of it</h3><p>One thread per drive reads every folder. C: with 350,000 entries takes about two seconds from a warm disk.</p></article>
+      <article><h3><span>&gt;</span>found as you type</h3><p>A search is one pass over the names: 900,000 of them in 5 to 15 ms. Words in any order, "phrases", wildcards, or a <code>folder\</code> to look in the path.</p></article>
+      <article><h3><span>&gt;</span>the right one first</h3><p>Exact names and name starts first, what you opened before and your own folders up, machine folders like <code>node_modules</code> well down.</p></article>
+      <article><h3><span>&gt;</span>keeps up</h3><p>Fixed drives are watched. New, renamed, moved and deleted files show up in about a second. USB drives are read when they appear.</p></article>
+      <article><h3><span>&gt;</span>three looks</h3><p>A window, a floating bar, or a thin line across the top of the screen. Same keys, same ghost.</p></article>
+      <article><h3><span>&gt;</span>ready at start</h3><p>The list is cached, so after a restart it's searchable within a tenth of a second while the drives are read again in the background.</p></article>
+    </div>
+  </section>
+
+
+  <section class="section wrap rise" aria-labelledby="keys-title">
+    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <dl class="keylist">
+      <div><dt><span data-keys="alt+shift+d"></span></dt><dd>the popup, from anywhere</dd></div>
+      <div><dt>type</dt><dd>every file and folder with that in its name</dd></div>
+      <div><dt><kbd>↑</kbd> <kbd>↓</kbd> <kbd>pgup</kbd> <kbd>pgdn</kbd> <kbd>tab</kbd></dt><dd>move</dd></div>
+      <div><dt><kbd>enter</kbd> · click</dt><dd>open it</dd></div>
+      <div><dt><span data-keys="ctrl+enter"></span></dt><dd>open the folder it's in, with it selected</dd></div>
+      <div><dt><span data-keys="ctrl+shift+c"></span></dt><dd>copy its path</dd></div>
+      <div><dt><span data-keys="shift+del"></span></dt><dd>forget it (in the recent list)</dd></div>
+      <div><dt><span data-keys="ctrl+r"></span></dt><dd>read the drives again</dd></div>
+      <div><dt><kbd>esc</kbd></dt><dd>clear the find, then close</dd></div>
+    </dl>
+  </section>
+
+  <section class="section wrap rise" aria-labelledby="more-title">
+    <h2 class="label" id="more-title"><span>04</span> the details</h2>
+    <ul class="details">
+      <li><h3>what you can type</h3><p><code>invoice 2026</code>: both words, anywhere in the name. <code>"dm mono"</code>: a phrase. <code>*.pdf</code>, <code>img_????.jpg</code>: wildcards, the whole name has to fit. <code>github\ notr</code>: a word with <code>\</code> is looked for in the whole path.</p></li>
+      <li><h3>left out</h3><p>The recycle bin, System Volume Information, WinSxS, setup leftovers and folders a normal user can't open. Links are listed but not followed, so nothing is indexed twice.</p></li>
+      <li><h3>drives</h3><p>Local and USB drives are in by default; network drives and discs can be turned on. A folder that isn't a drive can be added in the settings file.</p></li>
+      <li><h3>memory and cost</h3><p>About 100–150 MB with 900,000 entries. Watching costs 1–2% of one core while things on disk change, nothing when they don't. Searches are never logged.</p></li>
+      <li><h3>Windows only</h3><p>Drive letters, PowerShell and recursive watching. On macOS and Linux utilr simply leaves findr out.</p></li>
+    </ul>
+  </section>
+
+  <section class="section wrap rise">
+    <div class="band">
+      <div><h2>findr comes with utilr.</h2><p>One download, five more tools, all on from the first start.</p></div>
+      <a class="btn primary" data-dl-main href="https://github.com/T-Julsgaard/Utilr/releases/latest"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v8.5M3 6l4 4 4-4M1.5 12.5h11" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="square"/></svg><span>download utilr <span class="os"></span></span></a>
+    </div>
+  </section>
+
+  <div class="wrap section tight">
+    <nav class="next" aria-label="More tools">
+      <a href="../paletr/"><span>← previous</span><b>paletr</b></a>
+      <a href="../notr/"><span>next →</span><b>notr</b></a>
+    </nav>
+  </div>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand" href="../"><img src="../assets/utilr.svg" alt="" width="18" height="18"> utilr</a>
+  <span>MIT licence · <a href="https://github.com/T-Julsgaard/Utilr/tree/main/tools/findr">findr on github</a></span>
+</footer>
+
+<script src="../assets/site.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>
