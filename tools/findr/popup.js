@@ -4,7 +4,7 @@
 //   type              find (words in any order, "a phrase", *.pdf, docs\name)
 //   ↑ ↓ pgup pgdn tab move (in the bar and the line, ↓ first shows what you opened last)
 //   enter / click     open it
-//   ctrl+enter        open the folder it's in (shift+enter too)
+//   ctrl+enter        open the folder it's in (shift+enter, or a click on its path, too)
 //   ctrl+shift+c      copy its path (ctrl+c too, when nothing is selected)
 //   shift+del         forget it (in the recent list)
 //   ctrl+r            read the drives again
@@ -194,7 +194,13 @@
     if (!charW) return;
     const els = list.querySelectorAll('.hit .hp');
     const widths = [...els].map((el) => el.clientWidth); // one layout, then all the writes
-    els.forEach((el, i) => { el.textContent = middle(items[i].dir || '', Math.floor(widths[i] / charW)); });
+    els.forEach((el, i) => {
+      // the text alone, so only the path itself (not the room after it) is a link
+      const t = document.createElement('span');
+      t.className = 'hpt';
+      t.textContent = middle(items[i].dir || '', Math.floor(widths[i] / charW));
+      el.replaceChildren(t);
+    });
   }
 
   const rows = () => list.querySelectorAll('.hit');
@@ -500,7 +506,8 @@
     const r = e.target.closest('.hit');
     if (!r) return;
     select(+r.dataset.i, false);
-    act(e.ctrlKey || e.shiftKey ? 'folder' : 'open');
+    // a click on the path goes to that folder
+    act(e.ctrlKey || e.shiftKey || e.target.closest('.hpt') ? 'folder' : 'open');
   });
 
   // ---------------------------------------------------------------------------

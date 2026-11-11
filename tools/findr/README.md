@@ -18,7 +18,7 @@ In the popup:
 | type | find: every file and folder with that in its name |
 | `↑` `↓` `pgup` `pgdn` `tab` | move |
 | `enter` / click | open it |
-| `ctrl+enter` / `shift+enter` / ctrl+click | open the folder it's in, with it selected |
+| `ctrl+enter` / `shift+enter` / ctrl+click / a click on its path | open the folder it's in, with it selected |
 | `ctrl+shift+c` (or `ctrl+c` with nothing selected) | copy its path |
 | `shift+del` | forget it (in the recent list) |
 | `ctrl+r` | read the drives again |
