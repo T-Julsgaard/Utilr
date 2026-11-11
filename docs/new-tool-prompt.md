@@ -17,12 +17,13 @@ follow. Read it fully before you start.
 
 - utilr (`C:\Users\T_J\Documents\GitHub\Utilr`, public repo `T-Julsgaard/Utilr`) is one
   Electron app with **one tray icon and one process** that hosts every tool. I plan for roughly
-  8–10 tools in total. The user installs utilr once, then installs each tool from inside it.
+  8–10 tools in total. The user downloads utilr once and gets every tool: the first start turns
+  them all on, and each can be removed (and installed again) from inside it.
 - The launcher (`src/`) gives every tool the same things: a row on the *tools* page
   (install / open / actions / remove), a tile in the **quick view** (a narrow column of square
   tiles on `alt+shift+space`), a submenu in the tray, and its keys on the *keys* page.
-- Two tools already exist and are your reference implementations. **Study them before writing
-  anything:**
+- Six tools already exist (notr, snipr, clipr, measr, paletr, findr). notr and snipr are the
+  reference implementations. **Study them before writing anything:**
   - `tools/notr/`: always-on-top notes (windows that persist, settings menu, saved state).
   - `tools/snipr/`: screenshots (pre-warmed hidden windows, a settings window, a toast).
   - Their READMEs (`tools/*/README.md`) say exactly what was changed to make them hosted tools.
@@ -108,16 +109,16 @@ Rules for a hosted tool (both existing tools follow them, so copy their patterns
   `ctrl+alt+shift+win`, then one key, e.g. `alt+shift+s`. It must include ctrl, alt or win. Copy
   `normalize` / `toAccelerator` / `fromEvent` / `label` into your tool's own `keys.js` (see snipr).
 - **Keys already taken** (don't use them as defaults): `alt+shift+space` (quick view),
-  `alt+shift+u` (open utilr), `ctrl+n` (notr), `alt+shift+s` and `alt+shift+t` (snipr). Pick a
-  default that's memorable and unlikely to clash with common apps.
+  `alt+shift+u` (open utilr), `ctrl+n` (notr), `alt+shift+s` and `alt+shift+t` (snipr),
+  `alt+shift+v` (clipr), `alt+shift+m` (measr), `alt+shift+p` (paletr), `alt+shift+d` (findr).
+  Pick a default that's memorable and unlikely to clash with common apps.
 - A global key is optional. Not every tool needs one; the quick view and tray already open it.
 
 ## 5. The style: ghost
 
-The look is **notr's ghost theme**. The theme kit with all the rules is in
-`C:\Users\T_J\Documents\GitHub\Notr\ghost-theme` (read its `README.md`, `ghost.css`,
-`tokens.json` and `preview.html`). utilr and both tools use it, so the new tool must look like
-part of the same family.
+The look is **notr's ghost theme**. The theme kit with all the rules is in `ghost-theme/` in this
+repository (read its `README.md`, `ghost.css`, `tokens.json` and `preview.html`). utilr and every
+tool use it, so the new tool must look like part of the same family.
 
 > "the app should feel like a thought, not a program. nothing on screen until you ask for it."
 
@@ -163,7 +164,12 @@ What I want: **minimalist, almost futuristic, sleek, modern, and it works well.*
 3. Extend `scripts/smoke.js` with checks for the new tool (install, open, its key, remove frees
    its key and closes its windows, data survives a reinstall) and run `npm test` until it's all
    `ok`. Look at the screenshots in `smoke-out/` and make sure they look right.
-4. Add the tool to the root `README.md` (intro line and the folder tree).
+4. Add the tool to the root `README.md` (the tools table and the folder tree) and to the website:
+   a card, scene and key on the home page (`TOOLS` in `docs/assets/site.js`, `SCENES` / `LONG` /
+   `KEYLABEL` / `VERSIONS` in `docs/assets/home.js`, the counts in `docs/index.html`), and its own
+   page `docs/<id>/` built like the others (`index.html` with the same sections, plus `demo.js` /
+   `demo.css`: a small live demo on a pretend screen, in ghost). Add it to every page's tool
+   switcher and prev / next links.
 5. Build the installer with `npm run dist:win` and make sure it builds.
 6. Commit with a clear message (co-authored), **don't push**: I push from GitHub Desktop.
 7. Tell me what you built, its default keys, what you tested, and what you didn't.

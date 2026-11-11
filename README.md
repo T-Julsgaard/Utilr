@@ -1,13 +1,45 @@
-# utilr
+<p align="center"><img src="assets/logo/svg/utilr-app-icon.svg" width="72" alt="utilr"></p>
 
-One quiet launcher for small tools. **One tray icon, one process, every tool.**
+<h1 align="center">utilr</h1>
 
-utilr hosts [notr](tools/notr), [snipr](tools/snipr), [clipr](tools/clipr),
-[measr](tools/measr), [paletr](tools/paletr) and [findr](tools/findr) (and the tools that come next) in a single app. You install utilr once, then install the tools you want from inside it. Same
-ghost look as notr and snipr: grey on near-black, DM Mono, nothing on screen until you ask
-for it.
+<p align="center">
+  <b>small tools. one key away.</b><br>
+  One quiet launcher for six small desktop tools. One download, one tray icon, every tool.<br>
+  Nothing on screen until you ask for it.
+</p>
 
-<img src="assets/logo/svg/utilr-app-icon.svg" width="72" alt="utilr">
+<p align="center">
+  <a href="https://t-julsgaard.github.io/Utilr/"><b>See them all (and try them) on the website</b></a> ·
+  <a href="https://github.com/T-Julsgaard/Utilr/releases/latest">Download</a>
+</p>
+
+<p align="center"><img src="docs/assets/og.png" width="720" alt="utilr: small tools, one key away"></p>
+
+## The tools
+
+Every tool comes with utilr, and every tool is on from the first start.
+
+| | | key | |
+|---|---|---|---|
+| [**notr**](tools/notr) | tiny notes that stay on top | `ctrl+n` | [page](https://t-julsgaard.github.io/Utilr/notr/) |
+| [**snipr**](tools/snipr) | press, drag, it's on your clipboard | `alt+shift+s` | [page](https://t-julsgaard.github.io/Utilr/snipr/) |
+| [**clipr**](tools/clipr) | everything you copied today | `alt+shift+v` | [page](https://t-julsgaard.github.io/Utilr/clipr/) |
+| [**measr**](tools/measr) | point at it, know its size in px | `alt+shift+m` | [page](https://t-julsgaard.github.io/Utilr/measr/) |
+| [**paletr**](tools/paletr) | click any pixel, copy its color | `alt+shift+p` | [page](https://t-julsgaard.github.io/Utilr/paletr/) |
+| [**findr**](tools/findr) | every file on every drive, at once (Windows) | `alt+shift+d` | [page](https://t-julsgaard.github.io/Utilr/findr/) |
+
+Each tool's folder has its own README: what it does, every key, and what's special about it.
+They all share the ghost look: grey on near-black, DM Mono, chrome only while you hover.
+
+## Install
+
+Get `utilr-setup-<version>.exe` from the [latest release](https://github.com/T-Julsgaard/Utilr/releases/latest)
+and run it. It installs for your user (no admin) and opens on the *tools* page with all six
+tools on. From then on it lives in the tray and starts with Windows.
+
+utilr isn't signed with a paid certificate yet: if SmartScreen says *"Windows protected your
+PC"*, click **More info → Run anyway**. There are macOS (`.dmg`) and Linux (`.AppImage`,
+`.deb`) builds too; they're early, and findr and snip text are Windows only.
 
 ## Using it
 
@@ -49,14 +81,14 @@ for the chrome (title, close, status line).
 
 `ctrl+tab` moves between pages, `esc` closes the launcher.
 
-### Installing a tool
+### Turning tools on and off
 
-Every tool ships with utilr. *Install* starts it: it gets its keys, it's added to the quick view
-(while there's room), and its actions appear in the tray. A tool you haven't installed is never
-loaded and costs nothing. *Remove* stops it and frees its keys. Its data stays, so installing it
-again brings everything back.
+Every tool ships with utilr, and the very first start turns them all on: each gets its keys, a
+tile in the quick view and its actions in the tray. *Remove* (on the tools page, under `›`)
+stops a tool and frees its keys; a tool that's off is never loaded and costs nothing. Its data
+stays, so *install* brings everything back.
 
-On the first install, utilr brings over the data of the stand-alone app if it finds it
+On the first start, utilr brings over the data of the stand-alone apps if it finds it
 (`%APPDATA%\notr\notr-state.json`, `%APPDATA%\snipr\snipr-settings.json`). Your notes and snipr
 settings come along. **Uninstall the stand-alone notr and snipr afterwards**: they would hold the
 same keys.
@@ -69,7 +101,7 @@ src/            the launcher: tray, quick view, launcher window, keys, tool host
   host.js       finds tools in tools/, starts and stops them, gives each its own scope
   shortcuts.js  one registry for every system-wide key (one owner per key)
   store.js      utilr.json: installed, pinned, keys, settings
-  theme/        the ghost theme kit (from notr/ghost-theme)
+  theme/        a copy of the ghost theme kit
 tools/
   notr/         notr's own code: windows, preload, theme, fonts, data
   snipr/        snipr's own code, the same way
@@ -77,7 +109,10 @@ tools/
   measr/        pixel ruler: edges, boxes, gaps and padding on the frozen screen
   paletr/       color picker: a loupe over the frozen screen, a palette of recent picks
   findr/        file search: every name on every drive, its own index, watched live
-scripts/        icons.js (app icons from assets/logo), smoke.js (end-to-end test)
+ghost-theme/    the ghost theme kit itself: tokens, components, rules (every theme/ is a copy)
+docs/           the website (GitHub Pages): a page and a live demo per tool
+scripts/        icons.js (app icons), smoke.js (end-to-end test), build-web.js (notr's web demo)
+.github/        release workflow: a version tag builds Windows, macOS and Linux
 ```
 
 Each tool stays in its own folder and doesn't share code with the others. A tool is a
@@ -103,9 +138,10 @@ module.exports = function mytool(host) {
 To add a tool, add a folder to `tools/`. The launcher, the quick view, the tray and the keys page
 pick it up from there.
 
-notr and snipr were moved in from their own repositories with only the stand-alone parts taken
-out (tray, start at login, single-instance lock, lifecycle). Each tool's README says exactly what
-changed.
+notr and snipr started as stand-alone apps in their own repositories (T-Julsgaard/Notr and
+T-Julsgaard/Snipr). Their whole histories are merged into this one; only the stand-alone parts
+were taken out (tray, start at login, single-instance lock, lifecycle), and each README's
+*History* says what changed. `docs/new-tool-prompt.md` is the brief for building the next tool.
 
 Data lives in `%APPDATA%\utilr` (`utilr.json`, `utilr.log`, `tools\<id>\…`).
 
@@ -117,7 +153,28 @@ npm start            # run from source
 npm test             # smoke test: drives the real windows, screenshots in smoke-out/
 npm run icons        # app icons from assets/logo/svg
 npm run dist:win     # installer in dist/ (also dist:mac, dist:linux)
+npm run web          # copy notr's note UI into the website's try-it demo
 ```
+
+### Releasing
+
+Bump `version` in `package.json`, update `.github/release-notes.md`, then push a tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+`.github/workflows/release.yml` builds Windows, macOS and Linux and publishes the release. The
+website's download buttons always point at the newest release.
+
+### The website
+
+[t-julsgaard.github.io/Utilr](https://t-julsgaard.github.io/Utilr/) is `docs/`, served by GitHub
+Pages from `main` / `/docs`. Plain HTML, CSS and JS, no build step: `docs/index.html` is the home
+page, `docs/<tool>/` a page per tool with a demo you can use in the browser. They run on pretend
+screens (measr and paletr read their own canvas pixels, findr searches a made-up drive),
+except notr's, which is the real note UI. A new tool gets a page there too.
 
 ## Licence
 
