@@ -1,0 +1,138 @@
+/* ==========================================================================
+   findr: the popup, built from the ghost tokens.
+   Load after theme/ghost.css. theme/ is a straight copy of notr's ghost kit
+   and is never edited; anything new lives here under findr's own names.
+   ========================================================================== */
+
+:root {
+  --hit-name: 12px;        /* a file's name: a list, so menu-sized */
+  --hit-path: 10px;        /* its folder, dim */
+  --hit-pad: 5px 12px 6px;
+}
+
+/* No focus rings: Chromium draws them in the system accent colour. */
+button:focus, button:focus-visible, input:focus { outline: none; }
+
+body.popup .bar-left { padding-left: 10px; }
+
+/* ---------- the find line: content, not chrome, so it's always there ------ */
+
+.ask {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  margin-top: -8px;           /* sits up against the (hidden) bar */
+  padding: 0 18px 0 18px;
+  font-size: var(--size);
+}
+.ask .prompt { color: var(--dim); }
+.find {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--strong);
+  font: inherit;
+  font-size: var(--size);
+}
+.note {
+  flex: none;
+  font-size: var(--status-size);
+  color: var(--dim);
+  opacity: 0;
+  transition: opacity var(--fade);
+}
+.note.on { opacity: 1; }
+
+/* ---------- the list -------------------------------------------------------- */
+
+body.popup .content { padding: 2px 6px 4px; line-height: 1.5; }
+body.popup .content.in { animation: ghost-drop var(--quick) ease-out; }
+
+.label {
+  padding: 6px 12px 4px;
+  font-size: var(--status-size);
+  color: var(--dim);
+}
+
+.hit {
+  padding: var(--hit-pad);
+  cursor: pointer;
+  transition: background var(--quick);
+}
+.hit.sel { background: var(--menu-hover); }
+
+.hit .hl {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  min-width: 0;
+}
+.hit .hn {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--hit-name);
+  color: var(--text);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--quick);
+}
+.hit.sel .hn { color: var(--strong); }
+.hit .hn mark { background: var(--sel); color: var(--strong); }
+.hit .hn .slash { color: var(--dim); }   /* a folder: "name\" */
+.hit .hm {
+  flex: none;
+  font-size: var(--status-size);
+  color: var(--dim);
+  white-space: nowrap;
+}
+.hit .hp {
+  font-size: var(--hit-path);
+  color: var(--dim);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty {
+  padding: 34px 10px;
+  text-align: center;
+  font-size: var(--status-size);
+  color: var(--dim);
+  line-height: 1.9;
+  white-space: pre-line;
+}
+
+/* the ruler measures one character of the path text (DM Mono: all the same) */
+.ruler {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  font-size: var(--hit-path);
+  white-space: pre;
+  visibility: hidden;
+}
+
+/* ---------- status: hints on hover; "indexing" stays up -------------------- */
+
+body.ghost.indexing .status { opacity: 1; }
+
+/* ---------- the settings menu, dropped from the gear ----------------------- */
+
+body.popup .menu { top: calc(var(--bar-h) - 2px); right: 6px; min-width: 260px; }
+.menu .mi-r.rec { color: var(--strong); }
+.menu .mi-r.rec::after { content: ''; display: inline-block; width: 6px; height: 11px; margin-left: 3px; vertical-align: -1px; background: var(--strong); animation: blink 1.06s steps(1) infinite; }
+.menu .mi-r.bad { color: var(--danger); }
+.menu .mi .sub { color: var(--dim); margin-left: 1ch; }
+@keyframes blink { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  body.popup .content.in { animation: none; }
+  .menu .mi-r.rec::after { animation: none; }
+  .note { transition: none; }
+}

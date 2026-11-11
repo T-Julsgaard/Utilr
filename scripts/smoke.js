@@ -278,6 +278,142 @@ async function clipr(u) {
   }
 }
 
+// ---- findr: install, its key, search, live changes, copy path, remove, and
+// the index coming back from its cache. Indexing the real drives would take a
+// while and change between runs, so every drive is off and findr covers a
+// small made-up folder instead. Enter on a file is never pressed here (it
+// would open it); "open" is only tried on a file that's just been deleted.
+async function findr(u) {
+  if (process.platform !== 'win32') return;
+  const keepClip = await clipText().catch(() => '');
+  const wins = () => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && w.getTitle() === 'findr');
+  const fx = fs.mkdtempSync(path.join(os.tmpdir(), 'findr-smoke-'));
+  const put = (rel) => { fs.mkdirSync(path.dirname(path.join(fx, rel)), { recursive: true }); fs.writeFileSync(path.join(fx, rel), 'x'); };
+  put('alpha/Invoice-2026-03.pdf');
+  put('alpha/deep/notes.txt');
+  put('node_modules/pkg/invoice.js');
+  put('photos/img_0001.jpg');
+  put('photos/img_0002.jpg');
+  const data = u.Host.dataDir('findr');
+  fs.mkdirSync(data, { recursive: true });
+  const off = Object.fromEntries('abcdefghijklmnopqrstuvwxyz'.split('').map((l) => [l, false]));
+  fs.writeFileSync(path.join(data, 'findr-settings.json'), JSON.stringify({ drives: off, folders: [fx] }));
+  const typeIn = (W, q) => js(W, `(() => { const f = document.getElementById('find'); f.value = ${JSON.stringify(q)}; f.dispatchEvent(new Event('input')); })()`);
+  const names = (W) => js(W, `[...document.querySelectorAll('.hit .hn')].map((e) => e.textContent)`);
+  try {
+    u.openLauncher('tools');
+    await wait(700);
+    const L = u.launcherWin();
+    await js(L, `document.querySelector('[data-act="install"][data-id="findr"]').click()`);
+    await wait(500);
+    check(u.Host.isRunning('findr'), 'findr installed from the tools page');
+    check(u.Store.get().pinned.includes('findr'), 'findr is in the quick view');
+    check(u.Shortcuts.ownerOf('Alt+Shift+D') === 'findr', 'findr has alt+shift+d');
+    check(wins().length === 0, 'no findr window until you open it');
+    u.closeLauncher();
+    await wait(2200); // the engine starts 1.5 s after findr does, then reads the folder
+
+    u.Host.open('findr');
+    await wait(700);
+    const W = wins()[0];
+    check(!!W && W.isVisible(), 'findr opens');
+    if (!W) return;
+    const st = await js(W, `window.findr.search('').then((r) => r.status)`);
+    check(st.roots.length === 1 && st.total === 11 && !st.scanning, `it covers only the test folder: ${st.total} entries`);
+    await shot(W, '50-findr-empty');
+
+    await typeIn(W, 'invoice');
+    await wait(400);
+    let n = await names(W);
+    check(n.length === 2 && n[0] === 'Invoice-2026-03.pdf', `"invoice": the pdf first, node_modules last (${n.join(', ')})`);
+    await wait(250);
+    check(/\d/.test(await js(W, `document.querySelector('.hit.sel .hm').textContent`)), 'the selected one shows its size and date');
+    await shot(W, '51-findr-invoice');
+    await js(W, `document.body.classList.add('hover')`);
+    await shot(W, '52-findr-hover');
+    await typeIn(W, 'img_????.jpg');
+    await wait(300);
+    check((await names(W)).length === 2, 'wildcards: img_????.jpg finds both photos');
+    await typeIn(W, 'alpha\\ notes');
+    await wait(300);
+    n = await names(W);
+    check(n.length === 1 && n[0] === 'notes.txt', 'a path word: "alpha\\ notes" finds alpha\\deep\\notes.txt');
+    await typeIn(W, 'deep\\notes');
+    await wait(300);
+    check((await names(W)).length === 1, 'and "deep\\notes" does too');
+
+    // live: new, renamed, deleted, without reading it all again
+    put('alpha/new-invoice.md');
+    await wait(1600);
+    let r = await js(W, `window.findr.search('new-invoice')`);
+    check(r.total === 1, 'a new file shows up within a second or two');
+    fs.renameSync(path.join(fx, 'alpha'), path.join(fx, 'beta'));
+    await wait(1600);
+    r = await js(W, `window.findr.search('notes')`);
+    check(r.total === 1 && r.items[0].dir.endsWith(path.join('beta', 'deep')), 'a renamed folder: what is in it moves along');
+
+    // copy the path of the selected one
+    await typeIn(W, 'img_0002');
+    await wait(300);
+    W.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'C', modifiers: ['control', 'shift'] });
+    await wait(300);
+    check((await clipText()) === path.join(fx, 'photos', 'img_0002.jpg'), 'ctrl+shift+c copies its path');
+
+    // a file that's gone before the index knows it: open says so, nothing opens
+    put('gone-soon.txt');
+    await wait(1600);
+    await typeIn(W, 'gone-soon');
+    await wait(300);
+    fs.rmSync(path.join(fx, 'gone-soon.txt'));
+    r = await js(W, `window.findr.open(0, 'open')`);
+    check(!r.ok && r.error === 'gone', `opening a deleted file says "${r.error}"`);
+    await wait(1600);
+    r = await js(W, `window.findr.search('gone-soon')`);
+    check(r.total === 0, 'and it leaves the index');
+
+    await typeIn(W, '');
+    await js(W, `document.getElementById('btn-menu').click()`);
+    await wait(250);
+    await shot(W, '53-findr-menu');
+    const rows = await js(W, `[...document.querySelectorAll('.mi')].map((m) => m.textContent.trim().replace(/\\s+/g, ' '))`);
+    check(!rows.some((t) => /start with|quit/.test(t)), 'findr menu: no start-at-login / quit rows');
+    check(rows.some((t) => /^>?\s*c:/.test(t) && /off$/.test(t)), 'the menu lists the drives (c: is off here)');
+    await js(W, `document.getElementById('btn-menu').click()`);
+    W.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+    await wait(400);
+    check(!W.isVisible(), 'esc closes it');
+
+    // keys, remove, reinstall: the index comes back from its cache
+    const sniprKey = u.publicState().tools.find((x) => x.id === 'snipr').keys[0].combo;
+    r = u.setKey('findr', 'key', sniprKey);
+    check(!r.ok && /snipr/.test(r.error), `findr can't take snipr's key, ${sniprKey} (${r.error})`);
+    r = u.setKey('findr', 'key', 'ctrl+alt+shift+f');
+    check(r.ok && u.Shortcuts.ownerOf('Control+Alt+Shift+F') === 'findr', 'findr takes a free key');
+    u.remove('findr');
+    await wait(300);
+    check(!u.Host.isRunning('findr'), 'findr removed');
+    check(u.Shortcuts.ownerOf('Control+Alt+Shift+F') === null, "findr's key is free again");
+    check(wins().length === 0, "findr's window is gone");
+    const cached = fs.readdirSync(data).filter((f) => /^index-.*\.bin$/.test(f));
+    check(fs.existsSync(path.join(data, 'findr-settings.json')) && cached.length === 1, `its settings and index stay on disk (${cached.join(', ')})`);
+    u.install('findr');
+    await wait(1900);
+    check(u.publicState().tools.find((x) => x.id === 'findr').keys[0].combo === 'ctrl+alt+shift+f', 'reinstalled findr remembers its key');
+    u.Host.open('findr');
+    await wait(600);
+    r = await js(wins()[0], `window.findr.search('new-invoice')`);
+    const logTxt = fs.readFileSync(path.join(app.getPath('userData'), 'utilr.log'), 'utf8');
+    check(r.total === 1 && /findr: .*entries from the cache/.test(logTxt), 'its index comes back from the cache at once');
+    await js(wins()[0], `window.findr.hide()`);
+    u.setKey('findr', 'key', 'alt+shift+d');
+    for (const m of logTxt.match(/findr: (scanned|.*from the cache).*$/gm) || []) log('     ' + m);
+    await wait(300);
+  } finally {
+    await clipboard.writeText(keepClip).catch(() => {});
+    try { fs.rmSync(fx, { recursive: true, force: true }); } catch (_) {}
+  }
+}
+
 module.exports = async (u) => {
   try {
     await wait(400);
@@ -396,6 +532,8 @@ module.exports = async (u) => {
     await testPaletr(u);
 
     await clipr(u);
+
+    await findr(u);
 
     // idle footprint: no tool windows open
     u.Host.run('notr', 'close');

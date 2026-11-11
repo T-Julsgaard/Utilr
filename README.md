@@ -3,7 +3,7 @@
 One quiet launcher for small tools. **One tray icon, one process, every tool.**
 
 utilr hosts [notr](tools/notr), [snipr](tools/snipr), [clipr](tools/clipr),
-[measr](tools/measr) and [paletr](tools/paletr) (and the tools that come next) in a single app. You install utilr once, then install the tools you want from inside it. Same
+[measr](tools/measr), [paletr](tools/paletr) and [findr](tools/findr) (and the tools that come next) in a single app. You install utilr once, then install the tools you want from inside it. Same
 ghost look as notr and snipr: grey on near-black, DM Mono, nothing on screen until you ask
 for it.
 
@@ -76,6 +76,7 @@ tools/
   clipr/        clipboard history: today's copies, in memory only
   measr/        pixel ruler: edges, boxes, gaps and padding on the frozen screen
   paletr/       color picker: a loupe over the frozen screen, a palette of recent picks
+  findr/        file search: every name on every drive, its own index, watched live
 scripts/        icons.js (app icons from assets/logo), smoke.js (end-to-end test)
 ```
 

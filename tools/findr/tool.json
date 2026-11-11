@@ -1,0 +1,10 @@
+{
+  "id": "findr",
+  "name": "findr",
+  "version": "1.0.0",
+  "description": "every file on every drive, at once",
+  "main": "main.js",
+  "glyph": "glyph.svg",
+  "order": 4,
+  "platforms": ["win32"]
+}
