@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; script-src 'self'">
+<title>measr</title>
+<link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="theme/ghost.css">
+<link rel="stylesheet" href="measr.css">
+</head>
+<body class="ghost overlay" data-theme="ghost">
+  <canvas id="shot"></canvas>
+  <canvas id="ink"></canvas>
+
+  <div class="panel loupe" id="loupe" hidden>
+    <canvas id="lens"></canvas>
+    <div class="lens-info"><span id="hex"></span><span class="d" id="pos"></span></div>
+  </div>
+
+  <div class="panel" id="note" hidden></div>
+
+  <div class="panel sheet" id="keys" hidden>
+    <div class="sheet-title">measr</div>
+    <dl>
+      <dt>move</dt><dd>the space round the pointer</dd>
+      <dt>click</dt><dd>pin it</dd>
+      <dt>drag</dt><dd>a box, snapped to what's inside</dd>
+      <dt>alt+drag</dt><dd>a box, as you draw it</dd>
+      <dt>dbl-click</dt><dd>a box round the element</dd>
+      <dt>two boxes</dt><dd>the gap, or the padding</dd>
+      <dt>arrows</dt><dd>nudge 1 px · shift 10</dd>
+      <dt>ctrl+c</dt><dd>copy the white number</dd>
+      <dt>enter</dt><dd>copy it and close</dd>
+      <dt>click a number</dt><dd>copy that one</dd>
+      <dt>c</dt><dd>copy the colour</dd>
+      <dt>s</dt><dd>copy an image, measures drawn on</dd>
+      <dt>a</dt><dd>copy everything, as text</dd>
+      <dt>tab</dt><dd>next box</dd>
+      <dt>z</dt><dd>loupe on / off</dd>
+      <dt>backspace · del</dt><dd>undo · clear</dd>
+      <dt>right click</dt><dd>menu</dd>
+      <dt>esc</dt><dd>close</dd>
+    </dl>
+  </div>
+
+  <div class="menu" id="menu" role="menu" hidden></div>
+
+  <script src="keys.js"></script>
+  <script src="menu.js"></script>
+  <script src="overlay.js"></script>
+</body>
+</html>

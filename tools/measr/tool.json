@@ -1,0 +1,9 @@
+{
+  "id": "measr",
+  "name": "measr",
+  "version": "1.0.0",
+  "description": "point at it, know its size in px",
+  "main": "main.js",
+  "glyph": "glyph.svg",
+  "order": 3
+}

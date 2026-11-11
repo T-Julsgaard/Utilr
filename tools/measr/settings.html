@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; script-src 'self'">
+<title>measr</title>
+<link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="theme/ghost.css">
+<link rel="stylesheet" href="measr.css">
+</head>
+<body class="settings" data-theme="ghost">
+  <header class="bar">
+    <div class="bar-left"><span class="bar-title">measr</span></div>
+    <div class="bar-right">
+      <button class="btn" id="btn-close" title="Close" aria-label="Close">
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="menu inline" id="menu" role="menu"></div>
+  </main>
+
+  <footer class="status">
+    <span class="st-left" id="st-left"></span>
+    <span class="st-right" id="st-right"></span>
+  </footer>
+
+  <div class="frame" aria-hidden="true"></div>
+
+  <script src="theme/ghost.js"></script>
+  <script src="keys.js"></script>
+  <script src="menu.js"></script>
+  <script src="settings.js"></script>
+</body>
+</html>

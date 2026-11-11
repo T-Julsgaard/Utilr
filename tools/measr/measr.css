@@ -1,0 +1,126 @@
+/* ==========================================================================
+   measr — the surfaces notr doesn't have, built from the ghost tokens.
+   Load after theme/ghost.css. New values live here under measr's own names;
+   theme/ is a straight copy of notr's ghost kit and is never edited.
+   The measures themselves are drawn on a canvas (overlay.js reads these).
+   ========================================================================== */
+
+:root {
+  --halo: rgba(0, 0, 0, .5);             /* dark edge round every drawn line, so white reads on white */
+  --panel-pad: 4px 8px;                  /* notices, loupe, toast */
+  --grid: rgba(255, 255, 255, .06);      /* the loupe's pixel grid */
+}
+
+/* No focus rings. Chromium draws them in the system accent colour; ghost has no colour. */
+button:focus, button:focus-visible, canvas:focus, [tabindex]:focus { outline: none; }
+
+/* small square panel: the ghost menu surface */
+.panel {
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border);
+  box-shadow: var(--menu-shadow);
+  color: var(--text);
+  font-size: var(--status-size);
+  padding: var(--panel-pad);
+  white-space: nowrap;
+}
+.panel .d { color: var(--dim); }
+
+/* --------------------------------------------------------------------------
+   overlay: the frozen screen, with the measures on top. Your own pointer is
+   hidden: the crosshair is drawn exactly on the pixel it measures from.
+   -------------------------------------------------------------------------- */
+body.overlay { background: #000; cursor: none; }
+body.overlay.on-chip, body.overlay.on-chip * { cursor: pointer; }
+body.overlay.menu-open, body.overlay .menu, body.overlay .menu * , body.overlay .sheet { cursor: default; }
+#shot, #ink { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+#ink { pointer-events: none; }
+
+.loupe { position: fixed; padding: 0; pointer-events: none; box-shadow: var(--menu-shadow); animation: measr-in var(--quick) ease-out; }
+.loupe[hidden] { display: none; }
+.loupe canvas { display: block; image-rendering: pixelated; }
+.lens-info { display: flex; justify-content: space-between; gap: 10px; padding: 3px 7px; font-size: var(--status-size); border-top: 1px solid var(--divider); }
+
+#note {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--menu-size);
+  padding: 6px 12px;
+  pointer-events: none;
+  transition: opacity var(--fade);
+  animation: ghost-drop var(--quick) ease-out;
+}
+#note.low { top: auto; bottom: 28px; }
+#note.gone { opacity: 0; }
+#note[hidden] { display: none; }
+#note .sep-dot { margin: 0 10px; color: var(--border-focus); }
+
+.sheet {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 14px 18px 12px;
+  font-size: var(--menu-size);
+  animation: ghost-drop var(--quick) ease-out;
+}
+.sheet[hidden] { display: none; }
+.sheet-title { font-size: var(--title-size); color: var(--label); margin-bottom: 8px; }
+.sheet dl { display: grid; grid-template-columns: auto auto; column-gap: 28px; row-gap: 5px; margin: 0; }
+.sheet dt { color: var(--text); }
+.sheet dd { margin: 0; color: var(--dim); text-align: right; }
+
+@keyframes measr-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* --------------------------------------------------------------------------
+   toast
+   -------------------------------------------------------------------------- */
+body.toast { background: transparent; justify-content: flex-end; align-items: flex-end; }
+.toast-panel {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 140px;
+  max-width: 100%;
+  font-size: var(--menu-size);
+  padding: 7px 12px;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .14s ease-out, transform .14s ease-out;
+}
+.toast-panel.on { opacity: 1; transform: none; }
+.toast-panel .d { font-size: var(--status-size); overflow: hidden; text-overflow: ellipsis; }
+
+/* the menu's key row while recording, or when the key is taken */
+.menu .mi-r { max-width: 26ch; overflow: hidden; text-overflow: ellipsis; }
+.menu .mi-r.rec { color: var(--strong); }
+.menu .mi-r.bad { color: var(--danger); }
+
+/* --------------------------------------------------------------------------
+   settings window: the same menu, standing on its own
+   -------------------------------------------------------------------------- */
+body.settings .content { padding: 0; overflow-y: auto; }
+body.settings .menu.inline {
+  position: static;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 2px 0 8px;
+  animation: none;
+}
+body.settings .menu.inline .mi { padding: 6px 18px; }
+body.settings .menu.inline .sep { margin: 6px 18px; }
+body.settings .bar-title { padding-left: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .loupe, #note, .sheet { animation: none; }
+  #note { transition: none; }
+  .toast-panel { transition: none; }
+}

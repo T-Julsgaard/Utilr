@@ -390,6 +390,8 @@ module.exports = async (u) => {
     await wait(300);
     check(u.publicState().tools.find((t) => t.id === 'snipr').keys[0].combo === free, 'reinstalled snipr remembers its key');
 
+    await measr(u);
+
     // paletr, end to end
     await testPaletr(u);
 
@@ -409,6 +411,153 @@ module.exports = async (u) => {
   fs.writeFileSync(path.join(out, 'smoke.log'), lines.join('\n') + '\n');
   app.exit(failed ? 1 : 0);
 };
+
+// ---- measr: install, its key, a real open, then a made-up screen with known
+// shapes on it, measured through the real overlay (mouse, keys, clipboard).
+async function measr(u) {
+  const keepClip = await clipboard.readText().catch(() => '');
+  const wins = () => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && w.getTitle() === 'measr');
+  const shown = () => wins().filter((w) => w.isVisible());
+
+  u.install('measr');
+  await wait(1200); // the overlays warm up
+  check(u.Host.isRunning('measr'), 'measr installed and running');
+  check(u.Shortcuts.ownerOf('Alt+Shift+M') === 'measr', 'measr holds alt+shift+m');
+  const t = u.publicState().tools.find((x) => x.id === 'measr');
+  check(t.keys.length === 1 && t.keys[0].ok, 'measr key is on the keys page, registered');
+  check(t.actions.map((a) => a.id).join() === 'measure,delay,settings', `measr actions: ${t.actions.map((a) => a.label).join(', ')}`);
+  check(u.Store.get().pinned.includes('measr'), 'measr is on the quick view');
+  check(wins().length >= screen.getAllDisplays().length && !shown().length, `one overlay per display, warm and hidden (${wins().length})`);
+
+  // the real screen
+  let t0 = Date.now();
+  u.Host.open('measr');
+  while (!shown().length && Date.now() - t0 < 3000) await wait(20);
+  await wait(300);
+  const cur = screen.getCursorScreenPoint();
+  const ov = shown().find((w) => { const b = w.getBounds(); return cur.x >= b.x && cur.x < b.x + b.width && cur.y >= b.y && cur.y < b.y + b.height; }) || shown()[0];
+  check(!!ov, `measr opens over the screen (${Date.now() - t0} ms)`);
+  if (!ov) return;
+  await shot(ov, '41-measr-real');
+
+  // a screen we know: two light boxes 16 px apart, a dark block inside the first
+  const b = ov.getBounds();
+  const d = screen.getDisplayMatching(b);
+  const W = Math.round(d.size.width * d.scaleFactor), H = Math.round(d.size.height * d.scaleFactor);
+  const bmp = Buffer.alloc(W * H * 4);
+  const fill = (x, y, w, h, v) => { for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { const i = (yy * W + xx) * 4; bmp[i] = bmp[i + 1] = bmp[i + 2] = v; bmp[i + 3] = 255; } };
+  fill(0, 0, W, H, 0x11);
+  fill(100, 100, 240, 48, 0xd6); // A
+  fill(356, 100, 120, 48, 0xd6); // B, 16 px right of A
+  fill(116, 112, 60, 24, 0x33);  // inside A: 12 down, 16 in
+  const settings = { key: 'alt+shift+m', keyOk: true, units: 'screen', format: 'plain', edges: 'soft', loupe: 'off', hints: false, platform: process.platform, version: 'test', hosted: true };
+  ov.webContents.send('overlay:open', { sid: 999, width: W, height: H, bitmap: bmp, scale: d.scaleFactor, active: true, cursor: { x: 5, y: 5 }, settings, keyLabel: '' });
+  await wait(500);
+  const k = W / b.width;
+  const at = (x, y) => ({ x: Math.round((x + 0.5) / k), y: Math.round((y + 0.5) / k) });
+  const send = (e) => ov.webContents.sendInputEvent(e);
+  const move = async (x, y) => { send({ type: 'mouseMove', ...at(x, y) }); await wait(40); };
+  const key = async (keyCode, modifiers = []) => { send({ type: 'keyDown', keyCode, modifiers }); send({ type: 'char', keyCode, modifiers }); send({ type: 'keyUp', keyCode, modifiers }); await wait(150); };
+  const dragFrom = async (x1, y1, x2, y2) => {
+    await move(x1, y1);
+    send({ type: 'mouseDown', ...at(x1, y1), button: 'left', clickCount: 1 });
+    for (let i = 1; i <= 6; i++) await move(x1 + ((x2 - x1) * i) / 6, y1 + ((y2 - y1) * i) / 6);
+    send({ type: 'mouseUp', ...at(x2, y2), button: 'left', clickCount: 1 });
+    await wait(250);
+  };
+  const clip = () => clipboard.readText();
+  const ctrlC = () => key('C', ['control']);
+
+  await move(348, 124);
+  await ctrlC();
+  check((await clip()) === `16 × ${H}`, `the space between two boxes: ${await clip()}`);
+  await move(200, 104);
+  await key('C');
+  check((await clip()) === '#d6d6d6', `c copies the colour: ${await clip()}`);
+  await dragFrom(80, 80, 344, 170);
+  await ctrlC();
+  check((await clip()) === '240 × 48', `a loose box snaps to what's in it: ${await clip()}`);
+  await dragFrom(350, 86, 492, 166);
+  await ctrlC();
+  check((await clip()) === '120 × 48', `and a second one: ${await clip()}`);
+  await key('A');
+  check(/gap {2}16/.test(await clip()), `two boxes: the gap between them (${(await clip()).replace(/\n/g, ' / ')})`);
+  await move(130, 120);
+  send({ type: 'mouseDown', ...at(130, 120), button: 'left', clickCount: 1 });
+  send({ type: 'mouseUp', ...at(130, 120), button: 'left', clickCount: 1 });
+  send({ type: 'mouseDown', ...at(130, 120), button: 'left', clickCount: 2 });
+  send({ type: 'mouseUp', ...at(130, 120), button: 'left', clickCount: 2 });
+  await wait(300);
+  await ctrlC();
+  check((await clip()) === '60 × 24', `dbl-click boxes the element: ${await clip()}`);
+  await key('A');
+  check(/padding {2}12 164 12 16/.test(await clip()), 'a box inside a box: its padding');
+  await shot(ov, '42-measr-measures');
+  ov.webContents.send('settings:changed', { ...settings, loupe: 'always' });
+  await move(420, 200);
+  await move(348, 124);
+  await shot(ov, '43-measr-live');
+  send({ type: 'mouseDown', ...at(600, 400), button: 'right', clickCount: 1 });
+  send({ type: 'mouseUp', ...at(600, 400), button: 'right', clickCount: 1 });
+  await wait(300);
+  check(await js(ov, `!document.getElementById('menu').hidden`), 'right click opens the menu');
+  await shot(ov, '44-measr-menu');
+  await key('Escape');
+  await key('?');
+  check(await js(ov, `!document.getElementById('keys').hidden`), '? shows the keys');
+  await shot(ov, '45-measr-keys');
+  await key('Escape');
+  // enter: copy and close, with a notice in the corner
+  await move(348, 124);
+  await key('Return');
+  await wait(400);
+  check(!shown().some((w) => w.getBounds().width === b.width), 'enter copies and closes');
+  const toastWin = shown().find((w) => w.getBounds().width === 300);
+  check(!!toastWin, 'and says so in the corner');
+  if (toastWin) await shot(toastWin, '46-measr-toast');
+
+  // the key again closes it
+  u.Host.open('measr');
+  t0 = Date.now();
+  while (!shown().some((w) => w.getBounds().width !== 300) && Date.now() - t0 < 3000) await wait(20);
+  await wait(300);
+  const o2 = shown().find((w) => w.getBounds().width !== 300);
+  if (o2) o2.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+  await wait(300);
+  check(!shown().some((w) => w.getBounds().width !== 300), 'esc closes it');
+
+  // settings window
+  u.Host.run('measr', 'settings');
+  await wait(800);
+  const sw = shown().find((w) => w.getBounds().width === 320);
+  check(!!sw, 'measr settings opens');
+  if (sw) {
+    const rows = await js(sw, `[...document.querySelectorAll('.mi')].map((m) => m.textContent.trim().replace(/\\s+/g, ' '))`);
+    log(`     ${rows.join(' | ')}`);
+    check(!rows.some((r) => /start with|quit/.test(r)), 'measr settings: no start-at-login / quit rows in utilr');
+    const fits = await js(sw, `document.querySelector('.content').scrollHeight <= document.querySelector('.content').clientHeight`);
+    check(fits, 'measr settings fit their window');
+    await shot(sw, '47-measr-settings');
+  }
+
+  // keys, remove, reinstall
+  const sniprKey = u.publicState().tools.find((x) => x.id === 'snipr').keys[0].combo;
+  let r = u.setKey('measr', 'key', sniprKey);
+  check(!r.ok && /snipr/.test(r.error), `measr can't take snipr's key, ${sniprKey} (${r.error})`);
+  r = u.setKey('measr', 'key', 'ctrl+alt+shift+m');
+  check(r.ok && u.Shortcuts.ownerOf('Control+Alt+Shift+M') === 'measr', 'measr takes a free key');
+  await wait(400);
+  u.remove('measr');
+  await wait(300);
+  check(!u.Host.isRunning('measr'), 'measr removed');
+  check(u.Shortcuts.ownerOf('Control+Alt+Shift+M') === null, "measr's key is free again");
+  check(wins().length === 0, "measr's windows are all gone");
+  check(fs.existsSync(path.join(u.Host.dataDir('measr'), 'measr-settings.json')), "measr's settings stay on disk");
+  u.install('measr');
+  await wait(300);
+  check(u.publicState().tools.find((x) => x.id === 'measr').keys[0].combo === 'ctrl+alt+shift+m', 'reinstalled measr remembers its key');
+  await clipboard.writeText(keepClip).catch(() => {});
+}
 
 // ---- launched as `electron scripts/smoke.js`: start utilr in test mode. main.js
 // then requires this file again (from the cache) and calls the export above.
