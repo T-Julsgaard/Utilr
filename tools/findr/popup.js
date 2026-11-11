@@ -8,7 +8,7 @@
 //   ctrl+shift+c      copy its path (ctrl+c too, when nothing is selected)
 //   shift+del         forget it (in the recent list)
 //   ctrl+r            read the drives again
-//   ctrl+,            settings (look: window, bar, line)
+//   ctrl+,            settings (look: bar, window, line)
 //   esc               clear the find, then close
 (() => {
   const api = window.findr;
@@ -42,7 +42,7 @@
   let againTimer = null;
   let charW = 0;
 
-  const look = () => (S && S.look) || 'window';
+  const look = () => (S && S.look) || 'bar';
   const compact = () => look() !== 'window'; // bar and line: one line per result, nothing until asked
 
   // ---------------------------------------------------------------------------
@@ -298,8 +298,8 @@
   // ---------------------------------------------------------------------------
 
   const LOOKS = [
-    { id: 'window', about: 'details and a status line' },
     { id: 'bar', about: 'just a search bar' },
+    { id: 'window', about: 'details and a status line' },
     { id: 'line', about: 'a line across the top' },
   ];
 

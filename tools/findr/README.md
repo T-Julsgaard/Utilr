@@ -45,8 +45,8 @@ flip through them with `↑` `↓` `enter`. All three have the same keys and the
 
 | | |
 |---|---|
-| **window** (the default) | A window: two-line results (name, then its folder), size and date on the selected one, a status line and the chrome on hover. |
-| **bar** | Just a search bar, floating a fifth of the way down the screen: the magnifier, the find line, `find in 918,000 files`. Results drop below it as you type, one line each. Before you type, `↓` shows what you opened last. |
+| **bar** (the default) | Just a search bar, floating a fifth of the way down the screen: the magnifier, the find line, `find in 918,000 files`. Results drop below it as you type, one line each. Before you type, `↓` shows what you opened last. |
+| **window** | A window: two-line results (name, then its folder), size and date on the selected one, a status line and the chrome on hover. |
 | **line** | A thin line across the top of the screen. Results drop down as a table: names in one column, folders in the next, size and date at the right edge. The key hints show on hover. |
 
 The bar and the line are drawn on a transparent window a little bigger than they are, so they

@@ -33,12 +33,12 @@ const Boot = require('./boot');
 const BG = '#111111';              // ghost --bg, so the popup never flashes white
 const POPUP = { width: 620, height: 440 };
 // How the popup looks (findr's menu › look):
+//   bar     just a search bar; results drop below it once you type (the default)
 //   window  a window: two-line rows, the status line, chrome on hover
-//   bar     just a search bar; results drop below it once you type
 //   line    a line across the top of the screen; results as a table below
 // The bar and the line are drawn on a transparent window a little bigger
 // than they are, so they can grow, cast their shadow and hold the menu.
-const LOOKS = ['window', 'bar', 'line'];
+const LOOKS = ['bar', 'window', 'line'];
 const BAR = { width: 680, height: 500, top: 0.2 }; // top: where the bar sits, as a share of the screen
 const LINE = { height: 0.62, max: 560 };
 const LIMIT = 100;                 // results the popup gets
@@ -69,8 +69,8 @@ module.exports = function findr(host) {
   //           Windows has been asked again
   // folders:  extra places to cover, e.g. a network share (settings file only)
   // recent:   remember what you open (it's ranked first, and shown before you type)
-  // look:     window, bar or line (see LOOKS)
-  const defaults = () => ({ key: Keys.DEFAULT, drives: {}, known: [], folders: [], recent: true, look: 'window' });
+  // look:     bar, window or line (see LOOKS)
+  const defaults = () => ({ key: Keys.DEFAULT, drives: {}, known: [], folders: [], recent: true, look: 'bar' });
   const FILE = () => path.join(host.dataDir, 'findr-settings.json');
   const RECENT = () => path.join(host.dataDir, 'findr-recent.json');
 
@@ -89,7 +89,7 @@ module.exports = function findr(host) {
     if (!Array.isArray(settings.folders)) settings.folders = [];
     settings.folders = settings.folders.filter((f) => typeof f === 'string' && path.isAbsolute(f));
     settings.recent = settings.recent !== false;
-    if (!LOOKS.includes(settings.look)) settings.look = 'window';
+    if (!LOOKS.includes(settings.look)) settings.look = 'bar';
   }
 
   function writeJson(file, data) {

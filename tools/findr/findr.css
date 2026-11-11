@@ -123,13 +123,13 @@ body.popup .content { padding: 2px 6px 4px; line-height: 1.5; }
   white-space: pre;
   overflow: hidden;
 }
-/* the path is a link to its folder: a white underline when you're on it */
+/* the path is a link to its folder: a quiet grey underline when you're on it */
 .hit .hp .hpt {
   text-decoration: underline transparent;
   text-underline-offset: 3px;
   transition: text-decoration-color var(--quick);
 }
-.hit .hp .hpt:hover { text-decoration-color: var(--strong); }
+.hit .hp .hpt:hover { text-decoration-color: color-mix(in srgb, var(--dim) 60%, transparent); }
 
 .empty {
   padding: 34px 10px;
