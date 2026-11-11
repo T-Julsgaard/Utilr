@@ -76,6 +76,9 @@
   let platform = 'win32';
   let S = null; // settings shared by all notes: theme, fonts, status, shortcuts
   let lastRange = null;
+  // ctrl+f+up / down: a font size for this note only, for as long as it's
+  // open. Not saved; the size in settings is for every note and clears it.
+  let noteSize = null;
 
   const font = () => ({ ...NO_FONT, ...((S && S.fonts[S.theme]) || {}) });
 
@@ -117,6 +120,9 @@
   }
 
   const fullText = () => serialize(editor, true);
+  // a note with nothing in it: no text, and no drawing with a stroke in it
+  const hasDrawing = () => !!editor.querySelector('.drawing path');
+  const isEmpty = () => fullText().trim() === '' && !hasDrawing();
 
   function caretPos() {
     const sel = getSelection();
@@ -266,12 +272,17 @@
   function applyFont() {
     const f = font();
     editor.style.fontFamily = f.family ? `"${f.family}", ui-monospace, monospace` : '';
-    editor.style.fontSize = f.size ? f.size + 'px' : '';
+    const size = noteSize || f.size;
+    editor.style.fontSize = size ? size + 'px' : '';
     editor.style.fontWeight = f.bold ? '700' : '';
     editor.style.fontStyle = f.italic ? 'italic' : '';
   }
 
+  // the size every note uses: a change to it (or to the theme) drops this note's own size
+  const sizeKey = (s) => s.theme + '|' + ((s.fonts[s.theme] || {}).size || '');
+
   function applySettings(next) {
+    if (S && sizeKey(S) !== sizeKey(next)) noteSize = null;
     S = next;
     body.dataset.theme = S.theme;
     applyFont();
@@ -289,7 +300,7 @@
 
   function onEdit() {
     const text = fullText();
-    const empty = text.trim() === '';
+    const empty = text.trim() === '' && !hasDrawing();
     api.update({ html: editor.innerHTML, preview: preview(text), empty });
     // all text gone: no longer saved (main drops the tab and tells every note)
     if (empty && isSaved()) { tabs = tabs.filter((t) => t.id !== note.id); renderTabs(); }
@@ -312,8 +323,17 @@
     api.setSettings(patch);
   }
   const setFont = (value) => setSetting({ font: { theme: S.theme, value } });
-  // ⚙ size − / + and ctrl+f+up / down
-  const stepSize = (d) => setFont({ size: Math.min(48, Math.max(8, (font().size || themeSize()) + d)) });
+  const clampSize = (px) => Math.min(48, Math.max(8, px));
+  // ⚙ size − / +: every note
+  const stepSize = (d) => setFont({ size: clampSize((font().size || themeSize()) + d) });
+  // ctrl+f+up / down: just this note, until it's closed
+  function stepNoteSize(d) {
+    const base = font().size || themeSize();
+    const next = clampSize((noteSize || base) + d);
+    noteSize = next === base ? null : next;
+    applyFont();
+    revealCaret();
+  }
 
   function setDot(dot) {
     note.dot = dot;
@@ -328,7 +348,7 @@
   // -------------------------------------------------------------------------
   const isSaved = () => !!note && tabs.some((t) => t.id === note.id);
 
-  function renderSaveBtn(empty = fullText().trim() === '') {
+  function renderSaveBtn(empty = isEmpty()) {
     const saved = isSaved();
     btnSave.classList.toggle('saved', saved);
     btnSave.setAttribute('aria-pressed', String(saved));
@@ -361,7 +381,7 @@
   }
 
   function saveNote() {
-    if (isSaved() || fullText().trim() === '') { focusEditor(); return; }
+    if (isSaved() || isEmpty()) { focusEditor(); return; }
     // the html is already sent on every edit; send it once more so main has
     // exactly this text when it saves
     onEdit();
@@ -386,7 +406,7 @@
     const groups = [
       ['notes', [bound('add'), bound('del'), bound('open'), 'switch note: tab']],
       ['window', ['resize note: ctrl + arrows', 'move note: alt + arrows']],
-      ['text', ['font size: ctrl + f + up / down', 'separator: /line + enter']],
+      ['text', ['font size, this note: ctrl + f + up / down', 'separator: /line + enter', 'drawing: /draw + enter']],
     ];
     return [SHORTCUTS_HINT, ...groups.flatMap(([name, lines]) => ['', `── ${name}`, ...lines])];
   };
@@ -436,7 +456,10 @@
     }
   });
 
-  // "/line" + Enter on a line of its own -> a separator line across the note.
+  // A slash command + Enter on a line of its own:
+  //   /line  a separator line across the note
+  //   /draw  a drawing (see "drawings" below)
+  const SLASH = { '/line': () => '<hr>', '/draw': () => drawingHtml() };
   function slashCommand() {
     const sel = getSelection();
     if (!sel.rangeCount || !sel.isCollapsed) return false;
@@ -446,13 +469,114 @@
     const box = document.createElement('div');
     box.appendChild(pre.cloneContents());
     const lineBefore = serialize(box, false).split('\n').pop();
-    if (lineBefore.trim().toLowerCase() !== '/line') return false;
-    // select the typed command (and any spaces around it) and swap it for the line
+    const cmd = lineBefore.trim().toLowerCase();
+    if (!SLASH[cmd]) return false;
+    // select the typed command (and any spaces around it) and swap it for what it makes
     for (let i = 0; i < lineBefore.length; i++) sel.modify('extend', 'backward', 'character');
-    if (sel.toString().trim().toLowerCase() !== '/line') { sel.collapseToEnd(); return false; }
-    document.execCommand('insertHTML', false, '<hr>');
+    if (sel.toString().trim().toLowerCase() !== cmd) { sel.collapseToEnd(); return false; }
+    document.execCommand('insertHTML', false, SLASH[cmd]());
+    const made = editor.querySelector('[data-new]');
+    if (made) caretAfter(made);
     onEdit();
     return true;
+  }
+
+  // The caret on the line after a block that was just put in (it would
+  // otherwise land before it), with a line to type on if there's none.
+  function caretAfter(el) {
+    el.removeAttribute('data-new');
+    if (!el.nextSibling) el.after(document.createElement('br'));
+    const r = document.createRange();
+    r.setStartAfter(el);
+    r.collapse(true);
+    const sel = getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
+  // -------------------------------------------------------------------------
+  // drawings: "/draw" + Enter puts a box in the note to draw in
+  // -------------------------------------------------------------------------
+  // A drawing is an <svg> of strokes in the note's own HTML, so it's saved
+  // with the note, and it's drawn in the theme's text colour (currentColor).
+  // Drag in it to draw, drag its bottom edge to make it taller or shorter,
+  // right-click it to undo a stroke, clear it or take it out.
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const DRAW_H = 140, DRAW_MIN = 40, DRAW_MAX = 2000;
+  const drawingHtml = () =>
+    `<div class="drawing" contenteditable="false" data-new><svg xmlns="${SVGNS}" style="height:${DRAW_H}px"></svg></div>`;
+
+  const r1 = (n) => Math.round(n * 10) / 10;
+  // A smooth line through the points: curves from midpoint to midpoint.
+  function strokePath(pts) {
+    const [x0, y0] = pts[0];
+    let d = `M${r1(x0)} ${r1(y0)}`;
+    if (pts.length === 1) return d + 'l0 0'; // a dot (the round cap draws it)
+    for (let i = 1; i < pts.length - 1; i++) {
+      const [x, y] = pts[i], [nx, ny] = pts[i + 1];
+      d += `Q${r1(x)} ${r1(y)} ${r1((x + nx) / 2)} ${r1((y + ny) / 2)}`;
+    }
+    const [lx, ly] = pts[pts.length - 1];
+    return d + `L${r1(lx)} ${r1(ly)}`;
+  }
+
+  let drawing = null; // { svg, path, pts } while a stroke is drawn
+  let sizing = null;  // { svg, y, h } while the bottom edge is dragged
+
+  editor.addEventListener('pointerdown', (e) => {
+    const box = e.target instanceof Element && e.target.closest('.drawing');
+    if (!box || e.button !== 0) return;
+    e.preventDefault(); // no caret, no text selection
+    closeMenu();
+    const svg = box.querySelector('svg');
+    if (!svg) return;
+    svg.setPointerCapture(e.pointerId);
+    const r = svg.getBoundingClientRect();
+    // the strip under the svg is the handle
+    if (!svg.contains(e.target)) { sizing = { svg, y: e.clientY, h: r.height }; return; }
+    const path = document.createElementNS(SVGNS, 'path');
+    svg.appendChild(path);
+    drawing = { svg, path, pts: [[e.clientX - r.left, e.clientY - r.top]] };
+    path.setAttribute('d', strokePath(drawing.pts));
+  });
+
+  editor.addEventListener('pointermove', (e) => {
+    if (sizing) {
+      const h = Math.min(DRAW_MAX, Math.max(DRAW_MIN, Math.round(sizing.h + e.clientY - sizing.y)));
+      sizing.svg.style.height = h + 'px';
+      return;
+    }
+    if (!drawing) return;
+    const r = drawing.svg.getBoundingClientRect();
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    for (const ev of evs.length ? evs : [e]) {
+      const x = ev.clientX - r.left, y = ev.clientY - r.top;
+      const [px, py] = drawing.pts[drawing.pts.length - 1];
+      if (Math.hypot(x - px, y - py) >= 1.5) drawing.pts.push([x, y]);
+    }
+    drawing.path.setAttribute('d', strokePath(drawing.pts));
+  });
+
+  function endPointer() {
+    if (!drawing && !sizing) return;
+    drawing = null;
+    sizing = null;
+    onEdit();
+  }
+  editor.addEventListener('pointerup', endPointer);
+  editor.addEventListener('pointercancel', endPointer);
+  editor.addEventListener('lostpointercapture', endPointer);
+
+  function drawingItems(box) {
+    const svg = box.querySelector('svg');
+    const strokes = svg ? svg.querySelectorAll('path').length : 0;
+    const change = (fn) => () => { fn(); onEdit(); };
+    return [
+      { label: 'undo stroke', disabled: !strokes, keep: true, run: change(() => svg.lastElementChild.remove()) },
+      { label: 'clear drawing', disabled: !strokes, run: change(() => svg.replaceChildren()) },
+      { sep: true },
+      { label: 'remove drawing', danger: true, run: change(() => box.remove()) },
+    ];
   }
 
   // Copying a separator: other apps get a drawn line (──────) as text, and a
@@ -776,6 +900,8 @@
     e.preventDefault();
     const t = e.target instanceof Element ? e.target : null;
     if (!t || !t.closest('.body')) return;
+    const box = t.closest('.drawing');
+    if (box) { openMenu('context', () => drawingItems(box), { x: e.clientX, y: e.clientY }); return; }
     const sel = getSelection();
     if (!editor.contains(sel.anchorNode)) focusEditor();
     openMenu('context', contextItems, { x: e.clientX, y: e.clientY });
@@ -799,7 +925,7 @@
   function askClose() {
     closeMenu();
     // a saved note is only closed, never deleted: nothing to ask
-    if (isSaved() || fullText().trim() === '' || !S.confirmDelete) { api.closeNote(); return; }
+    if (isSaved() || isEmpty() || !S.confirmDelete) { api.closeNote(); return; }
     confirmEl.hidden = false;
     $('confirm-yes').focus();
   }
@@ -820,7 +946,7 @@
   // keyboard
   // -------------------------------------------------------------------------
   // ctrl+f+up / down is a chord: while ctrl and f are held, the up / down
-  // arrows change the font size instead of resizing the note.
+  // arrows change this note's font size instead of resizing the note.
   let fHeld = false;
   const isF = (e) => e.code === 'KeyF';
 
@@ -844,12 +970,12 @@
       api.kbdStop(); // a resize that was already gliding stops here
     }
 
-    // ctrl+f+up / down: font size, one step per press (or key repeat)
+    // ctrl+f+up / down: this note's font size, one step per press (or key repeat)
     const arrow = ARROWS[e.key];
     if (arrow && fHeld && e.ctrlKey) {
       e.preventDefault();
       if ((arrow === 'up' || arrow === 'down') && !e.shiftKey && !e.altKey && !e.metaKey) {
-        stepSize(arrow === 'up' ? 1 : -1);
+        stepNoteSize(arrow === 'up' ? 1 : -1);
       }
       return;
     }

@@ -252,7 +252,9 @@
   // its tab. Closing a saved note keeps it (note.closed) and its tab stays in
   // every note; emptying its text unsaves it. (same as tools/notr/main.js)
   // -------------------------------------------------------------------------
-  const hasText = (html) => String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;|​/g, '').trim() !== '';
+  // text, or a drawing with a stroke in it (/draw)
+  const hasText = (html) => /<path\b/.test(String(html || '')) ||
+    String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;|​/g, '').trim() !== '';
   const findNote = (id) => state.notes.find((n) => n.id === id);
 
   function freeSlot() {

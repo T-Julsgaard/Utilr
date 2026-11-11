@@ -148,7 +148,9 @@ module.exports = function notr(host) {
   // Saved notes (the floppy button): note.saved + note.slot (the number on its
   // tab). Closing a saved note keeps it (note.closed) and its tab stays in the
   // title bar of every note; emptying its text unsaves it again.
-  const hasText = (html) => String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;|​/g, '').trim() !== '';
+  // text, or a drawing with a stroke in it (/draw)
+  const hasText = (html) => /<path\b/.test(String(html || '')) ||
+    String(html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;|​/g, '').trim() !== '';
 
   function freeSlot() {
     const used = new Set(state.notes.filter((n) => n.saved).map((n) => n.slot));
