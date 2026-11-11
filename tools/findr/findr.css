@@ -1,17 +1,37 @@
 /* ==========================================================================
-   findr: the popup, built from the ghost tokens.
+   findr: the popup, built from the ghost tokens, in three looks.
    Load after theme/ghost.css. theme/ is a straight copy of notr's ghost kit
    and is never edited; anything new lives here under findr's own names.
+
+     body.l-window   a window: chrome on hover, two-line rows, a status line
+     body.l-bar      just a search bar, floating; results drop below it
+     body.l-line     a line across the top of the screen; results as a table
+
+   The bar and the line sit on a transparent window: .shell is what you see.
    ========================================================================== */
 
 :root {
   --hit-name: 12px;        /* a file's name: a list, so menu-sized */
   --hit-path: 10px;        /* its folder, dim */
   --hit-pad: 5px 12px 6px;
+  --faint: #555555;        /* findr's own: a placeholder, the glyph at rest */
+  --bar-ask: 54px;         /* the bar's find line */
+  --line-ask: 46px;        /* the line's find line */
+  --edge: 10px;            /* room around the bar for its shadow */
 }
 
 /* No focus rings: Chromium draws them in the system accent colour. */
 button:focus, button:focus-visible, input:focus { outline: none; }
+
+/* ---------- the shell: in the window look, simply the window's insides ---- */
+
+.shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 
 body.popup .bar-left { padding-left: 10px; }
 
@@ -24,10 +44,11 @@ body.popup .bar-left { padding-left: 10px; }
   gap: 10px;
   height: 34px;
   margin-top: -8px;           /* sits up against the (hidden) bar */
-  padding: 0 18px 0 18px;
+  padding: 0 18px;
   font-size: var(--size);
 }
 .ask .prompt { color: var(--dim); }
+.ask .glyph { display: none; flex: none; width: 15px; height: 15px; color: var(--faint); transition: color var(--fade); }
 .find {
   flex: 1;
   min-width: 0;
@@ -39,19 +60,21 @@ body.popup .bar-left { padding-left: 10px; }
   font: inherit;
   font-size: var(--size);
 }
-.note {
+.find::placeholder { color: var(--faint); opacity: 1; }
+.note, .count, .hints {
   flex: none;
   font-size: var(--status-size);
   color: var(--dim);
-  opacity: 0;
-  transition: opacity var(--fade);
+  white-space: nowrap;
 }
+.note { opacity: 0; transition: opacity var(--fade); }
 .note.on { opacity: 1; }
+.count, .hints, .ask-menu { display: none; }
 
 /* ---------- the list -------------------------------------------------------- */
 
 body.popup .content { padding: 2px 6px 4px; line-height: 1.5; }
-body.popup .content.in { animation: ghost-drop var(--quick) ease-out; }
+.content.in { animation: ghost-drop var(--quick) ease-out; }
 
 .label {
   padding: 6px 12px 4px;
@@ -59,21 +82,22 @@ body.popup .content.in { animation: ghost-drop var(--quick) ease-out; }
   color: var(--dim);
 }
 
+/* a result: name and size/date on top, its folder below (window), or all
+   three on one line (bar, line) — the same row, laid out by the grid */
 .hit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "n m" "p p";
+  column-gap: 14px;
+  align-items: baseline;
   padding: var(--hit-pad);
   cursor: pointer;
   transition: background var(--quick);
 }
 .hit.sel { background: var(--menu-hover); }
 
-.hit .hl {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  min-width: 0;
-}
 .hit .hn {
-  flex: 1;
+  grid-area: n;
   min-width: 0;
   font-size: var(--hit-name);
   color: var(--text);
@@ -86,17 +110,18 @@ body.popup .content.in { animation: ghost-drop var(--quick) ease-out; }
 .hit .hn mark { background: var(--sel); color: var(--strong); }
 .hit .hn .slash { color: var(--dim); }   /* a folder: "name\" */
 .hit .hm {
-  flex: none;
+  grid-area: m;
   font-size: var(--status-size);
   color: var(--dim);
   white-space: nowrap;
 }
 .hit .hp {
+  grid-area: p;
+  min-width: 0;
   font-size: var(--hit-path);
   color: var(--dim);
   white-space: pre;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .empty {
@@ -122,17 +147,119 @@ body.popup .content.in { animation: ghost-drop var(--quick) ease-out; }
 
 body.ghost.indexing .status { opacity: 1; }
 
-/* ---------- the settings menu, dropped from the gear ----------------------- */
+/* ---------- the settings menu ---------------------------------------------- */
 
-body.popup .menu { top: calc(var(--bar-h) - 2px); right: 6px; min-width: 260px; }
+body.l-window .menu { top: calc(var(--bar-h) - 2px); right: 6px; }
+.menu { min-width: 270px; }
 .menu .mi-r.rec { color: var(--strong); }
 .menu .mi-r.rec::after { content: ''; display: inline-block; width: 6px; height: 11px; margin-left: 3px; vertical-align: -1px; background: var(--strong); animation: blink 1.06s steps(1) infinite; }
 .menu .mi-r.bad { color: var(--danger); }
 .menu .mi .sub { color: var(--dim); margin-left: 1ch; }
+.menu .mi.head { cursor: default; background: transparent; }
 @keyframes blink { 50% { opacity: 0; } }
 
+/* ==========================================================================
+   bar and line: what they share
+   ========================================================================== */
+
+html:has(body.l-bar), html:has(body.l-line) { background: transparent; }
+body.ghost.l-bar, body.ghost.l-line { background: transparent; }
+body.l-bar .bar, body.l-line .bar,
+body.l-bar .status, body.l-line .status,
+body.l-bar .frame, body.l-line .frame { display: none; }
+
+body.l-bar .shell, body.l-line .shell {
+  flex: none;
+  background: var(--bg);
+  box-shadow: var(--menu-shadow);
+}
+body.l-bar .shell.in, body.l-line .shell.in { animation: ghost-drop .16s ease-out; }
+
+body.l-bar .ask, body.l-line .ask { margin: 0; }
+body.l-bar .count, body.l-line .count { display: block; }
+
+/* the gear: chrome, so only while the pointer is here (or the menu is open) */
+body.l-bar .ask-menu, body.l-line .ask-menu {
+  display: flex;
+  min-width: 26px;
+  padding: 0 4px;
+  opacity: 0;
+  transition: opacity var(--fade), color var(--quick);
+}
+body.hover .ask-menu, body.menu-open .ask-menu { opacity: 1; }
+
+/* results only once there's something to show (you typed, or pressed ↓) */
+body.l-bar .content, body.l-line .content { display: none; flex: 0 1 auto; border-top: 1px solid var(--divider); }
+body.l-bar.open .content, body.l-line.open .content { display: block; }
+
+/* one line per result */
+body.l-bar .hit, body.l-line .hit {
+  grid-template-areas: "n p m";
+  column-gap: 16px;
+}
+body.l-bar .hit .hp, body.l-line .hit .hp { font-size: var(--hit-path); }
+
+body.l-bar .empty, body.l-line .empty { padding: 14px 12px; text-align: left; }
+
+/* reading a drive: a slow sweep along the bottom edge */
+body.l-bar.indexing .shell::after, body.l-line.indexing .shell::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 22%;
+  height: 1px;
+  background: var(--dim);
+  animation: findr-sweep 2.2s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+@keyframes findr-sweep {
+  from { transform: translateX(-100%); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  to { transform: translateX(455%); opacity: 0; }
+}
+
+/* ==========================================================================
+   bar: just a search bar
+   ========================================================================== */
+
+body.l-bar .shell {
+  margin: var(--edge) var(--edge) 0;
+  max-height: calc(100vh - var(--edge) - 44px); /* the rest is room for the shadow */
+  border: 1px solid var(--border);
+  transition: border-color .15s;
+}
+body.l-bar.focused .shell { border-color: var(--border-focus); }
+body.l-bar .ask { height: var(--bar-ask); padding: 0 10px 0 18px; gap: 14px; }
+body.l-bar .prompt { display: none; }
+body.l-bar .glyph { display: block; }
+body.l-bar.typing .glyph { color: var(--dim); }
+body.l-bar .find { font-size: 15px; height: 26px; }
+body.l-bar .content { padding: 6px 6px 8px; }
+body.l-bar .hit { grid-template-columns: fit-content(55%) minmax(0, 1fr) auto; padding: 7px 12px; }
+body.l-bar .menu { top: calc(var(--edge) + var(--bar-ask) - 6px); right: calc(var(--edge) + 6px); }
+
+/* ==========================================================================
+   line: across the top of the screen
+   ========================================================================== */
+
+body.l-line .shell {
+  max-height: calc(100vh - 40px);
+  border-bottom: 1px solid var(--border);
+}
+body.l-line .ask { height: var(--line-ask); padding: 0 14px 0 28px; gap: 12px; font-size: 14px; }
+body.l-line .find { font-size: 14px; }
+body.l-line .hints { display: block; opacity: 0; transition: opacity var(--fade); }
+body.l-line.hover .hints { opacity: 1; }
+body.l-line .content { padding: 4px 16px 10px; }
+/* a table: names in one column, folders in the next, size and date last */
+body.l-line .hit { grid-template-columns: minmax(0, min(500px, 36%)) minmax(0, 1fr) auto; padding: 6px 12px; }
+body.l-line .label { padding-left: 12px; }
+body.l-line .menu { top: calc(var(--line-ask) - 4px); right: 14px; }
+
 @media (prefers-reduced-motion: reduce) {
-  body.popup .content.in { animation: none; }
+  .content.in, body.l-bar .shell.in, body.l-line .shell.in { animation: none; }
   .menu .mi-r.rec::after { animation: none; }
+  body.l-bar.indexing .shell::after, body.l-line.indexing .shell::after { animation: none; display: none; }
   .note { transition: none; }
 }

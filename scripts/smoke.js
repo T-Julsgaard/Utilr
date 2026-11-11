@@ -372,16 +372,48 @@ async function findr(u) {
     check(r.total === 0, 'and it leaves the index');
 
     await typeIn(W, '');
-    await js(W, `document.getElementById('btn-menu').click()`);
+    await js(W, `document.querySelector('.btn-menu').click()`);
     await wait(250);
     await shot(W, '53-findr-menu');
     const rows = await js(W, `[...document.querySelectorAll('.mi')].map((m) => m.textContent.trim().replace(/\\s+/g, ' '))`);
     check(!rows.some((t) => /start with|quit/.test(t)), 'findr menu: no start-at-login / quit rows');
     check(rows.some((t) => /^>?\s*c:/.test(t) && /off$/.test(t)), 'the menu lists the drives (c: is off here)');
-    await js(W, `document.getElementById('btn-menu').click()`);
+    await js(W, `document.querySelector('.btn-menu').click()`);
     W.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
     await wait(400);
     check(!W.isVisible(), 'esc closes it');
+
+    // the looks, as the menu's look › … sets them: the bar, the line, back to the window
+    u.Host.open('findr');
+    await wait(600);
+    const vis = () => wins().find((w) => w.isVisible());
+    for (const [look, n] of [['bar', 54], ['line', 56]]) {
+      await js(vis(), `window.findr.setSettings({ look: '${look}' })`);
+      await wait(900);
+      const lw = vis();
+      check(wins().length === 1 && !!lw && await js(lw, `document.body.classList.contains('l-${look}') && !document.getElementById('menu').hidden`),
+        `${look}: made again in that look, the look menu still open`);
+      if (!lw) continue;
+      await js(lw, `document.querySelector('.ask-menu').click()`); // the menu closes
+      await wait(200);
+      check(!(await js(lw, `document.body.classList.contains('open')`)), `${look}: only the find line until you type`);
+      await shot(lw, `${n}-findr-${look}`);
+      await typeIn(lw, 'invoice');
+      await wait(400);
+      check((await names(lw)).length === 3, `${look}: the results drop below it (the pdf, new-invoice.md, invoice.js)`);
+      await shot(lw, `${n + 1}-findr-${look}-results`);
+      if (look === 'line') {
+        const b = lw.getBounds(), wa = screen.getDisplayMatching(b).workArea;
+        check(b.x === wa.x && b.y === wa.y && b.width === wa.width, 'the line spans the top of the screen');
+      }
+      await typeIn(lw, '');
+      await wait(200);
+    }
+    await js(vis(), `window.findr.setSettings({ look: 'window' })`);
+    await wait(900);
+    check(wins().length === 1 && JSON.parse(fs.readFileSync(path.join(data, 'findr-settings.json'), 'utf8')).look === 'window', 'back to the window, and the look is saved');
+    await js(vis(), `window.findr.hide()`);
+    await wait(400);
 
     // keys, remove, reinstall: the index comes back from its cache
     const sniprKey = u.publicState().tools.find((x) => x.id === 'snipr').keys[0].combo;

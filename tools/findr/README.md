@@ -22,7 +22,7 @@ In the popup:
 | `ctrl+shift+c` (or `ctrl+c` with nothing selected) | copy its path |
 | `shift+del` | forget it (in the recent list) |
 | `ctrl+r` | read the drives again |
-| `ctrl+,` | settings: which drives, remember opened, key |
+| `ctrl+,` | settings: look, which drives, remember opened, key |
 | `esc` | clear the find, then close (clicking elsewhere closes it too) |
 
 What you can type:
@@ -36,6 +36,22 @@ What you can type:
 
 Before you type, the popup lists what you opened last. The selected row shows the size and when
 the file was last changed.
+
+## Looks
+
+Three ways for the popup to look, picked under `look ›` in findr's menu (`ctrl+,`). A new look
+takes effect at once: the popup is made again in that look, with the menu still open, so you can
+flip through them with `↑` `↓` `enter`. All three have the same keys and the same ghost style.
+
+| | |
+|---|---|
+| **window** (the default) | A window: two-line results (name, then its folder), size and date on the selected one, a status line and the chrome on hover. |
+| **bar** | Just a search bar, floating a fifth of the way down the screen: the magnifier, the find line, `find in 918,000 files`. Results drop below it as you type, one line each. Before you type, `↓` shows what you opened last. |
+| **line** | A thin line across the top of the screen. Results drop down as a table: names in one column, folders in the next, size and date at the right edge. The key hints show on hover. |
+
+The bar and the line are drawn on a transparent window a little bigger than they are, so they
+can grow, cast their shadow and hold the menu. A click past them closes them, like a click
+anywhere else. While a drive is being read, a slow 1 px sweep runs along their bottom edge.
 
 ## How it works
 
@@ -56,6 +72,11 @@ the file was last changed.
   show up in about a second. A folder moved in is read whole. USB drives aren't watched (a watch
   would keep you from ejecting them). They're read when they appear and when you ask. Watching
   costs about 1–2% of one core while things on disk change, nothing when they don't.
+- **When Windows loses track.** If too much changes at once, Windows says it lost track and
+  findr reads that drive again, a minute later and at most every 15 minutes. With last-access
+  times on (`fsutil behavior query disablelastaccess`; on by default on many machines), findr's
+  own scan touches every folder, and that alone can overflow the watch. So losing track during a
+  scan, or within 2 minutes of one, is ignored. The log says why each scan ran.
 - **The cache.** After every scan, the list is written to `index-<drive>.bin` in
   `%APPDATA%\utilr\tools\findr` (about 45 MB for 900k entries). On the next start it's
   searchable from there within a tenth of a second. Twenty seconds later the drives are read
@@ -81,14 +102,14 @@ the file was last changed.
 ## Files
 
 ```
-main.js      the tool: settings, drives, recent, the popup window, opening, the key
+main.js      the tool: settings, drives, recent, the popup window (one per look), opening, the key
 worker.js    the engine thread: roots, scans, watching, live updates, cache, searches
 engine.js    the index itself: segments, search and ranking, refreshing a folder, the cache file
 walk.js      reading a folder tree into the list (used by scans and by live updates)
 scan.js      a scan thread: walks one drive, posts batches
 boot.js      starts the threads from source text (worker_threads can't load from app.asar)
 preload.js   the popup's bridge, on findr/… channels
-popup.html   the popup (popup.js, findr.css on top of theme/ghost.css)
+popup.html   the popup in all three looks (popup.js, findr.css on top of theme/ghost.css)
 keys.js      shortcut helpers, same combo format as the rest of utilr
 glyph.svg    a magnifier, for the quick view, launcher and tray
 ```

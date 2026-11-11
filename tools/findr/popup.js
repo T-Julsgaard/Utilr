@@ -2,21 +2,24 @@
 
 // The popup: type, and every file and folder with that in its name.
 //   type              find (words in any order, "a phrase", *.pdf, docs\name)
-//   ↑ ↓ pgup pgdn tab move
+//   ↑ ↓ pgup pgdn tab move (in the bar and the line, ↓ first shows what you opened last)
 //   enter / click     open it
 //   ctrl+enter        open the folder it's in (shift+enter too)
 //   ctrl+shift+c      copy its path (ctrl+c too, when nothing is selected)
 //   shift+del         forget it (in the recent list)
 //   ctrl+r            read the drives again
-//   ctrl+,            settings          esc   clear the find, then close
+//   ctrl+,            settings (look: window, bar, line)
+//   esc               clear the find, then close
 (() => {
   const api = window.findr;
   const Keys = window.FindrKeys;
   const $ = (id) => document.getElementById(id);
   const body = document.body;
+  const shell = $('shell');
   const list = $('list');
   const find = $('find');
   const menuEl = $('menu');
+  const gears = [...document.querySelectorAll('.btn-menu')];
 
   let S = null;         // settings
   let ST = null;        // the index: { roots, total, scanning }
@@ -24,10 +27,12 @@
   let total = 0;
   let ms = 0;
   let recentMode = true;
+  let reveal = false;   // bar / line: the recent list, asked for with ↓
   let sel = 0;
   let q = '';
   let ask = 0;          // so an old answer never overwrites a newer one
   let menuOpen = false;
+  let menuView = 'main'; // main | look
   let menuSel = -1;
   let recording = false;
   let keyNote = null;
@@ -37,12 +42,16 @@
   let againTimer = null;
   let charW = 0;
 
+  const look = () => (S && S.look) || 'window';
+  const compact = () => look() !== 'window'; // bar and line: one line per result, nothing until asked
+
   // ---------------------------------------------------------------------------
   // formatting
   // ---------------------------------------------------------------------------
 
   const num = (n) => Math.round(n).toLocaleString('en-US');
-  const drive = (root) => root.length <= 3 ? root.slice(0, 1).toLowerCase() + ':' : root.toLowerCase();
+  const short = (n) => (n >= 10000 ? `${Math.round(n / 1000)}k` : num(n));
+  const drive = (root) => (root.length <= 3 ? root.slice(0, 1).toLowerCase() + ':' : root.toLowerCase());
 
   function size(b) {
     if (b == null) return '';
@@ -65,7 +74,8 @@
   // a long folder keeps its start and its end: c:\users\…\project\src
   function middle(s, n) {
     if (!n || s.length <= n) return s;
-    const head = Math.max(6, Math.floor(n * 0.4));
+    if (n < 8) return '…' + s.slice(s.length - Math.max(1, n - 1));
+    const head = Math.max(4, Math.floor(n * 0.4));
     const tail = n - head - 1;
     return s.slice(0, head) + '…' + s.slice(s.length - tail);
   }
@@ -100,20 +110,44 @@
   }
 
   // ---------------------------------------------------------------------------
+  // the look
+  // ---------------------------------------------------------------------------
+
+  function applyLook() {
+    for (const l of ['window', 'bar', 'line']) body.classList.toggle('l-' + l, look() === l);
+    placeholder();
+  }
+
+  function placeholder() {
+    const st = ST || {};
+    if (!compact()) { find.placeholder = ''; return; }
+    if (!st.total && st.scanning) find.placeholder = 'reading your drives…';
+    else if (st.total) find.placeholder = `find in ${num(st.total)} files`;
+    else find.placeholder = 'find a file';
+  }
+
+  // ---------------------------------------------------------------------------
   // the list
   // ---------------------------------------------------------------------------
+
+  // bar / line: results only when there's something to show
+  const showing = () => !compact() || !!q || reveal;
 
   function emptyText() {
     const st = ST || {};
     const where = (st.roots || []).map((r) => drive(r.root)).join(' ');
-    if (q) return st.scanning ? 'no match yet\nstill reading your drives' : 'no match';
+    if (q) return st.scanning ? 'no match yet · still reading your drives' : 'no match';
+    if (compact()) return 'nothing opened yet';
     if (!st.total && st.scanning) return 'reading your drives\nthe first time takes a minute';
     if (!st.total) return 'starting…';
     return `type to find\n${num(st.total)} files and folders on ${where}`;
   }
 
   function render() {
+    body.classList.toggle('open', showing());
+    body.classList.toggle('typing', !!q);
     list.textContent = '';
+    if (!showing()) { status(); return; }
     if (!items.length) {
       const e = document.createElement('div');
       e.className = 'empty';
@@ -125,8 +159,6 @@
       l.textContent = 'recent';
       list.append(l);
     }
-    const width = list.clientWidth - 12 - 24; // the list's padding, the row's padding
-    const fit = charW ? Math.floor(width / charW) : 0;
     const marks = recentMode ? [] : needles();
     const frag = document.createDocumentFragment();
     items.forEach((it, i) => {
@@ -134,8 +166,6 @@
       row.className = 'hit' + (it.isDir ? ' dir' : '');
       row.dataset.i = i;
       row.setAttribute('role', 'option');
-      const hl = document.createElement('div');
-      hl.className = 'hl';
       const hn = document.createElement('span');
       hn.className = 'hn';
       fill(hn, it.name, marks);
@@ -145,19 +175,26 @@
         s.textContent = '\\';
         hn.append(s);
       }
+      const hp = document.createElement('span');
+      hp.className = 'hp';
+      hp.title = it.dir || '';
       const hm = document.createElement('span');
       hm.className = 'hm';
-      hl.append(hn, hm);
-      const hp = document.createElement('div');
-      hp.className = 'hp';
-      hp.textContent = middle(it.dir || '', fit);
-      hp.title = it.dir || '';
-      row.append(hl, hp);
+      row.append(hn, hp, hm);
       frag.append(row);
     });
     list.append(frag);
+    fitPaths();
     select(Math.min(sel, items.length - 1));
     status();
+  }
+
+  // each folder cut to the room its row has (DM Mono: every character is as wide)
+  function fitPaths() {
+    if (!charW) return;
+    const els = list.querySelectorAll('.hit .hp');
+    const widths = [...els].map((el) => el.clientWidth); // one layout, then all the writes
+    els.forEach((el, i) => { el.textContent = middle(items[i].dir || '', Math.floor(widths[i] / charW)); });
   }
 
   const rows = () => list.querySelectorAll('.hit');
@@ -176,7 +213,7 @@
     clearTimeout(detailTimer);
     for (const m of list.querySelectorAll('.hm')) m.textContent = '';
     const i = sel, n = ask;
-    if (!items[i]) return;
+    if (!items[i] || !showing()) return;
     detailTimer = setTimeout(async () => {
       const d = await api.details(i);
       if (!d || n !== ask || i !== sel) return;
@@ -189,15 +226,16 @@
   function status() {
     const st = ST || {};
     body.classList.toggle('indexing', !!st.scanning);
+    const reading = (st.roots || []).filter((r) => r.scanning).map((r) => `${drive(r.root)} ${short(r.found)}`).join(' · ');
+    // window: the status line
     const left = $('st-left');
-    if (st.scanning) {
-      left.textContent = 'reading ' + (st.roots || []).filter((r) => r.scanning).map((r) => `${drive(r.root)} ${num(r.found)}`).join(' · ');
-    } else if (q) {
-      left.textContent = `${num(total)} found${ms ? ` in ${ms < 10 ? ms.toFixed(1) : Math.round(ms)} ms` : ''}`;
-    } else {
-      left.textContent = st.total ? `${num(st.total)} on ${(st.roots || []).map((r) => drive(r.root)).join(' ')}` : '';
-    }
+    if (st.scanning) left.textContent = 'reading ' + reading;
+    else if (q) left.textContent = `${num(total)} found${ms ? ` in ${ms < 10 ? ms.toFixed(1) : Math.round(ms)} ms` : ''}`;
+    else left.textContent = st.total ? `${num(st.total)} on ${(st.roots || []).map((r) => drive(r.root)).join(' ')}` : '';
     $('st-right').textContent = items.length ? 'enter open · ctrl+enter folder · ctrl+shift+c path' : '';
+    // bar / line: a count in the find line
+    $('count').textContent = q ? `${num(total)}${st.scanning ? ' · reading' : ''}` : st.scanning ? 'reading ' + reading : '';
+    placeholder();
   }
 
   function take(r, keep) {
@@ -231,7 +269,7 @@
   }
 
   async function act(how) {
-    if (!items[sel]) return;
+    if (!items[sel] || !showing()) return;
     const r = await api.open(sel, how);
     if (!r) return;
     if (r.note) flash(r.note);
@@ -242,7 +280,7 @@
   }
 
   function forgetCurrent() {
-    if (!recentMode || !items[sel]) return;
+    if (!recentMode || !items[sel] || !showing()) return;
     api.forget(sel);
     items.splice(sel, 1);
     total = items.length;
@@ -250,8 +288,14 @@
   }
 
   // ---------------------------------------------------------------------------
-  // the settings menu
+  // the settings menu (and its look submenu)
   // ---------------------------------------------------------------------------
+
+  const LOOKS = [
+    { id: 'window', about: 'details and a status line' },
+    { id: 'bar', about: 'just a search bar' },
+    { id: 'line', about: 'a line across the top' },
+  ];
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function row({ act: a, label, sub = '', value = '', mark = '', cls = '', valueCls = '', data = '' }) {
@@ -262,36 +306,49 @@
 
   function renderMenu() {
     if (!S) return;
-    let keyValue = Keys.label(S.key) + (S.keyOk ? '' : ' (taken)');
-    let keyCls = S.keyOk ? '' : 'bad';
-    if (recording) { keyValue = 'press keys'; keyCls = 'rec'; } else if (keyNote) { keyValue = keyNote; keyCls = 'bad'; }
-    let html = '<div class="mi head">drives</div>';
-    for (const d of S.drives) {
-      const count = ST && (ST.roots || []).find((r) => drive(r.root) === d.letter + ':');
-      html += row({
-        act: 'drive', data: `data-letter="${d.letter}"`, label: `${d.letter}:`,
-        sub: [d.type, d.label].filter(Boolean).join(' · ').toLowerCase(),
-        value: d.on ? (count ? num(count.scanning ? count.found : count.count) : 'on') : 'off',
-        mark: d.on ? '&gt;' : '',
-      });
+    let html = '';
+    if (menuView === 'look') {
+      html += row({ act: 'back', label: 'back', mark: '‹', value: 'esc' });
+      html += '<div class="sep"></div>';
+      for (const l of LOOKS) html += row({ act: 'look', data: `data-look="${l.id}"`, label: l.id, sub: l.about, mark: S.look === l.id ? '&gt;' : '' });
+    } else {
+      let keyValue = Keys.label(S.key) + (S.keyOk ? '' : ' (taken)');
+      let keyCls = S.keyOk ? '' : 'bad';
+      if (recording) { keyValue = 'press keys'; keyCls = 'rec'; } else if (keyNote) { keyValue = keyNote; keyCls = 'bad'; }
+      html += row({ act: 'looks', label: 'look', value: `${S.look} ›` });
+      html += '<div class="sep"></div>';
+      html += '<div class="mi head">drives</div>';
+      for (const d of S.drives) {
+        const count = ST && (ST.roots || []).find((r) => drive(r.root) === d.letter + ':');
+        html += row({
+          act: 'drive', data: `data-letter="${d.letter}"`, label: `${d.letter}:`,
+          sub: [d.type, d.label].filter(Boolean).join(' · ').toLowerCase(),
+          value: d.on ? (count ? num(count.scanning ? count.found : count.count) : 'on') : 'off',
+          mark: d.on ? '&gt;' : '',
+        });
+      }
+      for (const f of S.folders) html += row({ act: 'none', label: f.toLowerCase(), mark: '&gt;', value: 'folder' });
+      html += '<div class="sep"></div>';
+      html += row({ act: 'recent', label: 'remember opened', value: S.recent ? 'on' : 'off', mark: S.recent ? '&gt;' : '' });
+      html += row({ act: 'key', label: 'key', value: keyValue, valueCls: keyCls });
+      html += '<div class="sep"></div>';
+      html += row({ act: 'rescan', label: 'read drives again', value: 'ctrl+r' });
     }
-    for (const f of S.folders) html += row({ act: 'none', label: f.toLowerCase(), mark: '&gt;', value: 'folder' });
-    html += '<div class="sep"></div>';
-    html += row({ act: 'recent', label: 'remember opened', value: S.recent ? 'on' : 'off', mark: S.recent ? '&gt;' : '' });
-    html += row({ act: 'key', label: 'key', value: keyValue, valueCls: keyCls });
-    html += '<div class="sep"></div>';
-    html += row({ act: 'rescan', label: 'read drives again', value: 'ctrl+r' });
     menuEl.innerHTML = html;
-    menuItems().forEach((b, i) => b.classList.toggle('active', i === menuSel));
+    const all = menuItems();
+    if (menuSel >= all.length) menuSel = all.length - 1;
+    all.forEach((b, i) => b.classList.toggle('active', i === menuSel));
   }
   const menuItems = () => [...menuEl.querySelectorAll('.mi[data-act]')];
 
-  function openMenu() {
+  function openMenu(view = 'main') {
     menuOpen = true;
-    menuSel = -1;
+    menuView = view;
+    // the look menu opens on the current look, so ↑ ↓ flips through them
+    menuSel = view === 'look' ? 2 + LOOKS.findIndex((l) => l.id === look()) - 1 : -1;
     renderMenu();
     menuEl.hidden = false;
-    $('btn-menu').setAttribute('aria-expanded', 'true');
+    for (const g of gears) g.setAttribute('aria-expanded', 'true');
     window.Ghost.menuOpen(true);
   }
   function closeMenu() {
@@ -299,9 +356,15 @@
     stopRecording();
     menuOpen = false;
     menuEl.hidden = true;
-    $('btn-menu').setAttribute('aria-expanded', 'false');
+    for (const g of gears) g.setAttribute('aria-expanded', 'false');
     window.Ghost.menuOpen(false);
     find.focus();
+  }
+  function showView(view) {
+    stopRecording();
+    menuView = view;
+    menuSel = view === 'look' ? LOOKS.findIndex((l) => l.id === look()) + 1 : 0;
+    renderMenu();
   }
 
   function stopRecording() {
@@ -326,7 +389,10 @@
   function menuAct(b) {
     const a = b.dataset.act;
     if (a !== 'key') stopRecording();
-    if (a === 'drive') {
+    if (a === 'looks') showView('look');
+    else if (a === 'back') showView('main');
+    else if (a === 'look') { if (b.dataset.look !== look()) api.setSettings({ look: b.dataset.look }); }
+    else if (a === 'drive') {
       const d = S.drives.find((x) => x.letter === b.dataset.letter);
       if (d) api.setSettings({ drive: { letter: d.letter, on: !d.on } });
     } else if (a === 'recent') api.setSettings({ recent: !S.recent });
@@ -344,11 +410,17 @@
     const b = e.target.closest('[data-act]');
     if (b) menuAct(b);
   });
-  $('btn-menu').addEventListener('mousedown', (e) => e.preventDefault());
-  $('btn-menu').addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
+  for (const g of gears) {
+    g.addEventListener('mousedown', (e) => e.preventDefault());
+    g.addEventListener('click', () => (menuOpen ? closeMenu() : openMenu()));
+  }
   $('btn-close').addEventListener('click', () => api.hide());
   document.addEventListener('mousedown', (e) => {
-    if (menuOpen && !menuEl.contains(e.target) && !e.target.closest('#btn-menu')) closeMenu();
+    const inMenu = menuEl.contains(e.target) || e.target.closest('.btn-menu');
+    if (menuOpen && !inMenu) closeMenu();
+    // bar / line: the window is bigger than what you see; a click past it is
+    // a click elsewhere
+    if (compact() && !inMenu && !shell.contains(e.target)) { e.preventDefault(); api.hide(); }
   });
 
   function menuKey(e) {
@@ -365,10 +437,13 @@
       return;
     }
     const all = menuItems();
+    const move = (d) => { menuSel = (menuSel + d + all.length) % all.length; renderMenu(); };
     switch (e.key) {
-      case 'Escape': e.preventDefault(); closeMenu(); break;
-      case 'ArrowDown': e.preventDefault(); menuSel = (menuSel + 1) % all.length; renderMenu(); break;
-      case 'ArrowUp': e.preventDefault(); menuSel = (menuSel - 1 + all.length) % all.length; renderMenu(); break;
+      case 'Escape': e.preventDefault(); if (menuView !== 'main') showView('main'); else closeMenu(); break;
+      case 'ArrowDown': e.preventDefault(); move(1); break;
+      case 'ArrowUp': e.preventDefault(); move(-1); break;
+      case 'ArrowRight': if (menuView === 'main' && all[menuSel] && all[menuSel].dataset.act === 'looks') { e.preventDefault(); showView('look'); } break;
+      case 'ArrowLeft': case 'Backspace': if (menuView !== 'main') { e.preventDefault(); showView('main'); } break;
       case 'Enter': case ' ': e.preventDefault(); if (all[menuSel]) menuAct(all[menuSel]); break;
       default:
         if ((e.ctrlKey || e.metaKey) && e.key === ',') { e.preventDefault(); closeMenu(); }
@@ -381,6 +456,7 @@
 
   find.addEventListener('input', () => {
     q = find.value;
+    if (!q) reveal = false;
     refresh();
   });
 
@@ -394,6 +470,10 @@
     if (ctrl && e.code === 'KeyC' && (e.shiftKey || !picked)) { e.preventDefault(); act('copy'); return; }
     if (e.shiftKey && e.key === 'Delete') { e.preventDefault(); forgetCurrent(); return; }
 
+    // bar / line, nothing typed: ↓ shows what you opened last, ↑ hides it again
+    if (compact() && !q && !reveal && e.key === 'ArrowDown') { e.preventDefault(); reveal = true; render(); return; }
+    if (compact() && !q && reveal && e.key === 'ArrowUp' && sel === 0) { e.preventDefault(); reveal = false; render(); return; }
+
     switch (e.key) {
       case 'ArrowDown': e.preventDefault(); select(sel + 1); break;
       case 'ArrowUp': e.preventDefault(); select(sel - 1); break;
@@ -403,7 +483,9 @@
       case 'Enter': e.preventDefault(); act(ctrl || e.shiftKey ? 'folder' : 'open'); break;
       case 'Escape':
         e.preventDefault();
-        if (q) { find.value = ''; q = ''; refresh(); } else api.hide();
+        if (q) { find.value = ''; q = ''; reveal = false; refresh(); }
+        else if (reveal) { reveal = false; render(); }
+        else api.hide();
         break;
       default:
     }
@@ -425,20 +507,26 @@
   // from main
   // ---------------------------------------------------------------------------
 
-  // every time it opens: nothing typed, what you opened last, the list drops in.
-  // (null: the same, but keep what's typed and ask again)
+  // Every time it opens: nothing typed, what you opened last, it drops in.
+  // After a new look: what you'd typed, and the look menu, stay.
+  // (null: the same popup, ask again)
   api.onShow((r) => {
     if (!r) { refresh(true); return; }
     ask++;
     closeMenu();
-    if (!charW) charW = $('ruler').getBoundingClientRect().width / 10;
-    q = '';
-    find.value = '';
     S = r.settings;
+    applyLook();
+    if (!charW) charW = $('ruler').getBoundingClientRect().width / 10;
+    q = r.q || '';
+    find.value = q;
+    reveal = false;
     take(r, false);
-    list.classList.remove('in');
-    void list.offsetWidth;
-    list.classList.add('in');
+    for (const el of [list, shell]) {
+      el.classList.remove('in');
+      void el.offsetWidth;
+      el.classList.add('in');
+    }
+    if (r.menu) openMenu(r.menu);
     find.focus();
   });
 
@@ -455,7 +543,7 @@
     if (!items.length) render(); else status();
   });
 
-  api.onSettings((s) => { S = s; if (menuOpen) renderMenu(); });
+  api.onSettings((s) => { S = s; applyLook(); if (menuOpen) renderMenu(); });
   api.onKeyTaken((text) => note(text));
 
   window.addEventListener('focus', () => { if (!menuOpen) find.focus(); });

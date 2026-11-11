@@ -32,6 +32,15 @@ const Boot = require('./boot');
 
 const BG = '#111111';              // ghost --bg, so the popup never flashes white
 const POPUP = { width: 620, height: 440 };
+// How the popup looks (findr's menu › look):
+//   window  a window: two-line rows, the status line, chrome on hover
+//   bar     just a search bar; results drop below it once you type
+//   line    a line across the top of the screen; results as a table below
+// The bar and the line are drawn on a transparent window a little bigger
+// than they are, so they can grow, cast their shadow and hold the menu.
+const LOOKS = ['window', 'bar', 'line'];
+const BAR = { width: 680, height: 500, top: 0.2 }; // top: where the bar sits, as a share of the screen
+const LINE = { height: 0.62, max: 560 };
 const LIMIT = 100;                 // results the popup gets
 const BOOT_AFTER = 1500;           // the engine starts this long after utilr does
 const RELEASE_MS = 5 * 60 * 1000;  // the hidden popup is closed after this long unused
@@ -60,7 +69,8 @@ module.exports = function findr(host) {
   //           Windows has been asked again
   // folders:  extra places to cover, e.g. a network share (settings file only)
   // recent:   remember what you open (it's ranked first, and shown before you type)
-  const defaults = () => ({ key: Keys.DEFAULT, drives: {}, known: [], folders: [], recent: true });
+  // look:     window, bar or line (see LOOKS)
+  const defaults = () => ({ key: Keys.DEFAULT, drives: {}, known: [], folders: [], recent: true, look: 'window' });
   const FILE = () => path.join(host.dataDir, 'findr-settings.json');
   const RECENT = () => path.join(host.dataDir, 'findr-recent.json');
 
@@ -79,6 +89,7 @@ module.exports = function findr(host) {
     if (!Array.isArray(settings.folders)) settings.folders = [];
     settings.folders = settings.folders.filter((f) => typeof f === 'string' && path.isAbsolute(f));
     settings.recent = settings.recent !== false;
+    if (!LOOKS.includes(settings.look)) settings.look = 'window';
   }
 
   function writeJson(file, data) {
@@ -320,8 +331,12 @@ module.exports = function findr(host) {
     step();
   }
 
+  // One window at a time, made for the look you chose (a window can't turn
+  // transparent later, so a new look means a new window).
   function ensureWin() {
-    if (win && !win.isDestroyed()) return win;
+    if (win && !win.isDestroyed() && win.look === settings.look) return win;
+    if (win && !win.isDestroyed()) { const old = win; win = null; old.destroy(); }
+    const clear = settings.look !== 'window';
     const w = win = new BrowserWindow({
       ...POPUP,
       frame: false,
@@ -334,7 +349,9 @@ module.exports = function findr(host) {
       skipTaskbar: true,
       alwaysOnTop: true,
       title: 'findr',
-      backgroundColor: BG,
+      transparent: clear,
+      hasShadow: !clear,
+      backgroundColor: clear ? '#00000000' : BG,
       webPreferences: {
         preload: path.join(__dirname, 'preload.js'),
         contextIsolation: true,
@@ -344,6 +361,7 @@ module.exports = function findr(host) {
         backgroundThrottling: false,
       },
     });
+    w.look = settings.look;
     w.setAlwaysOnTop(true, 'pop-up-menu');
     w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     w.webContents.on('will-navigate', (e) => e.preventDefault());
@@ -362,19 +380,42 @@ module.exports = function findr(host) {
     return w;
   }
 
-  // in the middle, a third of the way down, on the screen with the pointer
+  // On the screen with the pointer. The window: in the middle, a third of the
+  // way down. The bar: in the middle, a fifth of the way down (it grows
+  // downwards). The line: across the top.
   function popupBounds() {
-    const { width, height } = POPUP;
     const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+    if (settings.look === 'line') {
+      return { x: wa.x, y: wa.y, width: wa.width, height: Math.round(Math.min(LINE.max, wa.height * LINE.height)) };
+    }
+    const { width, height } = settings.look === 'bar' ? BAR : POPUP;
+    const w = Math.min(width, wa.width), h = Math.min(height, wa.height);
+    const top = settings.look === 'bar' ? wa.height * BAR.top : (wa.height - h) / 3;
     return {
-      x: Math.round(wa.x + (wa.width - width) / 2),
-      y: Math.round(wa.y + Math.max(0, (wa.height - height) / 3)),
-      width,
-      height,
+      x: Math.round(wa.x + (wa.width - w) / 2),
+      y: Math.round(wa.y + Math.max(0, Math.min(top, wa.height - h))),
+      width: w,
+      height: h,
     };
   }
 
-  async function show() {
+  // A new look, while the popup is up: it's made again in that look and
+  // opens with the look menu still there, so you can flip through them.
+  function setLook(look) {
+    if (!LOOKS.includes(look) || look === settings.look) return;
+    settings.look = look;
+    save();
+    log(`look: ${look}`);
+    if (!win || win.isDestroyed()) return;
+    const old = win, was = shown;
+    win = null;
+    shown = false;
+    clearTimeout(fadeTimer);
+    old.destroy();
+    if (was) show({ menu: 'look', q: lastQ });
+  }
+
+  async function show(opts = {}) {
     clearTimeout(releaseTimer);
     if (!engine && !stopping) { clearTimeout(bootTimer); bootEngine(); }
     if (Date.now() - drivesAt > DRIVES_EVERY) detectDrives(); // a USB drive you just put in
@@ -385,10 +426,10 @@ module.exports = function findr(host) {
     await w.loaded;
     if (cold) log(`popup made in ${Date.now() - t0} ms`);
     if (!shown || w.isDestroyed()) return;
-    lastQ = '';
-    const first = await listRecent();
+    const q = typeof opts.q === 'string' ? opts.q : '';
+    const first = q.trim() ? (await search(q)) || (await listRecent()) : (lastQ = '', await listRecent());
     if (!shown || w.isDestroyed()) return;
-    w.webContents.send('popup:show', { ...first, settings: publicSettings() });
+    w.webContents.send('popup:show', { ...first, q, menu: opts.menu || null, settings: publicSettings() });
     w.setOpacity(0);
     const b = popupBounds();
     w.setBounds(b);
@@ -548,6 +589,7 @@ module.exports = function findr(host) {
     drives: settings.known.map((d) => ({ letter: d.letter, type: d.type, label: d.label, on: driveOn(d) })),
     folders: settings.folders.slice(),
     recent: settings.recent,
+    look: settings.look,
     version: host.version,
     hosted: true, // utilr does start at login and quit: findr has no rows for them
   });
@@ -584,6 +626,7 @@ module.exports = function findr(host) {
       settings.drives[patch.drive.letter] = !!patch.drive.on;
       configure();
     }
+    if (typeof patch.look === 'string') { setLook(patch.look); return; } // a new window; it gets the settings itself
     if (typeof patch.recent === 'boolean') {
       settings.recent = patch.recent;
       if (!patch.recent) clearRecent();
