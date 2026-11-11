@@ -557,6 +557,6 @@ module.exports = function measr(host) {
       { id: 'settings', label: 'settings', run: openSettings },
     ],
     keys: () => [{ id: 'key', label: 'measure', combo: settings.key, ok: registered !== null || keyPaused }],
-    setKey: (id, combo) => (id === 'key' ? setKeyCombo(combo) : { ok: false, error: 'unknown key' }),
+    setKey: (id, combo) => (id === 'key' ? setKeyCombo(combo) : { ok: false, error: 'unknown shortcut' }),
   };
 };

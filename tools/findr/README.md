@@ -1,13 +1,13 @@
 # findr, in utilr
 
-Every file on every drive, found as you type. Press the key, type a few letters of a name, and
+Every file on every drive, found as you type. Press the shortcut, type a few letters of a name, and
 `enter` opens it. Windows' own search only knows what its indexer got around to (on the machine
 this was built on: 647 files out of about 900,000). findr keeps its own list of every name
 instead. No admin rights needed, and nothing leaves the computer.
 
 | | |
 |---|---|
-| `alt+shift+d` | the popup (from anywhere; change it on utilr's *keys* page or in findr's menu) |
+| `alt+shift+d` | the popup (from anywhere; change it on utilr's *shortcuts* page or in findr's menu) |
 | quick view | the popup |
 | tray / launcher | find files, read the drives again, clear recent |
 
@@ -22,7 +22,7 @@ In the popup:
 | `ctrl+shift+c` (or `ctrl+c` with nothing selected) | copy its path |
 | `shift+del` | forget it (in the recent list) |
 | `ctrl+r` | read the drives again |
-| `ctrl+,` | settings: look, which drives, remember opened, key |
+| `ctrl+,` | settings: look, which drives, remember opened, shortcut |
 | `esc` | clear the find, then close (clicking elsewhere closes it too) |
 
 What you can type:
@@ -41,13 +41,13 @@ the file was last changed.
 
 Three ways for the popup to look, picked under `look ›` in findr's menu (`ctrl+,`). A new look
 takes effect at once: the popup is made again in that look, with the menu still open, so you can
-flip through them with `↑` `↓` `enter`. All three have the same keys and the same ghost style.
+flip through them with `↑` `↓` `enter`. All three have the same shortcuts and the same ghost style.
 
 | | |
 |---|---|
 | **bar** (the default) | Just a search bar, floating a fifth of the way down the screen: the magnifier, the find line, `find in 918,000 files`. Results drop below it as you type, one line each. Before you type, `↓` shows what you opened last. |
 | **window** | A window: two-line results (name, then its folder), size and date on the selected one, a status line and the chrome on hover. |
-| **line** | A thin line across the top of the screen. Results drop down as a table: names in one column, folders in the next, size and date at the right edge. The key hints show on hover. |
+| **line** | A thin line across the top of the screen. Results drop down as a table: names in one column, folders in the next, size and date at the right edge. The shortcut hints show on hover. |
 
 The bar and the line are drawn on a transparent window a little bigger than they are, so they
 can grow, cast their shadow and hold the menu. A click past them closes them, like a click
@@ -92,17 +92,17 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
   isn't a drive (a network share, say), add it to `"folders"` in `findr-settings.json`.
 - **Memory:** about 100–150 MB with 900,000 entries indexed (most of it the names themselves).
   The engine starts 1.5 s after utilr does, so utilr's own start isn't slowed.
-- **The popup is made the first time you open it** (about 0.1 s), then kept hidden so the key
+- **The popup is made the first time you open it** (about 0.1 s), then kept hidden so the shortcut
   opens it at once. After 5 minutes unused it's closed again.
 - **Windows only** (`platforms: ["win32"]`): drive letters, PowerShell, recursive watching.
-- **The key:** `alt+shift+d` (d for disk), because `alt+shift+f` is VS Code's "format document".
+- **The shortcut:** `alt+shift+d` (d for disk), because `alt+shift+f` is VS Code's "format document".
 - No network, no dependencies. Plain JS, HTML and CSS, with its own copy of the ghost theme in
   `theme/`. Searches are never logged, only sizes and timings.
 
 ## Files
 
 ```
-main.js      the tool: settings, drives, recent, the popup window (one per look), opening, the key
+main.js      the tool: settings, drives, recent, the popup window (one per look), opening, the shortcut
 worker.js    the engine thread: roots, scans, watching, live updates, cache, searches
 engine.js    the index itself: segments, search and ranking, refreshing a folder, the cache file
 walk.js      reading a folder tree into the list (used by scans and by live updates)

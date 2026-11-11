@@ -400,7 +400,7 @@
   // -------------------------------------------------------------------------
   // The bracketed keys can be edited in place; the rest are fixed. Grouped
   // with a blank line and a small heading between groups, easier to scan.
-  const SHORTCUTS_HINT = 'to change a shortcut, just edit the key in its [brackets]';
+  const SHORTCUTS_HINT = 'to change a shortcut, just edit it in its [brackets]';
   const shortcutLines = () => {
     const bound = (a) => `${Keys.LABELS[a]} [${S.shortcuts[a]}]`;
     const groups = [

@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>snipr: press, drag, it's on your clipboard · utilr</title>
-<meta name="description" content="A quiet screenshot tool, part of utilr. Press the key, drag, and the snip is on your clipboard: mark it up, blur it for good, copy its text.">
+<meta name="description" content="A quiet screenshot tool, part of utilr. Press the shortcut, drag, and the snip is on your clipboard: mark it up, blur it for good, copy its text.">
 <meta name="theme-color" content="#0a0a0a">
 <meta property="og:title" content="snipr: press, drag, it's on your clipboard">
-<meta property="og:description" content="A quiet screenshot tool, part of utilr. Press the key, drag, and the snip is on your clipboard: mark it up, blur it for good, copy its text. Try it in your browser.">
+<meta property="og:description" content="A quiet screenshot tool, part of utilr. Press the shortcut, drag, and the snip is on your clipboard: mark it up, blur it for good, copy its text. Try it in your browser.">
 <meta property="og:url" content="https://t-julsgaard.github.io/Utilr/snipr/">
 <meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -89,7 +89,7 @@ clipboard.<span class="f">write</span>(snip);   <span class="c">// done</span></
     <div class="grid">
       <article><h3><span>&gt;</span>on the clipboard at once</h3><p>Release the mouse and the snip is already copied. Paste it anywhere, or keep going.</p></article>
       <article><h3><span>&gt;</span>lifts off the screen</h3><p>The snip opens in a small ghost window exactly where you took it. Hover for the chrome; at rest it's just the image.</p></article>
-      <article><h3><span>&gt;</span>mark it up</h3><p>Pen, arrow, box, circle, text and blur, each on one key. Shift snaps arrows to 45° and makes boxes square.</p></article>
+      <article><h3><span>&gt;</span>mark it up</h3><p>Pen, arrow, box, circle, text and blur, each on one shortcut. Shift snaps arrows to 45° and makes boxes square.</p></article>
       <article><h3><span>&gt;</span>blur for good</h3><p>Nothing of what's under a blur survives: one average colour plus secure random noise. The unblurred copy on the clipboard is replaced too.</p></article>
       <article><h3><span>&gt;</span>copy the text</h3><p><kbd>alt</kbd><span class="plus">+</span><kbd>shift</kbd><span class="plus">+</span><kbd>t</kbd> drags out text instead of an image, with Windows' own OCR. Rows, columns and indentation kept.</p></article>
       <article><h3><span>&gt;</span>drag it out</h3><p>Grab the image and drop it in a chat, a folder or a document. Or <kbd>ctrl</kbd><span class="plus">+</span><kbd>s</kbd> to save it to Pictures\snipr.</p></article>
@@ -98,7 +98,7 @@ clipboard.<span class="f">write</span>(snip);   <span class="c">// done</span></
 
 
   <section class="section wrap rise" aria-labelledby="keys-title">
-    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <h2 class="label" id="keys-title"><span>03</span> shortcuts</h2>
     <dl class="keylist">
       <div><dt><span data-keys="alt+shift+s"></span></dt><dd>snip, from anywhere</dd></div>
       <div><dt><span data-keys="alt+shift+t"></span></dt><dd>snip text: drag, and the text is on your clipboard <span class="dim">(windows)</span></dd></div>
@@ -115,7 +115,7 @@ clipboard.<span class="f">write</span>(snip);   <span class="c">// done</span></
   <section class="section wrap rise" aria-labelledby="more-title">
     <h2 class="label" id="more-title"><span>04</span> the details</h2>
     <ul class="details">
-      <li><h3>instant</h3><p>One hidden overlay per display is kept ready, so the key opens a snip at once. It's snipr's only cost while it waits.</p></li>
+      <li><h3>instant</h3><p>One hidden overlay per display is kept ready, so the shortcut opens a snip at once. It's snipr's only cost while it waits.</p></li>
       <li><h3>inks and fonts</h3><p>Marks in <b>ghost</b> (white with a dark halo, reads on anything), red or black. Text in JetBrains Mono, IBM Plex Mono, DM Mono, Martian Mono, Space Mono or VT323, or a system font.</p></li>
       <li><h3>settings</h3><p>Auto copy, auto open, auto save, close after copy, the folder, a matte border, keep snips on top, ask before discard. Tray → snipr → settings, or the gear on any snip.</p></li>
       <li><h3>private</h3><p>Copy text uses the OCR built into Windows 10 and 11. Nothing is uploaded, ever: snips go to your clipboard and, if you want, to <code>Pictures\snipr</code>.</p></li>

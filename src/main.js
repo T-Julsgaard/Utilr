@@ -2,7 +2,7 @@
 
 // utilr: one tray icon, one process, every tool.
 //
-//   launcher    a small ghost window: pin tools to the quick view, set their keys
+//   launcher    a small ghost window: pin tools to the quick view, set their shortcuts
 //   quick view  a narrow column of pinned tools, on a key from anywhere
 //   tray        the only tray icon; every tool's actions are in its menu
 //
@@ -346,7 +346,7 @@ function setKey(owner, keyId, raw) {
   if (combo === null) return { ok: false, error: 'not a shortcut' };
 
   if (owner === 'utilr') {
-    if (!(keyId in KEY_RUN)) return { ok: false, error: 'unknown key' };
+    if (!(keyId in KEY_RUN)) return { ok: false, error: 'unknown shortcut' };
     const s = S();
     if (combo === s.keys[keyId]) return { ok: true };
     if (combo) {
@@ -369,7 +369,7 @@ function setKey(owner, keyId, raw) {
   }
 
   if (!Host.isRunning(owner)) return { ok: false, error: 'not installed' };
-  if (!combo) return { ok: false, error: 'needs a key' };
+  if (!combo) return { ok: false, error: 'needs a shortcut' };
   const who = holder(combo, owner);
   if (who) return { ok: false, error: `${who} has it` };
   const r = Host.setKey(owner, keyId, combo);

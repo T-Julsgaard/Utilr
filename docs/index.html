@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>utilr: small tools, one key away</title>
+<title>utilr: small tools, one shortcut away</title>
 <meta name="description" content="One quiet launcher for six small desktop tools: notes, screenshots, clipboard history, a pixel ruler, a color picker and file search. One download, one tray icon, nothing on screen until you ask for it.">
 <meta name="theme-color" content="#0a0a0a">
-<meta property="og:title" content="utilr: small tools, one key away">
+<meta property="og:title" content="utilr: small tools, one shortcut away">
 <meta property="og:description" content="Six small desktop tools in one quiet launcher. One download, one tray icon, nothing on screen until you ask for it.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://t-julsgaard.github.io/Utilr/">
@@ -28,7 +28,7 @@
   <nav class="links" aria-label="Sections">
     <a href="#tools">tools</a>
     <a href="#launcher">how it works</a>
-    <a href="#keys">keys</a>
+    <a href="#keys">shortcuts</a>
     <a href="https://github.com/T-Julsgaard/Utilr">github</a>
     <a class="cta-mini" href="#download">download</a>
   </nav>
@@ -37,7 +37,7 @@
 <main id="top">
   <section class="hero wrap">
     <p class="eyebrow"><i></i>six small tools · one download</p>
-    <h1>small tools.<br>one key <span class="nowrap">away.<span class="caret" aria-hidden="true"></span></span></h1>
+    <h1>small tools.<br>one shortcut <span class="nowrap">away.<span class="caret" aria-hidden="true"></span></span></h1>
     <p class="lede">utilr is one quiet launcher for six desktop tools: notes, screenshots, clipboard
       history, a pixel ruler, a color picker and file search. <b>One download, one tray icon,</b>
       and nothing on screen until you ask for it.</p>
@@ -85,14 +85,14 @@
     <div class="split">
       <ul class="points" id="points">
         <li data-tab="quick"><button class="pt"><h3><span>›</span>quick view</h3><p>Your tools as a slim column of square tiles, on <kbd>alt</kbd><span class="plus">+</span><kbd>shift</kbd><span class="plus">+</span><kbd>space</kbd>, wherever you are. Every tool comes installed and ready: pick which ones are pinned, in which order, and where the column appears.</p></button></li>
-        <li data-tab="keys"><button class="pt"><h3><span>›</span>keys</h3><p>Every system-wide key, utilr's and each tool's, in one place. Click one and press the new combo. A key has one owner: utilr says who has it and never lets two tools fight over it.</p></button></li>
+        <li data-tab="keys"><button class="pt"><h3><span>›</span>shortcuts</h3><p>Every system-wide shortcut, utilr's and each tool's, in one place. Click one and press the new combo. A shortcut has one owner: utilr says who has it and never lets two tools fight over it.</p></button></li>
         <li data-tab="settings"><button class="pt"><h3><span>›</span>settings</h3><p>Start with Windows, where the quick view appears, the data folder. One tray icon for all of it: click to open utilr, right-click for every tool's actions.</p></button></li>
       </ul>
       <div class="gw launcher" id="launcherwin">
         <div class="gw-bar chrome"><span>utilr</span><span class="ico"><span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 6.5h10" stroke="currentColor" stroke-width="1.4" fill="none"/></svg></span><span><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"/></svg></span></span></div>
         <div class="tabs" role="tablist" aria-label="utilr launcher">
           <button class="tab" role="tab" data-tab="quick">quick view</button>
-          <button class="tab" role="tab" data-tab="keys">keys</button>
+          <button class="tab" role="tab" data-tab="keys">shortcuts</button>
           <button class="tab" role="tab" data-tab="settings">settings</button>
         </div>
         <div class="view" id="lview" role="tabpanel"></div>
@@ -102,8 +102,8 @@
   </section>
 
   <section class="section wrap rise" id="keys" aria-labelledby="keys-title">
-    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
-    <p class="statement">every tool is one key away. <span class="soft">from any program, and all of them can be changed.</span></p>
+    <h2 class="label" id="keys-title"><span>03</span> shortcuts</h2>
+    <p class="statement">every tool is one shortcut away. <span class="soft">from any program, and all of them can be changed.</span></p>
     <dl class="keylist" id="keylist"></dl>
   </section>
 
@@ -113,9 +113,9 @@
     <div class="grid">
       <article><h3><span>&gt;</span>light</h3><p>Every tool starts in milliseconds and waits without a single window open, until you ask for it.</p></article>
       <article><h3><span>&gt;</span>private</h3><p>No accounts, no network, no telemetry. Notes, clips, palettes and the file index stay on your computer.</p></article>
-      <article><h3><span>&gt;</span>keyboard first</h3><p>Every main action has a key, and <kbd>esc</kbd> always backs out. The mouse is welcome, never required.</p></article>
+      <article><h3><span>&gt;</span>keyboard first</h3><p>Every main action has a shortcut, and <kbd>esc</kbd> always backs out. The mouse is welcome, never required.</p></article>
       <article><h3><span>&gt;</span>one look</h3><p>Ghost: grey on near-black, one light typeface, square edges. The chrome only shows while your pointer is there.</p></article>
-      <article><h3><span>&gt;</span>one process</h3><p>One tray icon instead of six. One place for every key, so two tools never fight over a combo.</p></article>
+      <article><h3><span>&gt;</span>one process</h3><p>One tray icon instead of six. One place for every shortcut, so two tools never fight over a combo.</p></article>
       <article><h3><span>&gt;</span>open source</h3><p>MIT licensed. Each tool lives in its own folder with its own README. Read it, fork it, add your own.</p></article>
     </div>
   </section>
@@ -143,7 +143,7 @@
         <h3>linux <span class="tag">early</span></h3>
         <p class="os-sub">x64</p>
         <a class="btn primary" data-asset="AppImage" href="https://github.com/T-Julsgaard/Utilr/releases/latest">download .AppImage</a>
-        <p class="small">or the <a data-asset="deb" href="https://github.com/T-Julsgaard/Utilr/releases/latest">.deb</a> for Debian and Ubuntu. Global keys depend on your desktop. findr is Windows only.</p>
+        <p class="small">or the <a data-asset="deb" href="https://github.com/T-Julsgaard/Utilr/releases/latest">.deb</a> for Debian and Ubuntu. Global shortcuts depend on your desktop. findr is Windows only.</p>
       </div>
     </div>
     <div class="included" id="included"></div>

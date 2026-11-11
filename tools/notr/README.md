@@ -1,11 +1,11 @@
 # notr, in utilr
 
 A note, nothing else. Tiny notes that float above every other window and remember everything by
-themselves. No home screen, no folders, no save button: press the key and you get a note.
+themselves. No home screen, no folders, no save button: press the shortcut and you get a note.
 
 | | |
 |---|---|
-| `ctrl+n` | open notr: your notes come to the front (from anywhere; change it on utilr's *keys* page or in a note) |
+| `ctrl+n` | open notr: your notes come to the front (from anywhere; change it on utilr's *shortcuts* page or in a note) |
 | quick view | open notes |
 | tray / launcher | open notes, new note, close notes |
 
@@ -63,7 +63,7 @@ It's a sticky note that stays on top of your other windows and saves every keyst
 ⚙ → **shortcuts** writes the current list into the note:
 
 ```
-to change a shortcut, just edit the key in its [brackets]
+to change a shortcut, just edit it in its [brackets]
 
 ── notes
 add note [ctrl+s]
@@ -72,10 +72,10 @@ open notr [ctrl+n]
 switch note: tab
 ```
 
-Edit a key inside the brackets, for example `[ctrl+alt+n]`, and it takes effect a moment after you
+Edit a shortcut inside the brackets, for example `[ctrl+alt+n]`, and it takes effect a moment after you
 stop typing. A shortcut needs `ctrl`, `alt` or `win` plus one key. `open notr` is system-wide and
-also shows on utilr's *keys* page, where it can be changed too; utilr won't let two tools hold the
-same key.
+also shows on utilr's *shortcuts* page, where it can be changed too; utilr won't let two tools
+hold the same shortcut.
 
 ## What's special about it
 
@@ -99,7 +99,7 @@ same key.
 ```
 main.js        the tool: notes as windows, placement, saving, keyboard move / resize, the key
 preload.js     a note's bridge, on notr/… channels
-note.html/js   one note: editor, menus, confirm strip, tabs, keys
+note.html/js   one note: editor, menus, confirm strip, tabs, shortcuts
 note.css       layout shared by every theme
 themes.css     the seven themes
 shortcuts.js   shortcut parsing, shared by main.js and the note

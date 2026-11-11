@@ -55,7 +55,7 @@
     function keyRow() {
       const value = recording ? 'press keys…' : keyNote ? keyNote.text : Keys.label(S.key) + (S.keyOk ? '' : ' (taken)');
       const valueCls = recording ? 'rec' : (keyNote && keyNote.bad) || !S.keyOk ? 'bad' : '';
-      return row({ act: 'key', label: 'measure key', value, valueCls });
+      return row({ act: 'key', label: 'measure shortcut', value, valueCls });
     }
 
     function render() {

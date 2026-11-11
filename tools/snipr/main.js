@@ -695,7 +695,7 @@ module.exports = function snipr(host) {
 
   // two keys: key = snip, textKey = snip text (windows only)
   const registered = { key: null, textKey: null };
-  const KEY_NAMES = { key: 'snip key', textKey: 'text key' };
+  const KEY_NAMES = { key: 'snip shortcut', textKey: 'text shortcut' };
   const KEY_ACTIONS = { key: () => startCapture('key'), textKey: () => startCapture('key', 'text') };
   let keyPaused = false;
 
@@ -959,7 +959,7 @@ module.exports = function snipr(host) {
   // A key from utilr's keys page, with the same rules as the settings menu:
   // the snip key and the text key can't be the same.
   function setKey(field, raw) {
-    if (!(field in registered) || (field === 'textKey' && !Ocr.available)) return { ok: false, error: 'unknown key' };
+    if (!(field in registered) || (field === 'textKey' && !Ocr.available)) return { ok: false, error: 'unknown shortcut' };
     const combo = Keys.normalize(raw);
     if (!combo) return { ok: false, error: 'not a shortcut' };
     if (combo === settings[field]) return { ok: true };

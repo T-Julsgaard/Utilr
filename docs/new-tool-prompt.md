@@ -20,13 +20,13 @@ follow. Read it fully before you start.
   8–10 tools in total. The user downloads utilr once and gets every tool, installed and running
   from the first start; they only pick which ones to pin to the quick view.
 - The launcher (`src/`) gives every tool the same things: a tile in the **quick view** (a narrow column of square
-  tiles on `alt+shift+space`), a submenu in the tray, and its keys on the *keys* page.
+  tiles on `alt+shift+space`), a submenu in the tray, and its shortcuts on the *shortcuts* page.
 - Six tools already exist (notr, snipr, clipr, measr, paletr, findr). notr and snipr are the
   reference implementations. **Study them before writing anything:**
   - `tools/notr/`: always-on-top notes (windows that persist, settings menu, saved state).
   - `tools/snipr/`: screenshots (pre-warmed hidden windows, a settings window, a toast).
   - Their READMEs (`tools/*/README.md`) say exactly what was changed to make them hosted tools.
-  - Also read `README.md`, `src/host.js` (the contract), `src/shortcuts.js` (key registry) and
+  - Also read `README.md`, `src/host.js` (the contract), `src/shortcuts.js` (shortcut registry) and
     `src/main.js` (how utilr calls tools).
 
 ## 2. Keep the tool segmented
@@ -38,7 +38,7 @@ follow. Read it fully before you start.
 - The tool's data goes in `host.dataDir` (`%APPDATA%\utilr\tools\<id>`), never
   `app.getPath('userData')`. Files the user makes (images, exports) can go to a normal user
   folder, like snipr does with `Pictures\snipr`.
-- Write `tools/<id>/README.md`: what it does, its keys, and anything that's special about it.
+- Write `tools/<id>/README.md`: what it does, its shortcuts, and anything that's special about it.
 
 ## 3. The tool contract
 
@@ -102,16 +102,16 @@ Rules for a hosted tool (both existing tools follow them, so copy their patterns
   `_▌`, snipr is two crop corners). It shows in the quick view tiles, the launcher and the tray.
   It must read at 11 px.
 
-## 4. Keys
+## 4. Shortcuts
 
 - Combo format (same as everywhere in utilr): lowercase, modifiers in the order
   `ctrl+alt+shift+win`, then one key, e.g. `alt+shift+s`. It must include ctrl, alt or win. Copy
   `normalize` / `toAccelerator` / `fromEvent` / `label` into your tool's own `keys.js` (see snipr).
-- **Keys already taken** (don't use them as defaults): `alt+shift+space` (quick view),
+- **Shortcuts already taken** (don't use them as defaults): `alt+shift+space` (quick view),
   `alt+shift+u` (open utilr), `ctrl+n` (notr), `alt+shift+s` and `alt+shift+t` (snipr),
   `alt+shift+v` (clipr), `alt+shift+m` (measr), `alt+shift+p` (paletr), `alt+shift+d` (findr).
   Pick a default that's memorable and unlikely to clash with common apps.
-- A global key is optional. Not every tool needs one; the quick view and tray already open it.
+- A global shortcut is optional. Not every tool needs one; the quick view and tray already open it.
 
 ## 5. The style: ghost
 
@@ -151,24 +151,24 @@ What I want: **minimalist, almost futuristic, sleek, modern, and it works well.*
 - Nothing loads until it's needed. `start()` should take milliseconds. Pre-warm a hidden window
   only if the tool must react instantly to a key (like snipr's overlays), and say so in its README.
 - No network access unless the tool is about the network. Nothing leaves my machine.
-- Keyboard first: every main action has a key, `esc` backs out, and it should all feel instant.
+- Keyboard first: every main action has a shortcut, `esc` backs out, and it should all feel instant.
 
 ## 7. How to work
 
-1. Read the references above, then tell me your plan in a few lines: windows, keys, actions, data,
+1. Read the references above, then tell me your plan in a few lines: windows, shortcuts, actions, data,
    and anything you're unsure about.
 2. Build it in `tools/<id>/`. Run it with `npm start` (use a throwaway data folder: set
    `UTILR_USER_DATA` to a temp dir; every tool in `tools/` starts on its own), and check it in the quick
-   view, the tray and the keys page.
-3. Extend `scripts/smoke.js` with checks for the new tool (start, open, its key, stopping it frees
-   its key and closes its windows, data survives a restart) and run `npm test` until it's all
+   view, the tray and the shortcuts page.
+3. Extend `scripts/smoke.js` with checks for the new tool (start, open, its shortcut, stopping it frees
+   its shortcut and closes its windows, data survives a restart) and run `npm test` until it's all
    `ok`. Look at the screenshots in `smoke-out/` and make sure they look right.
 4. Add the tool to the root `README.md` (the tools table and the folder tree) and to the website:
-   a card, scene and key on the home page (`TOOLS` in `docs/assets/site.js`, `SCENES` / `LONG` /
+   a card, scene and shortcut on the home page (`TOOLS` in `docs/assets/site.js`, `SCENES` / `LONG` /
    `KEYLABEL` / `VERSIONS` in `docs/assets/home.js`, the counts in `docs/index.html`), and its own
    page `docs/<id>/` built like the others (`index.html` with the same sections, plus `demo.js` /
    `demo.css`: a small live demo on a pretend screen, in ghost). Add it to every page's tool
    switcher and prev / next links.
 5. Build the installer with `npm run dist:win` and make sure it builds.
 6. Commit with a clear message (co-authored), **don't push**: I push from GitHub Desktop.
-7. Tell me what you built, its default keys, what you tested, and what you didn't.
+7. Tell me what you built, its default shortcuts, what you tested, and what you didn't.

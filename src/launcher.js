@@ -1,7 +1,7 @@
 // The launcher: three pages. Every tool comes with utilr and is always there;
 // the quick view page is where you pick the ones you see.
 //   quick view  which tools sit in the quick view, in what order
-//   keys        every system-wide key in utilr, utilr's own and each tool's
+//   shortcuts   every system-wide shortcut in utilr, utilr's own and each tool's
 //   settings    start with windows, where the quick view appears, quit
 (() => {
   'use strict';
@@ -88,7 +88,7 @@
         `<span class="ctl"><button class="act" data-act="pin" data-id="${t.id}"${pinned.length >= S.maxPinned ? ' disabled' : ''}>pin</button></span></div>`).join('');
     }
     side += '<div class="sep"></div>';
-    side += keyRow('utilr', { ...S.keys.find((k) => k.id === 'quick'), label: 'key' });
+    side += keyRow('utilr', { ...S.keys.find((k) => k.id === 'quick'), label: 'shortcut' });
     side += row({ act: 'place', label: 'appears', value: PLACES[S.settings.quickAt] + ' ›' });
     side += row({ act: 'try', label: 'try it', value: '›' });
     side += '<div class="note">in it: 1–8 open a tool, ↑ ↓ and enter, esc closes.</div>';
@@ -106,7 +106,7 @@
       html += `<div class="sect"><span>${esc(t.name)}</span></div>`;
       for (const k of t.keys) html += keyRow(t.id, k);
     }
-    html += '<div class="note">click a key, then press the new one. esc cancels; backspace clears one of utilr\'s own. these work from anywhere, so each one belongs to one tool only.</div>';
+    html += '<div class="note">click a shortcut, then press the new keys. esc cancels; backspace clears one of utilr\'s own. these work from anywhere, so each one belongs to one tool only.</div>';
     return html;
   }
 
@@ -189,7 +189,7 @@
     if (e.key === 'Escape') { stopRecording(); return; }
     let combo;
     if (e.key === 'Backspace' && !e.ctrlKey && !e.altKey && !e.metaKey) {
-      if (owner !== 'utilr') { noteKey(owner, id, 'needs a key'); stopRecording(); return; }
+      if (owner !== 'utilr') { noteKey(owner, id, 'needs a shortcut'); stopRecording(); return; }
       combo = '';
     } else {
       combo = Keys.normalize(Keys.fromEvent(e));

@@ -74,8 +74,8 @@
         html += row({ act: 'ink', label: 'ink', value: S.ink + ' ›' });
         html += row({ act: 'font', label: 'font', value: S.font.toLowerCase() + ' ›' });
         html += row({ act: 'border', label: 'border', value: borderLabel(S.border) + ' ›' });
-        html += keyRow('key', 'snip key');
-        if (S.ocr) html += keyRow('textKey', 'text key');
+        html += keyRow('key', 'snip shortcut');
+        if (S.ocr) html += keyRow('textKey', 'text shortcut');
         html += sep;
         html += toggle('onTop', 'keep snips on top', S.onTop);
         html += toggle('confirmDiscard', 'ask before discard', S.confirmDiscard);

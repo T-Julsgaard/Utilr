@@ -797,7 +797,7 @@ module.exports = function notr(host) {
   // The "open notr" key, from utilr's keys page. The same rules as setting it
   // in a note: not a key a note already uses for add / delete.
   function setKey(id, raw) {
-    if (id !== 'open') return { ok: false, error: 'unknown key' };
+    if (id !== 'open') return { ok: false, error: 'unknown shortcut' };
     const combo = Keys.normalize(raw);
     if (!combo) return { ok: false, error: 'not a shortcut' };
     const sc = state.settings.shortcuts;

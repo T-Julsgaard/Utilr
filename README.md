@@ -3,7 +3,7 @@
 <h1 align="center">utilr</h1>
 
 <p align="center">
-  <b>small tools. one key away.</b><br>
+  <b>small tools. one shortcut away.</b><br>
   One quiet launcher for six small desktop tools. One download, one tray icon, every tool.<br>
   Nothing on screen until you ask for it.
 </p>
@@ -13,13 +13,13 @@
   <a href="https://github.com/T-Julsgaard/Utilr/releases/latest">Download</a>
 </p>
 
-<p align="center"><img src="docs/assets/og.png" width="720" alt="utilr: small tools, one key away"></p>
+<p align="center"><img src="docs/assets/og.png" width="720" alt="utilr: small tools, one shortcut away"></p>
 
 ## The tools
 
 Every tool comes with utilr, and every tool is on from the first start.
 
-| | | key | |
+| | | shortcut | |
 |---|---|---|---|
 | [**notr**](tools/notr) | tiny notes that stay on top | `ctrl+n` | [page](https://t-julsgaard.github.io/Utilr/notr/) |
 | [**snipr**](tools/snipr) | press, drag, it's on your clipboard | `alt+shift+s` | [page](https://t-julsgaard.github.io/Utilr/snipr/) |
@@ -28,7 +28,7 @@ Every tool comes with utilr, and every tool is on from the first start.
 | [**paletr**](tools/paletr) | click any pixel, copy its color | `alt+shift+p` | [page](https://t-julsgaard.github.io/Utilr/paletr/) |
 | [**findr**](tools/findr) | every file on every drive, at once (Windows) | `alt+shift+d` | [page](https://t-julsgaard.github.io/Utilr/findr/) |
 
-Each tool's folder has its own README: what it does, every key, and what's special about it.
+Each tool's folder has its own README: what it does, every shortcut, and what's special about it.
 They all share the ghost look: grey on near-black, DM Mono, chrome only while you hover.
 
 ## Install
@@ -49,7 +49,7 @@ PC"*, click **More info → Run anyway**. There are macOS (`.dmg`) and Linux (`.
 | `alt+shift+u` | open utilr (the launcher) |
 | tray icon | click: open utilr. Right-click: every tool's actions, and quit |
 
-All of these keys can be changed on the launcher's *keys* page.
+All of these shortcuts can be changed on the launcher's *shortcuts* page.
 
 ### The quick view
 
@@ -71,8 +71,8 @@ A small ghost window with three pages. At rest it shows the content and nothing 
 for the chrome (title, close, status line).
 
 - **quick view**: which tools are pinned and in what order, with a live preview of the column.
-- **keys**: every system-wide key in utilr, both utilr's own and each tool's, in one place. Click
-  one and press the new combo. A key belongs to one tool only: utilr says who has it
+- **shortcuts**: every system-wide shortcut in utilr, both utilr's own and each tool's, in one
+  place. Click one and press the new combo. A shortcut belongs to one tool only: utilr says who has it
   (`snipr has it`) and doesn't let two tools fight over a combo.
 - **settings**: start with Windows, where the quick view appears, the data folder, versions,
   quit.
@@ -82,23 +82,23 @@ for the chrome (title, close, status line).
 ### Every tool, ready
 
 Every tool ships with utilr and is installed and running from the first start: each gets its
-keys and its actions in the tray (new note, snip in 3 seconds, open folder, …). What you see in
+shortcuts and its actions in the tray (new note, snip in 3 seconds, open folder, …). What you see in
 the quick view is up to you: pin, unpin and reorder tools on the launcher's *quick view* page. A
 tool that comes with an update is pinned for you while there's room.
 
 On the first start, utilr brings over the data of the stand-alone apps if it finds it
 (`%APPDATA%\notr\notr-state.json`, `%APPDATA%\snipr\snipr-settings.json`). Your notes and snipr
 settings come along. **Uninstall the stand-alone notr and snipr afterwards**: they would hold the
-same keys.
+same shortcuts.
 
 ## How it's put together
 
 ```
-src/            the launcher: tray, quick view, launcher window, keys, tool host
+src/            the launcher: tray, quick view, launcher window, shortcuts, tool host
   main.js       app lifecycle, windows, tray, IPC
   host.js       finds tools in tools/, starts and stops them, gives each its own scope
-  shortcuts.js  one registry for every system-wide key (one owner per key)
-  store.js      utilr.json: installed, pinned, keys, settings
+  shortcuts.js  one registry for every system-wide shortcut (one owner each)
+  store.js      utilr.json: installed, pinned, shortcuts, settings
   theme/        a copy of the ghost theme kit
 tools/
   notr/         notr's own code: windows, preload, theme, fonts, data
@@ -121,10 +121,10 @@ module.exports = function mytool(host) {
   // host.ipc        ipcMain, but every channel is "<id>/<channel>" (the preload sends the same)
   // host.shortcuts  globalShortcut, shared fairly between tools
   // host.dataDir    %APPDATA%\utilr\tools\<id>
-  // host.changed()  "my keys or actions changed": the launcher refreshes
+  // host.changed()  "my shortcuts or actions changed": the launcher refreshes
   return {
-    start() {},        // load state, register keys; no windows yet
-    stop() {},         // save, close every window, let go of every key
+    start() {},        // load state, register shortcuts; no windows yet
+    stop() {},         // save, close every window, let go of every shortcut
     open() {},         // the main thing: quick view tile, tray, launcher
     actions: () => [{ id, label, key, run }],
     keys: () => [{ id, label, combo, ok }],
@@ -133,7 +133,7 @@ module.exports = function mytool(host) {
 };
 ```
 
-To add a tool, add a folder to `tools/`. The launcher, the quick view, the tray and the keys page
+To add a tool, add a folder to `tools/`. The launcher, the quick view, the tray and the shortcuts page
 pick it up from there.
 
 notr and snipr started as stand-alone apps in their own repositories (T-Julsgaard/Notr and

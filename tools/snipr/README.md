@@ -1,6 +1,6 @@
 # snipr, in utilr
 
-A quiet screenshot tool. **Press the key, drag, and the snip is on your clipboard.** Nothing on
+A quiet screenshot tool. **Press the shortcut, drag, and the snip is on your clipboard.** Nothing on
 screen until you ask for it: then a snip lifts off the screen right where you took it, in a small
 ghost window you can mark up, blur, copy the text out of, drag into a chat or save.
 
@@ -8,7 +8,7 @@ ghost window you can mark up, blur, copy the text out of, drag into a chat or sa
 
 | | |
 |---|---|
-| `alt+shift+s` | snip (from anywhere; change it on utilr's *keys* page or in snipr's settings) |
+| `alt+shift+s` | snip (from anywhere; change it on utilr's *shortcuts* page or in snipr's settings) |
 | `alt+shift+t` | snip text (Windows): drag, and the text is on your clipboard. No image, no window |
 | quick view | a snip |
 | tray / launcher | snip, snip text, snip in 3 seconds, open folder, settings |
@@ -64,7 +64,7 @@ Tray / launcher → *settings*, or the gear on any snip.
 - **auto save**: also save every snip to the folder (off)
 - **close after copy**: a snip window closes once you copy it (off)
 - **folder**: where snips are saved, `Pictures\snipr` by default, as `snip-2026-11-10-142233.png`
-- **ink**, **font**, **border** (a matte round the snip, off by default), **snip key**, **text key**
+- **ink**, **font**, **border** (a matte round the snip, off by default), **snip shortcut**, **text shortcut**
   (Windows)
 - **keep snips on top** (off), **ask before discard** (on)
 
@@ -86,7 +86,7 @@ Tray / launcher → *settings*, or the gear on any snip.
   without your arrows, boxes and pen strokes, but with your blurs, so blurred text stays
   unreadable. It reads the languages Windows has OCR for (Settings → Time & language → Language).
 - **Pre-warmed overlays.** One hidden overlay window per display and the toast are made up front,
-  so the key opens a snip at once. They're rebuilt when displays change. This is snipr's only
+  so the shortcut opens a snip at once. They're rebuilt when displays change. This is snipr's only
   cost while it's idle.
 - **Data:** settings in `%APPDATA%\utilr\tools\snipr\snipr-settings.json`; snips go to
   `Pictures\snipr`. The first install copies `%APPDATA%\snipr\snipr-settings.json` over from the
@@ -97,7 +97,7 @@ Tray / launcher → *settings*, or the gear on any snip.
 
 ## Per platform
 
-- **Windows**: tested. The print screen key can be the snip key if Windows' own "use print
+- **Windows**: tested. The print screen key can be the snip shortcut if Windows' own "use print
   screen to open screen capture" is turned off.
 - **macOS**: asks for *Screen Recording* permission for utilr the first time. Without it,
   captures come back empty. Snip text is Windows only.
@@ -107,7 +107,7 @@ Tray / launcher → *settings*, or the gear on any snip.
 ## Files
 
 ```
-main.js        the tool: capture, overlays, snip windows, saving, clipboard, settings, keys
+main.js        the tool: capture, overlays, snip windows, saving, clipboard, settings, shortcuts
 overlay.html/js  the frozen screen and the selection
 snip.html/js   a snip: marks, blur, text, undo, copy, save, drag out
 menu.js        the settings rows, shared by the settings window and a snip's gear

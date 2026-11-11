@@ -336,7 +336,7 @@
       for (const f of S.folders) html += row({ act: 'none', label: f.toLowerCase(), mark: '&gt;', value: 'folder' });
       html += '<div class="sep"></div>';
       html += row({ act: 'recent', label: 'remember opened', value: S.recent ? 'on' : 'off', mark: S.recent ? '&gt;' : '' });
-      html += row({ act: 'key', label: 'key', value: keyValue, valueCls: keyCls });
+      html += row({ act: 'key', label: 'shortcut', value: keyValue, valueCls: keyCls });
       html += '<div class="sep"></div>';
       html += row({ act: 'rescan', label: 'read drives again', value: 'ctrl+r' });
     }

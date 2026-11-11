@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>clipr: everything you copied today · utilr</title>
-<meta name="description" content="Clipboard history that lives only in memory, part of utilr. Press the key, type a few letters, enter: it's pasted where you were.">
+<meta name="description" content="Clipboard history that lives only in memory, part of utilr. Press the shortcut, type a few letters, enter: it's pasted where you were.">
 <meta name="theme-color" content="#0a0a0a">
 <meta property="og:title" content="clipr: everything you copied today">
-<meta property="og:description" content="Clipboard history that lives only in memory, part of utilr. Press the key, type a few letters, enter: it's pasted where you were. Try it in your browser.">
+<meta property="og:description" content="Clipboard history that lives only in memory, part of utilr. Press the shortcut, type a few letters, enter: it's pasted where you were. Try it in your browser.">
 <meta property="og:url" content="https://t-julsgaard.github.io/Utilr/clipr/">
 <meta property="og:image" content="https://t-julsgaard.github.io/Utilr/assets/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -37,7 +37,7 @@
       <div class="mark" data-glyph="clipr"></div>
       <p class="name"><b>clipr</b> · clipboard history · in utilr</p>
       <h1>everything you<br><span class="soft">copied today.</span></h1>
-      <p class="lede">Clipboard history that lives only in memory. Press the key, type a few letters, <b>enter: it's pasted where you were.</b> Restart the computer and it's a clean day.</p>
+      <p class="lede">Clipboard history that lives only in memory. Press the shortcut, type a few letters, <b>enter: it's pasted where you were.</b> Restart the computer and it's a clean day.</p>
     </div>
     <div class="keybox">your history, from anywhere<div class="k" data-keys="alt+shift+v"></div></div>
   </section>
@@ -86,7 +86,7 @@
 
 
   <section class="section wrap rise" aria-labelledby="keys-title">
-    <h2 class="label" id="keys-title"><span>03</span> keys</h2>
+    <h2 class="label" id="keys-title"><span>03</span> shortcuts</h2>
     <dl class="keylist">
       <div><dt><span data-keys="alt+shift+v"></span></dt><dd>the popup, from anywhere</dd></div>
       <div><dt>type</dt><dd>find: every clip with those letters</dd></div>
@@ -106,7 +106,7 @@
       <li><h3>limits</h3><p>At most 200 clips and 4 million characters in all; the oldest go first. A single clip over a million characters isn't kept.</p></li>
       <li><h3>private, precisely</h3><p>On Windows the formats Windows' own history respects (<code>ExcludeClipboardContentFromMonitorProcessing</code>, <code>CanIncludeInClipboardHistory = 0</code>), on macOS <code>org.nspasteboard.ConcealedType</code>, on Linux KDE's password manager hint. While paused, nothing is kept.</p></li>
       <li><h3>how it pastes</h3><p>The popup steps aside so Windows gives focus back to the window you were in, then <kbd>ctrl</kbd>+<kbd>v</kbd> is sent with the script host every Windows has. About 60 ms.</p></li>
-      <li><h3>settings</h3><p>Paste on pick, where it appears (pointer or center), its key, pause. <code>ctrl+,</code> in the popup.</p></li>
+      <li><h3>settings</h3><p>Paste on pick, where it appears (pointer or center), its shortcut, pause. <code>ctrl+,</code> in the popup.</p></li>
     </ul>
   </section>
 

@@ -159,7 +159,7 @@
       for (const f of Color.FORMATS) html += row({ act: 'format:' + f, label: f, value: Color.format(sample, f), mark: f === S.format ? '&gt;' : '' });
     } else {
       html += row({ act: 'format', label: 'copy as', value: S.format + ' ›' });
-      html += row({ act: 'key', label: 'pick key', ...keyValue() });
+      html += row({ act: 'key', label: 'pick shortcut', ...keyValue() });
       html += sep;
       html += row({ act: 'pick', label: 'pick a color', value: 'p' });
       html += sep;

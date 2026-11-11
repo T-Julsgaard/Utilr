@@ -187,7 +187,7 @@
     let html = '';
     if (S.canPaste) html += toggleRow('paste', 'paste on pick', S.paste);
     html += row({ act: 'at', label: 'appears at', value: S.at });
-    html += row({ act: 'key', label: 'key', value: keyValue, valueCls: keyCls });
+    html += row({ act: 'key', label: 'shortcut', value: keyValue, valueCls: keyCls });
     html += '<div class="sep"></div>';
     html += toggleRow('paused', 'pause recording', S.paused);
     html += row({ act: 'clear', label: 'clear history', value: 'ctrl+shift+del', cls: 'danger' });

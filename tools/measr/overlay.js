@@ -692,7 +692,7 @@
     footer: () => [
       { act: 'undo', label: 'undo', value: 'backspace', disabled: !pins.length },
       { act: 'clear', label: 'clear', value: 'del', disabled: !pins.length },
-      { act: 'keys', label: 'keys', value: '?' },
+      { act: 'keys', label: 'shortcuts', value: '?' },
       { act: 'close', label: 'close', value: 'esc' },
     ],
     onCommand: (a) => {
@@ -924,7 +924,7 @@
       mouse = { x: o.cursor.x, y: o.cursor.y };
       inside = true;
       if (S.loupe === 'auto') stillCheck();
-      if (S.hints) note(`drag <span class="d">box</span><span class="sep-dot">·</span>click <span class="d">pin</span><span class="sep-dot">·</span>ctrl+c <span class="d">copy</span><span class="sep-dot">·</span>? <span class="d">keys</span><span class="sep-dot">·</span>esc <span class="d">close</span>`, 3200);
+      if (S.hints) note(`drag <span class="d">box</span><span class="sep-dot">·</span>click <span class="d">pin</span><span class="sep-dot">·</span>ctrl+c <span class="d">copy</span><span class="sep-dot">·</span>? <span class="d">shortcuts</span><span class="sep-dot">·</span>esc <span class="d">close</span>`, 3200);
     }
     live = true;
     await fontReady;

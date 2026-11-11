@@ -447,7 +447,7 @@ module.exports = function clipr(host) {
   }
 
   function setKey(id, raw) {
-    if (id !== 'key') return { ok: false, error: 'unknown key' };
+    if (id !== 'key') return { ok: false, error: 'unknown shortcut' };
     const combo = Keys.normalize(raw);
     if (!combo) return { ok: false, error: 'not a shortcut' };
     if (combo === settings.key && registered) return { ok: true };

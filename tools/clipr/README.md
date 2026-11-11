@@ -1,12 +1,12 @@
 # clipr, in utilr
 
-Everything you copied today, one key away. clipr keeps the text you copy, newest first, for as
-long as the computer is on. Press the key, type a few letters, `enter`: it's pasted where you
+Everything you copied today, one shortcut away. clipr keeps the text you copy, newest first, for as
+long as the computer is on. Press the shortcut, type a few letters, `enter`: it's pasted where you
 were.
 
 | | |
 |---|---|
-| `alt+shift+v` | the popup (from anywhere; change it on utilr's *keys* page or in clipr's menu) |
+| `alt+shift+v` | the popup (from anywhere; change it on utilr's *shortcuts* page or in clipr's menu) |
 | quick view | the popup |
 | tray / launcher | clipboard history, pause / resume recording, clear history |
 
@@ -21,7 +21,7 @@ In the popup:
 | `shift+del` | remove that clip |
 | `ctrl+shift+del` | clear all (`clear all 14?  [y]es  [n]o`) |
 | `ctrl+p` | pause / resume recording |
-| `ctrl+,` | settings: paste on pick, appears at (pointer / center), key, pause |
+| `ctrl+,` | settings: paste on pick, appears at (pointer / center), shortcut, pause |
 | `esc` | clear the find, then close (clicking elsewhere closes it too) |
 
 ## What's special about it
@@ -43,7 +43,7 @@ In the popup:
   window you were in, then `ctrl+v` is sent with the script host every Windows has
   (`cscript`, about 60 ms). The one-line script is written to clipr's data folder, since
   `cscript` can't read from inside the app. On macOS and Linux picking a clip copies it.
-- **The popup is made the first time you open it** (about 0.1 s), then kept hidden so the key
+- **The popup is made the first time you open it** (about 0.1 s), then kept hidden so the shortcut
   opens it at once. After 5 minutes unused it's closed again, so clipr idles at no window at all.
 - No network, no dependencies. Plain JS, HTML and CSS, with its own copy of the ghost theme in
   `theme/`.
@@ -51,7 +51,7 @@ In the popup:
 ## Files
 
 ```
-main.js      the tool: settings, polling, history, popup window, paste, key
+main.js      the tool: settings, polling, history, popup window, paste, shortcut
 preload.js   the popup's bridge, on clipr/… channels
 popup.html   the popup (popup.js, clipr.css on top of theme/ghost.css)
 keys.js      shortcut helpers, same combo format as the rest of utilr

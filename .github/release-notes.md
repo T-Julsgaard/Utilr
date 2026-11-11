@@ -33,4 +33,4 @@ utilr isn't signed with a paid developer certificate yet, so your system will be
 - **macOS:** open the `.dmg` and drag utilr to Applications. When you first open it, macOS says it can't verify the app. Click **Done**, go to **System Settings → Privacy & Security**, and click **Open Anyway** next to utilr. If macOS says the app *"is damaged"*, run `xattr -cr /Applications/utilr.app` in Terminal, then open it again. snipr, paletr and measr need *Screen Recording* permission.
 - **Linux:** make the AppImage executable (`chmod +x utilr-*.AppImage`) and run it. Or install the `.deb` with `sudo apt install ./utilr-*.deb`.
 
-Already have the stand-alone notr or snipr? utilr brings their notes and settings over on the first start. Uninstall them afterwards: they'd hold the same keys.
+Already have the stand-alone notr or snipr? utilr brings their notes and settings over on the first start. Uninstall them afterwards: they'd hold the same shortcuts.

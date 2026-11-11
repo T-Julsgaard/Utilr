@@ -534,7 +534,7 @@ module.exports = function paletr(host) {
 
   // -> { ok } or { ok: false, error }; the launcher's keys page and the palette both use it
   function setKey(id, raw) {
-    if (id !== 'pick') return { ok: false, error: 'unknown key' };
+    if (id !== 'pick') return { ok: false, error: 'unknown shortcut' };
     const combo = Keys.normalize(raw);
     if (!combo) return { ok: false, error: 'not a shortcut' };
     if (combo === data.key && registered) return { ok: true };

@@ -1,6 +1,6 @@
 'use strict';
 // The home page: the quick view demo (a tile per tool, each opening a small
-// scene of what it does), the launcher replica, the tool grid and the keys.
+// scene of what it does), the launcher replica, the tool grid and the shortcuts.
 (() => {
   const { TOOLS, svg, keyHtml } = window.Utilr;
   const $ = (id) => document.getElementById(id);
@@ -274,7 +274,7 @@ measr → copy as tailwind</div>
       <div><div class="sect"><span>pinned</span><span>${TOOLS.length} / 8</span></div>
       ${TOOLS.map((t, i) => `<div class="pinrow"><span class="num">${i + 1}</span><span class="mini">${svg(t)}</span><span>${t.id}</span><span class="ctl">↑↓×</span></div>`).join('')}
       <div class="sep"></div>
-      <div class="mi"><span>key</span><span class="r">${keyState.quick}</span></div>
+      <div class="mi"><span>shortcut</span><span class="r">${keyState.quick}</span></div>
       <div class="mi"><span>appears</span><span class="r">center ›</span></div>
       <div class="mi"><span>try it</span><span class="r">›</span></div></div></div>`,
     keys: () => KEYROWS.map(([group, rows]) => `<div class="sect"><span>${group}</span></div>` + rows.map(([id, label]) => {
@@ -284,7 +284,7 @@ measr → copy as tailwind</div>
         : bad ? `<span class="r" style="color:var(--danger)">${clash.combo} (${clash.owner} has it)</span>`
         : `<span class="r">${keyState[id]}</span>`;
       return `<div class="mi" data-key="${id}" style="cursor:pointer"><span>${label}</span>${r}</div>`;
-    }).join('')).join('') + '<p class="dim" style="font-size:10px;line-height:1.7;margin-top:10px">click a key, then press the new one. esc cancels. try one another tool has.</p>',
+    }).join('')).join('') + '<p class="dim" style="font-size:10px;line-height:1.7;margin-top:10px">click a shortcut, then press the new keys. esc cancels. try one another tool has.</p>',
     settings: () => `<div class="sect"><span>utilr</span></div>
       <div class="mi"><span>&gt; start with windows</span><span class="r on">on</span></div>
       <div class="mi"><span>&nbsp; quick view appears</span><span class="r">center ›</span></div>
@@ -301,7 +301,7 @@ measr → copy as tailwind</div>
     tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
     points.forEach((li) => li.classList.toggle('on', li.dataset.tab === name));
     view.innerHTML = `<div class="page">${PAGES[name]()}</div>`;
-    status.textContent = name === 'keys' ? 'one owner per key' : `${TOOLS.length} tools`;
+    status.textContent = name === 'keys' ? 'one owner per shortcut' : `${TOOLS.length} tools`;
   }
   const rerender = () => { view.innerHTML = `<div class="page" style="animation:none">${PAGES[tab]()}</div>`; };
   tabs.forEach((b) => b.addEventListener('click', () => show(b.dataset.tab)));

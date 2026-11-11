@@ -1,12 +1,12 @@
 # measr, in utilr
 
-A pixel ruler that reads the screen. Press the key, point, and you know how big it is and how
+A pixel ruler that reads the screen. Press the shortcut, point, and you know how big it is and how
 far apart things are. Built for checking a UI against what you meant, or for telling an AI
 exactly what to change.
 
 | | |
 |---|---|
-| `alt+shift+m` | measure (from anywhere; change it on utilr's *keys* page or in measr's settings) |
+| `alt+shift+m` | measure (from anywhere; change it on utilr's *shortcuts* page or in measr's settings) |
 | quick view | measure |
 | tray / launcher | measure, measure in 3 seconds, settings |
 
@@ -41,9 +41,9 @@ or the number under the pointer. Click any number to copy that one.
 | `s` | an image of what you measured, with the measures drawn on (for a chat, an issue, a prompt) |
 | `a` | everything on screen as text, one line each (`box  240 × 48`, `gap  16`, `padding  12 16`) |
 | `backspace` / `del` | undo / clear |
-| right click | the menu: copy, settings, keys |
-| `?` | every key |
-| `esc` | close (the key again closes it too) |
+| right click | the menu: copy, settings, shortcuts |
+| `?` | every shortcut |
+| `esc` | close (the shortcut again closes it too) |
 
 Numbers copy in the format you choose (right-click menu or settings → *copy as*):
 
@@ -69,7 +69,7 @@ they're gone when measr closes. Nothing leaves your machine.
 ## What's special about it
 
 - **Pre-warmed overlays.** Like snipr, measr keeps one hidden overlay window per display, so the
-  key opens it at once (they're rebuilt when displays change). This is the only cost while it's
+  shortcut opens it at once (they're rebuilt when displays change). This is the only cost while it's
   idle. The corner toast is made the first time it's needed.
 - **Everything is worked out in device pixels**, on the screenshot's own pixels, and drawn on a
   canvas the size of the screen. A line is always exactly one screen pixel, and the numbers are
@@ -86,8 +86,8 @@ they're gone when measr closes. Nothing leaves your machine.
 
 | | |
 |---|---|
-| `main.js` | captures the screens, shows and hides the overlays, settings, clipboard, the key |
-| `overlay.html` / `overlay.js` | the measuring: edges, snapping, elements, gaps, padding, drawing, keys |
+| `main.js` | captures the screens, shows and hides the overlays, settings, clipboard, the shortcut |
+| `overlay.html` / `overlay.js` | the measuring: edges, snapping, elements, gaps, padding, drawing, shortcuts |
 | `menu.js` | the menu rows, shared by the overlay and the settings window |
 | `settings.html` / `settings.js` | the settings window (tray → settings) |
 | `toast.html` / `toast.js` | the corner notice after *enter* |
