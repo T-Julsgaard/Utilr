@@ -157,35 +157,50 @@ body.focused .frame {
   margin: .55em 0;
   opacity: .8;
 }
-/* /draw: a box to draw in. Strokes take the text colour; the edge only
-   shows while the pointer is on it, and the strip under it is the handle
-   that makes it taller or shorter */
-.editor .drawing {
-  display: block;
-  margin: .35em 0;
-  padding-bottom: 6px;
-  cursor: ns-resize;
-  white-space: normal;
+/* /draw: strokes in a layer over the whole note, no box, no border. The
+   layer takes no room and lets the pointer through; in draw mode the editor
+   does too, so the scrolling area under it gets the pointer to draw with */
+.editor { position: relative; }
+.editor > .ink {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  overflow: visible;
+  pointer-events: none;
   user-select: none;
 }
-.editor .drawing svg {
-  display: block;
+.editor > .ink svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  overflow: hidden;
-  cursor: crosshair;
-  touch-action: none;
-  outline: 1px dashed transparent;
-  outline-offset: -1px;
-  transition: outline-color .15s;
+  height: 100%;
+  overflow: visible;
 }
-.editor .drawing:hover svg { outline-color: color-mix(in srgb, var(--dim) 55%, transparent); }
-.editor .drawing path {
+.editor .ink path, .editor .drawing path {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* the boxed drawings of the first /draw still show */
+.editor .drawing { display: block; margin: .35em 0; white-space: normal; user-select: none; }
+.editor .drawing svg { display: block; width: 100%; overflow: hidden; }
+body.draw-mode .body { cursor: crosshair; touch-action: none; }
+body.draw-mode .editor { pointer-events: none; caret-color: transparent; }
+/* "drawing · any key stops", top right while in draw mode */
+.draw-hint {
+  position: fixed;
+  top: calc(var(--bar-h) + 8px);
+  right: 14px;
+  font-size: var(--status-size, 11px);
+  color: var(--dim);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+}
+body.draw-mode .draw-hint { opacity: .85; }
 .editor ::selection, .editor::selection { background: var(--sel); color: inherit; }
 
 .body::-webkit-scrollbar { width: 8px; }

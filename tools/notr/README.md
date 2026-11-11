@@ -42,7 +42,7 @@ It's a sticky note that stays on top of your other windows and saves every keyst
 | hold `alt` + arrows | move the note (stops at the screen edge) |
 | hold `ctrl` + `f`, then `↑` / `↓` | font size bigger / smaller, for this note only and only while it's open. The size in `⚙` is for every note |
 | `/line` then `enter` (on its own line) | a separator line. Copied into other apps it becomes `────────`, and pasting that back makes it a separator again |
-| `/draw` then `enter` (on its own line) | a box to draw in, in the theme's text colour. Drag its bottom edge to make it taller; right-click it to undo a stroke, clear it or remove it. It's saved with the note |
+| `/draw` then `enter` (on its own line) | draw anywhere on the note, over the text or below it, in the theme's text colour. Any key stops drawing (`enter` and `esc` only stop it; other keys type as usual). While drawing, `ctrl+z` takes back a stroke and right-click can clear it. Right-click → *draw* starts it too. Saved with the note |
 | select text + right click | cut, copy, paste, select all, bold, italic, underline, font, size |
 | `⚙` (top right) | theme, font, size, bold / italic, status line, always on top, ask before delete, shortcuts |
 | drag the title bar / any edge | move / resize |

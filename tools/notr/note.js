@@ -110,6 +110,7 @@
           out += hrText + '\n';
           lastWasBr = false;
         } else if (c.nodeType === 1) {
+          if (c.classList.contains('ink')) continue; // the drawing: no text, no line
           if (BLOCK.test(c.nodeName) && out && !out.endsWith('\n')) { out += '\n'; lastWasBr = false; }
           walk(c);
         }
@@ -121,7 +122,7 @@
 
   const fullText = () => serialize(editor, true);
   // a note with nothing in it: no text, and no drawing with a stroke in it
-  const hasDrawing = () => !!editor.querySelector('.drawing path');
+  const hasDrawing = () => !!editor.querySelector('.ink path, .drawing path');
   const isEmpty = () => fullText().trim() === '' && !hasDrawing();
 
   function caretPos() {
@@ -406,7 +407,7 @@
     const groups = [
       ['notes', [bound('add'), bound('del'), bound('open'), 'switch note: tab']],
       ['window', ['resize note: ctrl + arrows', 'move note: alt + arrows']],
-      ['text', ['font size, this note: ctrl + f + up / down', 'separator: /line + enter', 'drawing: /draw + enter']],
+      ['text', ['font size, this note: ctrl + f + up / down', 'separator: /line + enter', 'draw: /draw + enter (any key stops)']],
     ];
     return [SHORTCUTS_HINT, ...groups.flatMap(([name, lines]) => ['', `── ${name}`, ...lines])];
   };
@@ -458,8 +459,11 @@
 
   // A slash command + Enter on a line of its own:
   //   /line  a separator line across the note
-  //   /draw  a drawing (see "drawings" below)
-  const SLASH = { '/line': () => '<hr>', '/draw': () => drawingHtml() };
+  //   /draw  draw anywhere on the note, until a key is pressed (see "drawing" below)
+  const SLASH = {
+    '/line': () => document.execCommand('insertHTML', false, '<hr>'),
+    '/draw': () => { document.execCommand('delete'); startDraw(); },
+  };
   function slashCommand() {
     const sel = getSelection();
     if (!sel.rangeCount || !sel.isCollapsed) return false;
@@ -474,37 +478,52 @@
     // select the typed command (and any spaces around it) and swap it for what it makes
     for (let i = 0; i < lineBefore.length; i++) sel.modify('extend', 'backward', 'character');
     if (sel.toString().trim().toLowerCase() !== cmd) { sel.collapseToEnd(); return false; }
-    document.execCommand('insertHTML', false, SLASH[cmd]());
-    const made = editor.querySelector('[data-new]');
-    if (made) caretAfter(made);
+    SLASH[cmd]();
     onEdit();
     return true;
   }
 
-  // The caret on the line after a block that was just put in (it would
-  // otherwise land before it), with a line to type on if there's none.
-  function caretAfter(el) {
-    el.removeAttribute('data-new');
-    if (!el.nextSibling) el.after(document.createElement('br'));
-    const r = document.createRange();
-    r.setStartAfter(el);
-    r.collapse(true);
-    const sel = getSelection();
-    sel.removeAllRanges();
-    sel.addRange(r);
-  }
-
   // -------------------------------------------------------------------------
-  // drawings: "/draw" + Enter puts a box in the note to draw in
+  // drawing: "/draw" + Enter, then draw anywhere on the note
   // -------------------------------------------------------------------------
-  // A drawing is an <svg> of strokes in the note's own HTML, so it's saved
-  // with the note, and it's drawn in the theme's text colour (currentColor).
-  // Drag in it to draw, drag its bottom edge to make it taller or shorter,
-  // right-click it to undo a stroke, clear it or take it out.
+  // Draw mode: the pointer draws, over the text or below it, with no box and
+  // no border. The first key you press ends it: enter and esc only end it,
+  // any other key also does what it always does (so you just carry on
+  // typing). ctrl+z takes back the last stroke; right-click for more.
+  //
+  // The strokes live in one layer per note: a <div class="ink"> with an <svg>
+  // in it, first in the editor, laid over the text and taking no room of its
+  // own. It's part of the note's HTML, so it's saved with the note, and it's
+  // drawn in the theme's text colour (currentColor). It stays where it was
+  // drawn: text that moves or rewraps moves under it.
   const SVGNS = 'http://www.w3.org/2000/svg';
-  const DRAW_H = 140, DRAW_MIN = 40, DRAW_MAX = 2000;
-  const drawingHtml = () =>
-    `<div class="drawing" contenteditable="false" data-new><svg xmlns="${SVGNS}" style="height:${DRAW_H}px"></svg></div>`;
+  let drawMode = false;
+  let stroke = null; // { path, pts } while a stroke is being drawn
+
+  function inkLayer(make) {
+    let layer = editor.querySelector(':scope > .ink');
+    if (!layer && make) {
+      layer = document.createElement('div');
+      layer.className = 'ink';
+      layer.contentEditable = 'false';
+      layer.innerHTML = `<svg xmlns="${SVGNS}"></svg>`;
+      editor.prepend(layer);
+    }
+    return layer;
+  }
+  const inkSvg = (make) => { const l = inkLayer(make); return l && l.querySelector('svg'); };
+
+  // The layer is as tall as its lowest stroke, so the note scrolls to it.
+  // No strokes: no layer.
+  function fitInk() {
+    const layer = inkLayer(false);
+    if (!layer) return;
+    const paths = layer.querySelectorAll('path');
+    if (!paths.length) { layer.remove(); return; }
+    let bottom = 0;
+    for (const p of paths) { const b = p.getBBox(); bottom = Math.max(bottom, b.y + b.height); }
+    layer.style.height = Math.ceil(bottom + 4) + 'px';
+  }
 
   const r1 = (n) => Math.round(n * 10) / 10;
   // A smooth line through the points: curves from midpoint to midpoint.
@@ -520,62 +539,96 @@
     return d + `L${r1(lx)} ${r1(ly)}`;
   }
 
-  let drawing = null; // { svg, path, pts } while a stroke is drawn
-  let sizing = null;  // { svg, y, h } while the bottom edge is dragged
-
-  editor.addEventListener('pointerdown', (e) => {
-    const box = e.target instanceof Element && e.target.closest('.drawing');
-    if (!box || e.button !== 0) return;
-    e.preventDefault(); // no caret, no text selection
+  function startDraw() {
     closeMenu();
-    const svg = box.querySelector('svg');
-    if (!svg) return;
-    svg.setPointerCapture(e.pointerId);
-    const r = svg.getBoundingClientRect();
-    // the strip under the svg is the handle
-    if (!svg.contains(e.target)) { sizing = { svg, y: e.clientY, h: r.height }; return; }
-    const path = document.createElementNS(SVGNS, 'path');
-    svg.appendChild(path);
-    drawing = { svg, path, pts: [[e.clientX - r.left, e.clientY - r.top]] };
-    path.setAttribute('d', strokePath(drawing.pts));
-  });
-
-  editor.addEventListener('pointermove', (e) => {
-    if (sizing) {
-      const h = Math.min(DRAW_MAX, Math.max(DRAW_MIN, Math.round(sizing.h + e.clientY - sizing.y)));
-      sizing.svg.style.height = h + 'px';
-      return;
-    }
-    if (!drawing) return;
-    const r = drawing.svg.getBoundingClientRect();
-    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
-    for (const ev of evs.length ? evs : [e]) {
-      const x = ev.clientX - r.left, y = ev.clientY - r.top;
-      const [px, py] = drawing.pts[drawing.pts.length - 1];
-      if (Math.hypot(x - px, y - py) >= 1.5) drawing.pts.push([x, y]);
-    }
-    drawing.path.setAttribute('d', strokePath(drawing.pts));
-  });
-
-  function endPointer() {
-    if (!drawing && !sizing) return;
-    drawing = null;
-    sizing = null;
+    drawMode = true;
+    body.classList.add('draw-mode');
+  }
+  function stopDraw() {
+    if (!drawMode) return;
+    drawMode = false;
+    stroke = null;
+    body.classList.remove('draw-mode');
+    fitInk();
+    onEdit();
+    focusEditor();
+  }
+  function undoStroke() {
+    const svg = inkSvg(false);
+    if (svg && svg.lastElementChild) svg.lastElementChild.remove();
+    fitInk();
     onEdit();
   }
-  editor.addEventListener('pointerup', endPointer);
-  editor.addEventListener('pointercancel', endPointer);
-  editor.addEventListener('lostpointercapture', endPointer);
+  function clearInk() {
+    const layer = inkLayer(false);
+    if (layer) layer.remove();
+    onEdit();
+  }
 
-  function drawingItems(box) {
-    const svg = box.querySelector('svg');
+  // A point in the note's own coordinates (they scroll with the text).
+  function inkPoint(ev) {
+    const r = editor.getBoundingClientRect();
+    return [ev.clientX - r.left, ev.clientY - r.top];
+  }
+
+  // In draw mode the editor lets the pointer through (see note.css), so the
+  // scrolling area under it gets it.
+  scroller.addEventListener('pointerdown', (e) => {
+    if (!drawMode || e.button !== 0) return;
+    if (e.offsetX >= scroller.clientWidth) return; // the scrollbar
+    e.preventDefault(); // the caret stays where it was
+    closeMenu();
+    scroller.setPointerCapture(e.pointerId);
+    const path = document.createElementNS(SVGNS, 'path');
+    inkSvg(true).appendChild(path);
+    stroke = { path, pts: [inkPoint(e)] };
+    path.setAttribute('d', strokePath(stroke.pts));
+  });
+
+  scroller.addEventListener('pointermove', (e) => {
+    if (!stroke) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+    for (const ev of evs.length ? evs : [e]) {
+      const [x, y] = inkPoint(ev);
+      const [px, py] = stroke.pts[stroke.pts.length - 1];
+      if (Math.hypot(x - px, y - py) >= 1.5) stroke.pts.push([x, y]);
+    }
+    stroke.path.setAttribute('d', strokePath(stroke.pts));
+  });
+
+  function endStroke() {
+    if (!stroke) return;
+    stroke = null;
+    fitInk();
+    onEdit();
+  }
+  scroller.addEventListener('pointerup', endStroke);
+  scroller.addEventListener('pointercancel', endStroke);
+  scroller.addEventListener('lostpointercapture', endStroke);
+
+  // The first key ends draw mode (before anything else sees it).
+  const LONE_MODS = ['Control', 'Shift', 'Alt', 'Meta', 'AltGraph', 'CapsLock'];
+  window.addEventListener('keydown', (e) => {
+    if (!drawMode || e.isComposing || LONE_MODS.includes(e.key)) return;
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.code === 'KeyZ') {
+      e.preventDefault();
+      e.stopPropagation();
+      undoStroke();
+      return;
+    }
+    const onlyStops = e.key === 'Enter' || e.key === 'Escape';
+    stopDraw();
+    if (onlyStops) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
+  function drawItems() {
+    const svg = inkSvg(false);
     const strokes = svg ? svg.querySelectorAll('path').length : 0;
-    const change = (fn) => () => { fn(); onEdit(); };
     return [
-      { label: 'undo stroke', disabled: !strokes, keep: true, run: change(() => svg.lastElementChild.remove()) },
-      { label: 'clear drawing', disabled: !strokes, run: change(() => svg.replaceChildren()) },
+      { label: 'undo stroke', hint: 'ctrl+z', disabled: !strokes, keep: true, run: undoStroke },
+      { label: 'clear drawing', disabled: !strokes, keep: true, run: clearInk },
       { sep: true },
-      { label: 'remove drawing', danger: true, run: change(() => box.remove()) },
+      { label: 'stop drawing', hint: 'any key', run: stopDraw },
     ];
   }
 
@@ -796,6 +849,9 @@
       { label: 'size', hint: '›', sub: () => SIZES.map((px) => ({ label: px + ' px', run: () => applySize(px) })) },
       { sep: true },
       { label: 'clear formatting', disabled: !sel, run: () => exec('removeFormat') },
+      { sep: true },
+      { label: 'draw', hint: '/draw', run: startDraw },
+      ...(inkSvg(false) ? [{ label: 'clear drawing', run: clearInk }] : []),
     ];
   }
 
@@ -900,8 +956,7 @@
     e.preventDefault();
     const t = e.target instanceof Element ? e.target : null;
     if (!t || !t.closest('.body')) return;
-    const box = t.closest('.drawing');
-    if (box) { openMenu('context', () => drawingItems(box), { x: e.clientX, y: e.clientY }); return; }
+    if (drawMode) { openMenu('context', drawItems, { x: e.clientX, y: e.clientY }); return; }
     const sel = getSelection();
     if (!editor.contains(sel.anchorNode)) focusEditor();
     openMenu('context', contextItems, { x: e.clientX, y: e.clientY });
