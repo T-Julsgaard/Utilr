@@ -31,12 +31,14 @@ const defaults = () => ({
 
 let state = defaults();
 let timer = null;
+let fresh = true; // no utilr.json yet: the very first start
 
 function load() {
   for (const f of [file(), file() + '.bak']) {
     try {
       const raw = JSON.parse(fs.readFileSync(f, 'utf8'));
       if (!raw || typeof raw !== 'object') continue;
+      fresh = false;
       const d = defaults();
       const ids = (a) => (Array.isArray(a) ? [...new Set(a.filter((x) => typeof x === 'string'))] : []);
       state = {
@@ -76,4 +78,4 @@ function saveNow() {
 
 const save = () => { clearTimeout(timer); timer = setTimeout(saveNow, 250); };
 
-module.exports = { load, save, saveNow, get: () => state, MAX_PINNED, PLACES };
+module.exports = { load, save, saveNow, get: () => state, fresh: () => fresh, MAX_PINNED, PLACES };

@@ -600,12 +600,30 @@ if (!app.requestSingleInstanceLock()) {
     Store.load();
     logLine(`start ${VERSION} ${process.platform} args=${JSON.stringify(process.argv.slice(1))}`);
 
+    // One download, every tool: the very first start (no utilr.json yet)
+    // installs and pins every tool there is. Remove what you don't want on
+    // the launcher's tools page. (Not in the smoke test, which installs each
+    // tool itself.)
+    const firstRun = Store.fresh() && !process.env.UTILR_SMOKE;
+    if (firstRun) {
+      const s = S();
+      for (const t of Host.list()) {
+        s.installed.push(t.id);
+        if (s.pinned.length < Store.MAX_PINNED) s.pinned.push(t.id);
+      }
+      logLine(`first start: installing ${s.installed.join(', ')}`);
+    }
+
     // every installed tool, in the background (no windows until you ask)
     for (const id of [...S().installed]) {
       if (!Host.find(id)) continue; // a tool that's no longer shipped
-      const r = Host.start(id);
-      if (!r.ok) logLine(`${id} did not start: ${r.error}`);
+      const r = Host.start(id, { firstRun });
+      if (!r.ok) {
+        logLine(`${id} did not start: ${r.error}`);
+        if (firstRun) { S().installed = S().installed.filter((x) => x !== id); S().pinned = S().pinned.filter((x) => x !== id); }
+      }
     }
+    if (firstRun) Store.saveNow();
     for (const id of Object.keys(KEY_RUN)) registerOwn(id);
     createTray();
     syncLoginItem();
@@ -620,7 +638,7 @@ if (!app.requestSingleInstanceLock()) {
         launcherWin: () => launcherWin, quickWin: () => quickWin, logLine,
       });
     } else if (!startedHidden()) {
-      openLauncher(S().installed.length ? null : 'tools');
+      openLauncher(firstRun || !S().installed.length ? 'tools' : null);
     }
 
     screen.on('display-removed', () => { if (quickShown) hideQuick(); });
