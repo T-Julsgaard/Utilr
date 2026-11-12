@@ -36,6 +36,20 @@ const NOISY_TOP = new Set(['windows', 'programdata', 'program files (x86)', 'mso
 
 const MAX_DEPTH = 255;
 
+// A drive's own Windows folder (C:\Windows, or an old install's G:\Windows):
+// with findr's "windows folders" setting off (the default), it's listed but
+// not walked. Hundreds of thousands of system files nobody looks for.
+const WINDOWS = 'windows';
+const skipInside = (lower, depth, noWindows) => noWindows && depth === 1 && lower === WINDOWS;
+
+// A change (a path below a root) that findr doesn't look at: it's in a
+// folder findr never walks.
+function ignoredChange(rel, noWindows) {
+  const parts = String(rel).toLowerCase().split(/[\\/]/);
+  if (noWindows && parts.length > 1 && parts[0] === WINDOWS) return true;
+  return parts.some((p) => SKIP.has(p));
+}
+
 function flagsFor(name, lower, isDir, parentNoisy, depth) {
   let f = isDir ? F_DIR : 0;
   if (parentNoisy || (isDir && (NOISY.has(lower) || (depth === 1 && NOISY_TOP.has(lower))))) f |= F_NOISY;
@@ -72,8 +86,9 @@ class Batch {
 
 // Walk everything below `dir` (not `dir` itself), whose id is `dirId`.
 // New entries get ids from `nextId` up. `onBatch(packed)` is called every
-// `size` entries and once at the end. Returns { next, denied, dirs, files }.
-function walk(dir, { dirId, nextId, depth = 0, noisy = false, size = 25000, onBatch, shouldStop }) {
+// `size` entries and once at the end. noWindows: `dir` is (in) a drive whose
+// Windows folder isn't walked. Returns { next, denied, dirs, files }.
+function walk(dir, { dirId, nextId, depth = 0, noisy = false, noWindows = false, size = 25000, onBatch, shouldStop }) {
   let next = nextId, denied = 0, dirs = 0, files = 0;
   let batch = new Batch();
   const flush = () => {
@@ -98,7 +113,7 @@ function walk(dir, { dirId, nextId, depth = 0, noisy = false, size = 25000, onBa
       batch.push(name, d.id, f, cd);
       if (isDir) {
         dirs++;
-        if (cd < MAX_DEPTH) stack.push({ p: path.join(d.p, name), id, depth: cd, noisy: (f & F_NOISY) !== 0 });
+        if (cd < MAX_DEPTH && !skipInside(lower, cd, noWindows)) stack.push({ p: path.join(d.p, name), id, depth: cd, noisy: (f & F_NOISY) !== 0 });
       } else {
         files++;
       }
@@ -116,4 +131,4 @@ function rootName(root) {
   return r || root;
 }
 
-module.exports = { walk, Batch, flagsFor, isRealDir, rootName, SKIP, F_DIR, F_DEAD, F_NOISY, F_HIDDEN };
+module.exports = { walk, Batch, flagsFor, isRealDir, rootName, skipInside, ignoredChange, SKIP, F_DIR, F_DEAD, F_NOISY, F_HIDDEN };

@@ -205,8 +205,11 @@ module.exports = function measr(host) {
     return win;
   }
 
-  // One hidden overlay per display, ready to show; rebuilt when screens change.
-  function syncOverlays() {
+  // One hidden overlay per display, ready to show; rebuilt when screens
+  // change. With utilr's RAM saver on, they're only made when you measure
+  // (make), and closed after a few minutes unused (cool).
+  const saving = () => !!(host.ramSaver && host.ramSaver());
+  function syncOverlays(make = !saving()) {
     const displays = screen.getAllDisplays();
     for (const [id, win] of overlays) {
       const d = displays.find((x) => x.id === id);
@@ -215,7 +218,27 @@ module.exports = function measr(host) {
         if (!win.isDestroyed()) win.destroy();
       }
     }
-    for (const d of displays) if (!overlays.has(d.id)) overlays.set(d.id, makeOverlay(d));
+    if (make) for (const d of displays) if (!overlays.has(d.id)) overlays.set(d.id, makeOverlay(d));
+  }
+  const onDisplays = () => syncOverlays(); // (not the event's arguments)
+
+  let coolTimer = null;
+  function cool() {
+    clearTimeout(coolTimer);
+    if (!saving()) return;
+    coolTimer = setTimeout(() => {
+      if (session || stopping) return;
+      for (const win of overlays.values()) if (!win.isDestroyed()) win.destroy();
+      overlays.clear();
+      if (toastWin && !toastWin.isDestroyed() && !toastWin.isVisible()) { toastWin.destroy(); toastWin = null; }
+      logLine('overlays closed (ram saver)');
+    }, host.ramSaverMs ? host.ramSaverMs() : 5 * 60 * 1000);
+  }
+
+  function setRamSaver(on) {
+    if (on) { cool(); return; }
+    clearTimeout(coolTimer);
+    syncOverlays(true);
   }
 
   async function startMeasure(origin = 'key') {
@@ -224,8 +247,9 @@ module.exports = function measr(host) {
     session = { sid, origin, ready: new Set() };
     const t0 = Date.now();
     try {
+      clearTimeout(coolTimer);
       hideToast();
-      syncOverlays();
+      syncOverlays(true);
       const displays = screen.getAllDisplays();
       const cursor = screen.getCursorScreenPoint();
       const active = screen.getDisplayNearestPoint(cursor);
@@ -287,6 +311,7 @@ module.exports = function measr(host) {
 
   function endMeasure() {
     session = null;
+    cool();
     for (const win of overlays.values()) {
       if (win.isDestroyed() || !win.isVisible()) continue;
       win.setOpacity(0);
@@ -520,14 +545,15 @@ module.exports = function measr(host) {
   const onMetrics = () => { if (!session) syncOverlays(); };
 
   // Ready for the key: the overlays are made up front, hidden, so measr opens
-  // at once. No window shows until you measure.
+  // at once (with utilr's RAM saver on: when you measure). No window shows
+  // until you measure.
   function start() {
     loadSettings();
     logLine(`start ${host.version} in utilr ${process.platform}`);
     registerKey();
-    syncOverlays();
-    screen.on('display-added', syncOverlays);
-    screen.on('display-removed', syncOverlays);
+    if (!saving()) syncOverlays();
+    screen.on('display-added', onDisplays);
+    screen.on('display-removed', onDisplays);
     screen.on('display-metrics-changed', onMetrics);
   }
 
@@ -538,8 +564,9 @@ module.exports = function measr(host) {
     clearTimeout(delayTimer);
     clearTimeout(toastTimer);
     session = null;
-    screen.removeListener('display-added', syncOverlays);
-    screen.removeListener('display-removed', syncOverlays);
+    clearTimeout(coolTimer);
+    screen.removeListener('display-added', onDisplays);
+    screen.removeListener('display-removed', onDisplays);
     screen.removeListener('display-metrics-changed', onMetrics);
     if (registered) { try { shortcuts.unregister(registered); } catch (_) {} registered = null; }
     for (const w of ownWindows()) w.destroy();
@@ -558,5 +585,6 @@ module.exports = function measr(host) {
     ],
     keys: () => [{ id: 'key', label: 'measure', combo: settings.key, ok: registered !== null || keyPaused }],
     setKey: (id, combo) => (id === 'key' ? setKeyCombo(combo) : { ok: false, error: 'unknown shortcut' }),
+    ramSaver: setRamSaver,
   };
 };

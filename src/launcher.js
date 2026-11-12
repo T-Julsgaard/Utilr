@@ -115,6 +115,8 @@
     let html = '<div class="sect"><span>utilr</span></div>';
     html += row({ act: 'startup', label: login, value: S.settings.startup ? 'on' : 'off', mark: S.settings.startup ? '&gt;' : '', valueCls: S.settings.startup ? 'on' : '' });
     html += row({ act: 'place', label: 'quick view appears', value: PLACES[S.settings.quickAt] + ' ›' });
+    html += row({ act: 'ramsaver', label: 'ram saver', value: S.settings.ramSaver ? 'on' : 'off', mark: S.settings.ramSaver ? '&gt;' : '', valueCls: S.settings.ramSaver ? 'on' : '' });
+    html += '<div class="note">on: what you haven\'t used for 5 minutes gives its memory back (findr\'s list, the snip and measure overlays, the quick view). the first use after that takes a moment longer.</div>';
     html += row({ act: 'data', label: 'data folder', value: 'open ›' });
     html += '<div class="sect"><span>versions</span></div>';
     html += row({ act: 'none', label: 'utilr', value: S.version, plain: true });
@@ -224,6 +226,7 @@
       case 'place': cyclePlace(); break;
       case 'try': api.previewQuick(); break;
       case 'startup': api.setSettings({ startup: !S.settings.startup }); break;
+      case 'ramsaver': api.setSettings({ ramSaver: !S.settings.ramSaver }); break;
       case 'data': api.openData(); break;
       case 'quit': confirm('quit utilr? every tool closes with it', () => api.quit()); break;
       default:

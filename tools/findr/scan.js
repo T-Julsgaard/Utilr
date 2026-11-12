@@ -11,6 +11,7 @@ const t0 = Date.now();
 const r = walk(workerData.root, {
   dirId: 0,
   nextId: 1,
+  noWindows: !!workerData.noWindows,
   onBatch: (p) => parentPort.postMessage({ type: 'batch', ...p }, [p.parent.buffer, p.flags.buffer, p.depth.buffer]),
 });
 parentPort.postMessage({ type: 'done', ...r, ms: Date.now() - t0 });

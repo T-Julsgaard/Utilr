@@ -104,7 +104,7 @@ function publicState() {
     platform: process.platform,
     maxPinned: Store.MAX_PINNED,
     pinned: s.pinned.filter((id) => Host.isRunning(id)),
-    settings: { startup: s.startup, quickAt: s.quickAt },
+    settings: { startup: s.startup, quickAt: s.quickAt, ramSaver: s.ramSaver },
     keys: Object.keys(KEY_LABELS).map((id) => ({
       id,
       label: KEY_LABELS[id],
@@ -197,12 +197,15 @@ function toggleLauncher() {
 }
 
 // ---------------------------------------------------------------------------
-// quick view: kept loaded and hidden, so the key opens it at once
+// quick view: kept loaded and hidden, so the key opens it at once. With the
+// RAM saver on, it's made when you open it and closed after a few minutes
+// hidden.
 // ---------------------------------------------------------------------------
 
 let quickWin = null;
 let quickShown = false;
 let quickShownAt = 0;
+let quickCool = null;
 
 function quickSize() {
   const pinned = S().pinned.filter((id) => Host.isRunning(id)).length;
@@ -251,6 +254,7 @@ function ensureQuick() {
   });
   win.setAlwaysOnTop(true, 'pop-up-menu');
   if (IS_MAC) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.loaded = new Promise((res) => win.webContents.once('did-finish-load', res));
   win.loadFile(path.join(__dirname, 'quick.html'));
   lockDown(win);
   // Click anywhere else and it goes. A blur in its first moments is focus
@@ -266,10 +270,13 @@ function ensureQuick() {
   return win;
 }
 
-function showQuick() {
+async function showQuick() {
+  clearTimeout(quickCool);
   const win = ensureQuick();
   quickShown = true;
   quickShownAt = Date.now();
+  await win.loaded; // at once, unless it was just made
+  if (!quickShown || win.isDestroyed()) return;
   win.webContents.send('utilr:state', publicState());
   win.webContents.send('quick:show');
   const b = quickBounds();
@@ -290,6 +297,25 @@ function hideQuick(done) {
     if (!win.isDestroyed()) win.hide();
     if (done) done();
   });
+  coolQuick();
+}
+
+// with the RAM saver on: hidden this long, the quick view is closed
+function coolQuick() {
+  clearTimeout(quickCool);
+  if (!Host.ramSaver()) return;
+  quickCool = setTimeout(() => {
+    if (quickShown || !quickWin || quickWin.isDestroyed()) return;
+    quickWin.destroy();
+    quickWin = null;
+  }, Host.ramSaverMs());
+}
+
+function setRamSaver(on) {
+  Host.setRamSaver(on);
+  logLine(`ram saver ${on ? 'on' : 'off'}`);
+  if (on) coolQuick();
+  else { clearTimeout(quickCool); ensureQuick(); }
 }
 
 const toggleQuick = () => (quickShown ? hideQuick() : showQuick());
@@ -564,6 +590,7 @@ ipcMain.on('utilr/settings', (e, patch) => {
   const s = S();
   if (typeof patch.startup === 'boolean' && patch.startup !== s.startup) { s.startup = patch.startup; syncLoginItem(); }
   if (Store.PLACES.includes(patch.quickAt)) s.quickAt = patch.quickAt;
+  if (typeof patch.ramSaver === 'boolean' && patch.ramSaver !== s.ramSaver) { s.ramSaver = patch.ramSaver; setRamSaver(s.ramSaver); }
   Store.save();
   refresh();
 });
@@ -596,7 +623,8 @@ if (!app.requestSingleInstanceLock()) {
     if (IS_WIN) app.setAppUserModelId('app.utilr');
     setAppMenu();
     Store.load();
-    logLine(`start ${VERSION} ${process.platform} args=${JSON.stringify(process.argv.slice(1))}`);
+    Host.setRamSaver(S().ramSaver); // before the tools start: they make their windows by it
+    logLine(`start ${VERSION} ${process.platform} args=${JSON.stringify(process.argv.slice(1))}${S().ramSaver ? ', ram saver on' : ''}`);
 
     // One download, every tool: every tool utilr ships is installed and
     // running. One that's new here (the first start, or an update that
@@ -626,7 +654,7 @@ if (!app.requestSingleInstanceLock()) {
     for (const id of Object.keys(KEY_RUN)) registerOwn(id);
     createTray();
     syncLoginItem();
-    ensureQuick();
+    if (!S().ramSaver) ensureQuick();
     logLine(`ready in ${Date.now() - t0} ms`);
 
     // test hook: scripts/smoke.js drives the real windows

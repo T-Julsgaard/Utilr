@@ -20,6 +20,8 @@ const file = () => path.join(app.getPath('userData'), 'utilr.json');
 // keys:      utilr's own system-wide keys (quick view, open utilr); '' = none
 // quickAt:   where the quick view appears
 // startup:   start (in the tray) when you log in
+// ramSaver:  windows and findr's index are made when used and let go of after
+//            a few minutes unused, instead of kept ready (see host.js)
 const defaults = () => ({
   version: VERSION,
   installed: [],
@@ -27,6 +29,7 @@ const defaults = () => ({
   keys: { ...Keys.DEFAULTS },
   quickAt: 'center',
   startup: true,
+  ramSaver: false,
 });
 
 let state = defaults();
@@ -55,6 +58,7 @@ function load() {
       }
       if (!PLACES.includes(state.quickAt)) state.quickAt = d.quickAt;
       state.startup = state.startup !== false;
+      state.ramSaver = state.ramSaver === true;
       return state;
     } catch (_) { /* missing or unreadable: try the next one */ }
   }

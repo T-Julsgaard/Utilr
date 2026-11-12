@@ -235,8 +235,10 @@ module.exports = function paletr(host) {
   }
   const onDisplays = () => { if (!session) syncOverlays(false); };
 
-  // after WARM_MS without a pick, the overlays and the toast close
+  // after WARM_MS without a pick (with utilr's RAM saver on, its shorter
+  // time), the overlays and the toast close
   function warm() {
+    const ms = host.ramSaver && host.ramSaver() ? host.ramSaverMs() : WARM_MS;
     clearTimeout(coolTimer);
     coolTimer = setTimeout(() => {
       if (session) return;
@@ -244,7 +246,7 @@ module.exports = function paletr(host) {
       overlays.clear();
       if (toastWin && !toastWin.isDestroyed() && !toastWin.isVisible()) { toastWin.destroy(); toastWin = null; }
       log('overlays closed (idle)');
-    }, WARM_MS);
+    }, ms);
   }
 
   // origin: key / tray / launch / palette

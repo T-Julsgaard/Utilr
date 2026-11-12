@@ -66,8 +66,9 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
   the best matches are ranked: exact names and name starts first, things you opened before and
   things in your own folder up, deep paths a little down, and machine-made folders (`AppData`,
   `node_modules`, `.git`, `Windows`, …) well down.
-- **Keeping up.** Fixed drives are watched by a small thread of their own (`fs.watch`,
-  recursive, one per drive: Windows' `ReadDirectoryChangesW`). Only names appearing and going count. When one does, its folder is
+- **Keeping up.** Fixed drives are watched (`fs.watch`, recursive, one per drive: Windows'
+  `ReadDirectoryChangesW`), by the engine thread, or with utilr's RAM saver on by a small thread
+  of their own. Only names appearing and going count. When one does, its folder is
   read again a moment later and compared with the list, so new, renamed, moved and deleted files
   show up in about a second. A folder moved in is read whole. USB drives aren't watched (a watch
   would keep you from ejecting them). They're read when they appear and when you ask. Watching
@@ -86,20 +87,28 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
   for), Windows setup leftovers, and folders a normal user can't open (findr runs without
   admin, so it sees what you see). Junctions and symlinks are listed but not followed, so
   nothing is indexed twice.
+- **Windows folders.** A drive's own `Windows` folder (`C:\Windows`, or an old install's) is
+  listed, but what's in it isn't, unless you turn *windows folders* on in the menu. On the
+  machine this was built on that was half of every entry (an old `G:\Windows` alone had 445k),
+  so leaving it out saves memory, scan time and cache space. A `Windows` folder anywhere else
+  is indexed as usual.
 - **Drives** come from Windows (`Win32_LogicalDisk`, through PowerShell, in the background).
   Local and USB drives are in by default. Network drives and discs aren't. Turn any of them on
   or off in the menu (a drive turned off is dropped, cache and all). To cover a folder that
   isn't a drive (a network share, say), add it to `"folders"` in `findr-settings.json`.
-- **Put away when unused.** After 5 minutes without the popup, and with no scan running or due
-  within 2 minutes, the engine thread saves what changed and is ended, and its memory goes back
-  to Windows. The watch thread stays (about 11 MB) and keeps a list of the folders that change.
+- **Put away when unused** (only with *ram saver* on, in utilr's settings; it's off by default).
+  After 5 minutes without the popup, and with no scan running or due within 2 minutes, the
+  engine thread saves what changed and is ended, and its memory goes back to Windows. The watch
+  thread stays (about 11 MB) and keeps a list of the folders that change.
   Opening findr starts the engine again: the cache loads, those folders are read again, and
   nothing else is. On the machine this was built on, C: (430k entries) loaded in about 50 ms,
   and the first search was answered about 85 ms after the engine started. A scan that comes
   due while the engine is away (the 6-hourly one, or Windows losing track) starts it for that
   scan, and it goes again afterwards. The log says when it goes and why it comes back.
-- **Memory**, measured on C: (430k entries): the engine thread with the index takes about
-  25–30 MB more than when it's put away, and that grows with the number of entries.
+- **Memory**, measured with the drives of the machine this was built on (about a million
+  entries): about 100 MB with the index up, about 25 MB with it put away (the watch thread and
+  what's left over), so the RAM saver saves 75–80 MB while findr isn't used. The first search
+  after it comes back took about a quarter of a second.
   The engine starts 1.5 s after utilr does, so utilr's own start isn't slowed.
 - **The popup is made the first time you open it** (about 0.1 s), then kept hidden so the shortcut
   opens it at once. After 5 minutes unused it's closed again.

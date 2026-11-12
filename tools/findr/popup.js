@@ -334,6 +334,10 @@
         });
       }
       for (const f of S.folders) html += row({ act: 'none', label: f.toLowerCase(), mark: '&gt;', value: 'folder' });
+      html += row({
+        act: 'windows', label: 'windows folders', sub: 'the system files in a drive\'s windows folder',
+        value: S.windowsFolders ? 'in' : 'left out', mark: S.windowsFolders ? '&gt;' : '',
+      });
       html += '<div class="sep"></div>';
       html += row({ act: 'recent', label: 'remember opened', value: S.recent ? 'on' : 'off', mark: S.recent ? '&gt;' : '' });
       html += row({ act: 'key', label: 'shortcut', value: keyValue, valueCls: keyCls });
@@ -402,6 +406,7 @@
       const d = S.drives.find((x) => x.letter === b.dataset.letter);
       if (d) api.setSettings({ drive: { letter: d.letter, on: !d.on } });
     } else if (a === 'recent') api.setSettings({ recent: !S.recent });
+    else if (a === 'windows') api.setSettings({ windowsFolders: !S.windowsFolders });
     else if (a === 'rescan') { rescan(); closeMenu(); }
     else if (a === 'key') {
       if (recording) { stopRecording(); return; }

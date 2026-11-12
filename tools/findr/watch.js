@@ -1,7 +1,8 @@
 'use strict';
 
-// findr's watch thread: the part of findr that's always on, and small. It
-// holds the watches on the fixed drives (one recursive watch per drive, what
+// findr's watch thread, with utilr's RAM saver on: the part of findr that's
+// always on, and small. (With it off, the index thread watches the drives
+// itself and this thread isn't started.) It holds the watches on the fixed drives (one recursive watch per drive, what
 // Windows calls ReadDirectoryChangesW) and passes on which folders changed.
 //
 // While the index thread (worker.js) is up, changes go straight to it over a
@@ -16,7 +17,7 @@
 const { parentPort, workerData } = require('worker_threads');
 const fs = require('fs');
 const path = require('path');
-const { SKIP } = require('./walk');
+const { ignoredChange } = require('./walk');
 const T = require('./timing');
 
 const P = path.win32;
@@ -57,7 +58,7 @@ function watch(s) {
 function onEvent(s, name) {
   if (!name) { lost(s, 'windows lost track of changes'); return; } // too much at once
   const rel = String(name);
-  for (const part of rel.toLowerCase().split('\\')) if (SKIP.has(part)) return;
+  if (ignoredChange(rel, s.noWindows)) return;
   const full = P.join(s.root, rel);
   if (cacheKey && key(full).startsWith(cacheKey)) return; // findr's own cache
   const dir = P.dirname(full);
@@ -106,12 +107,12 @@ function configure(list) {
   for (const [k, r] of want) {
     let s = roots.get(k);
     if (!s) {
-      s = { root: r.root, watchOn: !!r.watch, watcher: null, kept: new Set(), pending: new Set() };
+      s = { root: r.root, watchOn: !!r.watch, noWindows: !!r.noWindows, watcher: null, kept: new Set(), pending: new Set() };
       roots.set(k, s);
       watch(s);
-    } else if (s.watchOn !== !!r.watch) {
-      s.watchOn = !!r.watch;
-      watch(s);
+    } else {
+      s.noWindows = !!r.noWindows;
+      if (s.watchOn !== !!r.watch) { s.watchOn = !!r.watch; watch(s); }
     }
   }
 }

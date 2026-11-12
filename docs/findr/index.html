@@ -109,7 +109,7 @@
       <li><h3>what you can type</h3><p><code>invoice 2026</code>: both words, anywhere in the name. <code>"dm mono"</code>: a phrase. <code>*.pdf</code>, <code>img_????.jpg</code>: wildcards, the whole name has to fit. <code>github\ notr</code>: a word with <code>\</code> is looked for in the whole path.</p></li>
       <li><h3>left out</h3><p>The recycle bin, System Volume Information, WinSxS, setup leftovers and folders a normal user can't open. Links are listed but not followed, so nothing is indexed twice.</p></li>
       <li><h3>drives</h3><p>Local and USB drives are in by default; network drives and discs can be turned on. A folder that isn't a drive can be added in the settings file.</p></li>
-      <li><h3>memory and cost</h3><p>When you haven't used findr for 5 minutes, its index is put away and the memory goes back; opening findr loads it again from its cache in a fraction of a second. Watching costs 1–2% of one core while things on disk change, nothing when they don't. Searches are never logged.</p></li>
+      <li><h3>memory and cost</h3><p>A Windows folder's system files are left out unless you want them. With the RAM saver on (utilr's settings), findr's list is put away after 5 minutes unused and loaded again from its cache when you open findr, in a fraction of a second. Watching costs 1–2% of one core while things on disk change, nothing when they don't. Searches are never logged.</p></li>
       <li><h3>Windows only</h3><p>Drive letters, PowerShell and recursive watching. On macOS and Linux utilr simply leaves findr out.</p></li>
     </ul>
   </section>

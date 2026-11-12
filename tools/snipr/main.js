@@ -273,8 +273,11 @@ module.exports = function snipr(host) {
     return win;
   }
 
-  // Keep one hidden overlay per display, ready to show; rebuilt when screens change.
-  function syncOverlays() {
+  // Keep one hidden overlay per display, ready to show; rebuilt when screens
+  // change. With utilr's RAM saver on, they're only made when you snip
+  // (make), and closed after a few minutes unused (cool).
+  const saving = () => !!(host.ramSaver && host.ramSaver());
+  function syncOverlays(make = !saving()) {
     const displays = screen.getAllDisplays();
     const ids = new Set(displays.map((d) => d.id));
     for (const [id, win] of overlays) {
@@ -284,7 +287,28 @@ module.exports = function snipr(host) {
         if (!win.isDestroyed()) win.destroy();
       }
     }
-    for (const d of displays) if (!overlays.has(d.id)) overlays.set(d.id, makeOverlay(d));
+    if (make) for (const d of displays) if (!overlays.has(d.id)) overlays.set(d.id, makeOverlay(d));
+  }
+  const onDisplays = () => syncOverlays(); // (not the event's arguments)
+
+  let coolTimer = null;
+  function cool() {
+    clearTimeout(coolTimer);
+    if (!saving()) return;
+    coolTimer = setTimeout(() => {
+      if (session || quitting) return;
+      for (const win of overlays.values()) if (!win.isDestroyed()) win.destroy();
+      overlays.clear();
+      if (toastWin && !toastWin.isDestroyed() && !toastWin.isVisible()) { toastWin.destroy(); toastWin = null; }
+      logLine('overlays closed (ram saver)');
+    }, host.ramSaverMs ? host.ramSaverMs() : 5 * 60 * 1000);
+  }
+
+  function setRamSaver(on) {
+    if (on) { cool(); return; }
+    clearTimeout(coolTimer);
+    syncOverlays(true);
+    ensureToast();
   }
 
   // mode 'image': the snip (clipboard, window, folder, as set); 'text': only its text, to the clipboard
@@ -295,8 +319,9 @@ module.exports = function snipr(host) {
     session = { sid, origin, mode, shots: null, displays: null, ready: new Set() };
     const t0 = Date.now();
     try {
+      clearTimeout(coolTimer);
       hideToast();
-      syncOverlays();
+      syncOverlays(true);
       const displays = screen.getAllDisplays();
       const cursor = screen.getCursorScreenPoint();
       const active = screen.getDisplayNearestPoint(cursor);
@@ -374,6 +399,7 @@ module.exports = function snipr(host) {
 
   function endSession() {
     session = null;
+    cool();
   }
 
   function cancelCapture() {
@@ -927,16 +953,16 @@ module.exports = function snipr(host) {
   const onMetrics = () => { if (!session) syncOverlays(); };
 
   // Ready for the key: the overlays and the toast are made up front, hidden, so
-  // a snip opens at once. No window shows until you snip.
+  // a snip opens at once (with utilr's RAM saver on: when you snip). No window
+  // shows until you snip.
   function start() {
     loadSettings();
     logLine(`start ${host.version} in utilr ${process.platform}`);
     ensureFolder();
     registerKey();
-    syncOverlays();
-    ensureToast();
-    screen.on('display-added', syncOverlays);
-    screen.on('display-removed', syncOverlays);
+    if (!saving()) { syncOverlays(); ensureToast(); }
+    screen.on('display-added', onDisplays);
+    screen.on('display-removed', onDisplays);
     screen.on('display-metrics-changed', onMetrics);
   }
 
@@ -947,8 +973,9 @@ module.exports = function snipr(host) {
     clearTimeout(delayTimer);
     clearTimeout(toastTimer);
     endSession();
-    screen.removeListener('display-added', syncOverlays);
-    screen.removeListener('display-removed', syncOverlays);
+    clearTimeout(coolTimer);
+    screen.removeListener('display-added', onDisplays);
+    screen.removeListener('display-removed', onDisplays);
     screen.removeListener('display-metrics-changed', onMetrics);
     for (const field of Object.keys(registered)) {
       if (registered[field]) { try { globalShortcut.unregister(registered[field]); } catch (_) {} registered[field] = null; }
@@ -993,5 +1020,6 @@ module.exports = function snipr(host) {
       ...(Ocr.available ? [{ id: 'textKey', label: 'snip text', combo: settings.textKey, ok: registered.textKey !== null || keyPaused }] : []),
     ],
     setKey,
+    ramSaver: setRamSaver,
   };
 };

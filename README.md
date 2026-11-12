@@ -74,8 +74,11 @@ for the chrome (title, close, status line).
 - **shortcuts**: every system-wide shortcut in utilr, both utilr's own and each tool's, in one
   place. Click one and press the new combo. A shortcut belongs to one tool only: utilr says who has it
   (`snipr has it`) and doesn't let two tools fight over a combo.
-- **settings**: start with Windows, where the quick view appears, the data folder, versions,
-  quit.
+- **settings**: start with Windows, where the quick view appears, the RAM saver, the data
+  folder, versions, quit. The RAM saver (off by default) lets go of what you haven't used for 5
+  minutes: findr's list, the snipr and measr overlays and the quick view are made again when
+  you use them, which takes a moment longer (a few tenths of a second). On the machine this was
+  built on it took utilr from about 130 MB to about 60 MB, before findr's list.
 
 `ctrl+tab` moves between pages, `esc` closes the launcher.
 

@@ -21,7 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { walk, Batch, flagsFor, isRealDir, rootName, SKIP, F_DIR, F_DEAD, F_NOISY, F_HIDDEN } = require('./walk');
+const { walk, Batch, flagsFor, isRealDir, rootName, skipInside, SKIP, F_DIR, F_DEAD, F_NOISY, F_HIDDEN } = require('./walk');
 
 const P = path.win32;
 
@@ -79,6 +79,7 @@ class Volume {
     this.root = root;
     this.rootKey = key(root);
     this.isDrive = /^[a-z]:$/.test(this.rootKey);
+    this.noWindows = false; // a drive whose Windows folder isn't walked (see walk.js)
     this.reset();
   }
 
@@ -393,6 +394,7 @@ function kill(v, ids) {
 function refreshDir(v, dirPath) {
   const id = resolveDir(v, dirPath);
   if (id < 0) return 'up';
+  if (id > 0 && v.parentOf(id) === 0 && skipInside(v.nameOf(id).toLowerCase(), 1, v.noWindows)) return { added: 0, removed: 0 };
   let ents;
   try {
     ents = fs.readdirSync(dirPath, { withFileTypes: true });
@@ -415,7 +417,7 @@ function refreshDir(v, dirPath) {
     const f = flagsFor(name, lower, isDir, noisy, depth);
     const nid = next++;
     batch.push(name, id, f, depth);
-    if (isDir) dirs.push({ p: P.join(dirPath, name), id: nid, noisy: (f & F_NOISY) !== 0 });
+    if (isDir && !skipInside(lower, depth, v.noWindows)) dirs.push({ p: P.join(dirPath, name), id: nid, noisy: (f & F_NOISY) !== 0 });
   }
   const removed = kill(v, [...have.values()].map((c) => c.id));
   const before = v.next;
@@ -423,7 +425,7 @@ function refreshDir(v, dirPath) {
   const kids = v.kids.get(id);
   if (kids) for (let nid = before; nid < before + batch.length; nid++) kids.push(nid);
   for (const d of dirs) {
-    walk(d.p, { dirId: d.id, nextId: v.next, depth, noisy: d.noisy, onBatch: (p) => v.add(p) });
+    walk(d.p, { dirId: d.id, nextId: v.next, depth, noisy: d.noisy, noWindows: v.noWindows, onBatch: (p) => v.add(p) });
   }
   return { added: v.next - before, removed };
 }
@@ -465,7 +467,7 @@ function save(v, file) {
     chunks.push(text);
     nb += Buffer.byteLength(text, 'utf8');
   }
-  const head = Buffer.from(JSON.stringify({ v: FORMAT, root: v.root, n, at: v.scannedAt || Date.now(), nb }) + '\n', 'utf8');
+  const head = Buffer.from(JSON.stringify({ v: FORMAT, root: v.root, n, at: v.scannedAt || Date.now(), nb, nw: v.noWindows }) + '\n', 'utf8');
   fs.mkdirSync(P.dirname(file), { recursive: true });
   const tmp = file + '.tmp';
   const fd = fs.openSync(tmp, 'w');
@@ -523,6 +525,7 @@ function load(v, file) {
     }
     if (count !== h.n) { v.reset(); return false; }
     v.scannedAt = h.at;
+    v.cachedNoWindows = !!h.nw; // how it was read: a cache from before the setting has the Windows folders in
     return true;
   } catch (_) {
     v.reset();

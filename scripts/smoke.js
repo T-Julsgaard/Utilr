@@ -411,19 +411,24 @@ async function findr(u) {
     await js(vis(), `window.findr.hide()`);
     await wait(400);
 
-    // unused for a while (here 1.5 s, not 5 minutes): the index is put away,
-    // its thread ended. The watch keeps what changes meanwhile, and opening
-    // findr brings the index back from its cache, with those changes, without
-    // reading the folder again.
+    // RAM saver off (the default): the index stays, however long it's unused
     const logNow = () => fs.readFileSync(path.join(app.getPath('userData'), 'utilr.log'), 'utf8');
     const scans = () => (logNow().match(/findr: scanned /g) || []).length;
-    process.env.UTILR_FINDR_UNLOAD = '1500';
+    process.env.UTILR_RAM_SAVER_MS = '1500';
+    await wait(2000);
+    check(!/findr: index put away/.test(logNow()), 'ram saver off: the index stays');
+
+    // RAM saver on, unused for a while (here 1.5 s, not 5 minutes): the index
+    // is put away, its thread ended. The watch keeps what changes meanwhile,
+    // and opening findr brings the index back from its cache, with those
+    // changes, without reading the folder again.
+    u.Host.setRamSaver(true);
     u.Host.open('findr');
     await wait(500);
     await js(vis(), `window.findr.hide()`);
     await wait(2600);
     const scanned = scans();
-    check(/findr: index put away/.test(logNow()), 'unused, the index is put away');
+    check(/findr: index put away/.test(logNow()), 'ram saver on, unused: the index is put away');
     put('beta/while-away.txt');
     fs.rmSync(path.join(fx, 'photos', 'img_0001.jpg'));
     await wait(600);
@@ -435,7 +440,17 @@ async function findr(u) {
     check(r.total === 0, 'and one deleted while it was away is gone');
     check(/findr: index back \(opened\)/.test(logNow()) && scans() === scanned, 'it came back from the cache, without reading the folder again');
     await js(vis(), `window.findr.hide()`);
-    delete process.env.UTILR_FINDR_UNLOAD;
+    await wait(2600);
+
+    // turned off while it's away: it comes back, watching on its own again
+    u.Host.setRamSaver(false);
+    await wait(2600);
+    check(/findr: index back \(ram saver off\)/.test(logNow()), 'ram saver off again: the index comes back');
+    put('beta/after-off.txt');
+    await wait(1600);
+    r = await js(vis() || wins()[0], `window.findr.search('after-off')`);
+    check(r.total === 1, 'and new files still show up');
+    delete process.env.UTILR_RAM_SAVER_MS;
     await wait(400);
 
     // keys, remove, reinstall: the index comes back from its cache
@@ -593,6 +608,8 @@ module.exports = async (u) => {
     const idle = app.getAppMetrics();
     for (const m of idle) log(`       ${m.type.padEnd(8)} ${(m.memory.workingSetSize / 1024).toFixed(0).padStart(4)} MB  private ${((m.memory.privateBytes || 0) / 1024).toFixed(0)} MB  ${m.name || ''}`);
     log(`     idle memory: ${(idle.reduce((s, m) => s + m.memory.workingSetSize, 0) / 1024).toFixed(0)} MB in ${idle.length} processes`);
+
+    await ramSaver(u);
   } catch (err) {
     failed++;
     log('FAIL ' + (err && err.stack || err));
@@ -601,6 +618,64 @@ module.exports = async (u) => {
   fs.writeFileSync(path.join(out, 'smoke.log'), lines.join('\n') + '\n');
   app.exit(failed ? 1 : 0);
 };
+
+// ---- the RAM saver (launcher › settings): off by default. On, the snip and
+// measure overlays and the quick view are made when they're used and closed
+// after a few minutes unused (here 1.5 s); off again, they're kept ready.
+async function ramSaver(u) {
+  const overlays = (title) => BrowserWindow.getAllWindows().filter((w) => !w.isDestroyed() && w.getTitle() === title && w.webContents.getURL().endsWith('/overlay.html'));
+  const n = screen.getAllDisplays().length;
+  const ready = () => overlays('snipr').length === n && overlays('measr').length === n && !!u.quickWin();
+  const none = () => !overlays('snipr').length && !overlays('measr').length && !u.quickWin();
+  const memory = () => (app.getAppMetrics().reduce((s, m) => s + m.memory.workingSetSize, 0) / 1024).toFixed(0);
+  const toggle = async () => {
+    u.openLauncher('settings');
+    await wait(700);
+    const L = u.launcherWin();
+    await js(L, `document.querySelector('[data-act="ramsaver"]').click()`);
+    await wait(300);
+    return L;
+  };
+  check(!u.Store.get().ramSaver && ready(), 'ram saver: off by default, the overlays and the quick view kept ready');
+  process.env.UTILR_RAM_SAVER_MS = '1500';
+  try {
+    let L = await toggle();
+    check(u.Store.get().ramSaver === true && (await js(L, `document.querySelector('[data-act="ramsaver"] .mi-r').textContent`)) === 'on', 'the launcher turns it on');
+    await shot(L, '09-settings-ram-saver');
+    u.closeLauncher();
+    await wait(2600);
+    check(none(), 'on, unused: the overlays and the quick view are closed');
+    log(`     memory with the ram saver on, unused: ${memory()} MB in ${app.getAppMetrics().length} processes`);
+
+    // used: made right then
+    for (const [id, what] of [['snipr', 'a snip'], ['measr', 'measuring']]) {
+      const t0 = Date.now();
+      u.Host.open(id);
+      while (!overlays(id).some((w) => w.isVisible()) && Date.now() - t0 < 4000) await wait(20);
+      const ov = overlays(id).find((w) => w.isVisible());
+      check(!!ov, `${what} makes its overlay when it's needed (${Date.now() - t0} ms)`);
+      await wait(300);
+      if (ov) ov.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await wait(400);
+    }
+    const t0 = Date.now();
+    await u.showQuick();
+    await wait(200);
+    const Q = u.quickWin();
+    check(!!Q && Q.isVisible(), `the quick view is made when it's opened (${Date.now() - t0} ms)`);
+    if (Q) Q.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+    await wait(2800);
+    check(none(), 'and after a while unused, closed again');
+
+    // off again: kept ready again
+    L = await toggle();
+    await wait(800);
+    check(u.Store.get().ramSaver === false && ready(), 'off again: the overlays and the quick view are kept ready again');
+    u.closeLauncher();
+  } finally {
+    delete process.env.UTILR_RAM_SAVER_MS;
+  }
+}
 
 // ---- measr: install, its key, a real open, then a made-up screen with known
 // shapes on it, measured through the real overlay (mouse, keys, clipboard).

@@ -8,12 +8,17 @@
 //   scans     a root without a cache is read at once; one with a cache is
 //             searchable straight from it and read again a little later (to
 //             catch what changed while utilr was off), then every 6 hours
-//   changes   the watch thread (watch.js) says which folders changed, over a
-//             port; a moment later each is read again and the index fixed
-//   away      when findr isn't used for a while, main puts this thread away to
-//             give its memory back: it saves what changed, hands back the
-//             folders it hadn't looked at yet, and is ended. The next one
-//             loads the cache and carries on where this one stopped
+//   watching  fixed drives are watched (one recursive watch per drive, what
+//             Windows calls ReadDirectoryChangesW). A change marks its folder;
+//             a moment later the folder is read again and the index fixed.
+//             USB drives aren't watched (a watch would stop you ejecting them).
+//             With utilr's RAM saver off, this thread watches the drives
+//             itself; with it on, the watch thread (watch.js) does, and says
+//             which folders changed over a port
+//   away      RAM saver on: when findr isn't used for a while, main puts this
+//             thread away to give its memory back. It saves what changed,
+//             hands back the folders it hadn't looked at yet, and is ended.
+//             The next one loads the cache and carries on where it stopped
 //
 // Messages in:  config, port, lost, search, rescan, touch, recent, save
 // On the port:  dirty, lost, park (from the watch thread)
@@ -25,10 +30,12 @@ const path = require('path');
 const crypto = require('crypto');
 const v8 = require('v8');
 const E = require('./engine');
+const { ignoredChange } = require('./walk');
 const { RESCAN_EVERY, FRESH, AFTER_CACHE, MAX_DIRTY, QUIET_AFTER, LOST_EVERY, LOST_WAIT } = require('./timing');
 
 const P = path.win32;
 const { cacheDir, srcs, boot } = workerData;
+const cacheKey = E.key(cacheDir);
 
 const SAVE_AFTER = 10 * 60 * 1000; // live changes are saved this long after the first (and when findr
                                    // stops, or this thread is put away): busy folders change all the
@@ -57,7 +64,7 @@ function status() {
     post({
       type: 'status',
       roots: [...roots.values()].map((s) => ({
-        root: s.root, count: s.v.live, scanning: !!s.scan, found: s.found, at: s.v.scannedAt, due: s.dueAt,
+        root: s.root, count: s.v.live, scanning: !!s.scan, found: s.found, at: s.v.scannedAt, due: s.dueAt, watching: !!s.watcher,
       })),
     });
   }, 150);
@@ -78,6 +85,7 @@ function scan(s, why = 'scheduled') {
   // Otherwise it fills a new one, swapped in when it's done.
   const fresh = s.v.next <= 1;
   const v = fresh ? s.v : new E.Volume(s.root);
+  v.noWindows = s.noWindows;
   v.start();
   s.target = v;
   s.found = 1;
@@ -89,7 +97,7 @@ function scan(s, why = 'scheduled') {
     // young generation keeps it from growing a big heap that outlives it.
     w = new Worker(boot, {
       eval: true,
-      workerData: { entry: './scan', srcs, root: s.root },
+      workerData: { entry: './scan', srcs, root: s.root, noWindows: s.noWindows },
       resourceLimits: { maxYoungGenerationSizeMb: 4, maxOldGenerationSizeMb: 512 },
     });
   } catch (err) {
@@ -162,7 +170,43 @@ function saveLater(s) {
 }
 
 // ---------------------------------------------------------------------------
-// changes (from the watch thread)
+// watching (here when the RAM saver is off; in watch.js when it's on)
+// ---------------------------------------------------------------------------
+
+function unwatch(s) {
+  if (s.watcher) { try { s.watcher.close(); } catch (_) {} }
+  s.watcher = null;
+}
+
+function watch(s) {
+  unwatch(s);
+  if (!s.watchOn) return;
+  try {
+    // 'rename' is a name appearing or going (new, deleted, renamed, moved);
+    // 'change' is only an edit, which doesn't change any name.
+    s.watcher = fs.watch(s.root, { recursive: true }, (ev, name) => {
+      if (ev === 'rename' || !name) onEvent(s, name);
+    });
+    s.watcher.on('error', (err) => {
+      log(`stopped watching ${s.root}: ${err.message}`);
+      unwatch(s);
+      status();
+    });
+  } catch (err) {
+    log(`can't watch ${s.root}: ${err.message}`);
+  }
+}
+
+function onEvent(s, name) {
+  if (!name) { onLost(s, 'windows lost track of changes'); return; } // too much at once
+  if (ignoredChange(name, s.noWindows)) return;
+  const full = P.join(s.root, String(name));
+  if (cacheKey && E.key(full).startsWith(cacheKey)) return; // findr's own cache
+  onDirty(s, [P.dirname(full)]);
+}
+
+// ---------------------------------------------------------------------------
+// changes (from this thread's watch, or the watch thread)
 // ---------------------------------------------------------------------------
 
 function onDirty(s, dirs) {
@@ -225,15 +269,20 @@ function tick(s) {
 // ---------------------------------------------------------------------------
 
 function drop(s) {
+  unwatch(s);
   if (s.scan) { try { s.scan.terminate(); } catch (_) {} }
   s.scan = null;
   for (const t of ['tick', 'saveTimer', 'rescanTimer']) clearTimeout(s[t]);
 }
 
-// Roots: each { root, resume }. resume is there when this thread takes over
-// from one that was put away: the watch thread kept every change since, so
-// nothing has to be read again, and the next scan is when that one had it
-// ({ at, why, lost }; no at: 6 hours after the last).
+// Roots: each { root, watch, noWindows, resume }.
+//   watch      this thread watches it (RAM saver off; with it on, the watch
+//              thread does, and this is false)
+//   noWindows  a drive whose Windows folder isn't walked (findr's setting)
+//   resume     there when this thread takes over from one that was put away:
+//              the watch thread kept every change since, so nothing has to be
+//              read again, and the next scan is when that one had it
+//              ({ at, why, lost }; no at: 6 hours after the last)
 function configure(m) {
   if (m.home) home = E.key(m.home);
   const want = new Map((m.roots || []).map((r) => [E.key(r.root), r]));
@@ -245,16 +294,32 @@ function configure(m) {
   }
   prune(want);
   for (const [k, r] of want) {
-    if (roots.has(k)) continue;
-    const s = {
-      root: r.root, v: new E.Volume(r.root), scan: null, target: null, found: 0, dirty: new Set(), during: null,
-      tick: null, saveTimer: null, rescanTimer: null, rescanAt: 0, dueAt: 0, dueWhy: '',
+    let s = roots.get(k);
+    if (s) {
+      if (s.watchOn !== !!r.watch) { s.watchOn = !!r.watch; watch(s); }
+      if (s.noWindows !== !!r.noWindows) {
+        s.noWindows = s.v.noWindows = !!r.noWindows;
+        scan(s, `windows folder ${s.noWindows ? 'left out' : 'in'}`);
+      }
+      continue;
+    }
+    s = {
+      root: r.root, watchOn: !!r.watch, noWindows: !!r.noWindows, v: new E.Volume(r.root), scan: null, target: null,
+      found: 0, watcher: null, dirty: new Set(), during: null, tick: null, saveTimer: null, rescanTimer: null,
+      rescanAt: 0, dueAt: 0, dueWhy: '',
     };
+    s.v.noWindows = s.noWindows;
     roots.set(k, s);
+    watch(s);
     const t0 = Date.now();
     if (!E.load(s.v, cacheFile(r.root))) { scan(s, 'first time'); continue; }
     const age = Date.now() - s.v.scannedAt;
     log(`${r.root}: ${s.v.live} entries from the cache in ${Date.now() - t0} ms (${Math.round(age / 60000)} min old)`);
+    if (s.v.cachedNoWindows !== s.noWindows) {
+      // read with the windows folder the other way: searchable as it is, read again now
+      scan(s, `windows folder ${s.noWindows ? 'left out' : 'in'}`);
+      continue;
+    }
     const re = r.resume;
     if (re && re.at) {
       if (re.lost) s.rescanAt = re.at;

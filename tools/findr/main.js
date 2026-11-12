@@ -74,7 +74,10 @@ module.exports = function findr(host) {
   // folders:  extra places to cover, e.g. a network share (settings file only)
   // recent:   remember what you open (it's ranked first, and shown before you type)
   // look:     bar, window or line (see LOOKS)
-  const defaults = () => ({ key: Keys.DEFAULT, drives: {}, known: [], folders: [], recent: true, look: 'bar' });
+  // windowsFolders: what's inside a drive's own Windows folder is found too
+  //           (off: the folder is listed, its hundreds of thousands of system
+  //           files aren't, which saves memory and scan time)
+  const defaults = () => ({ key: Keys.DEFAULT, drives: {}, known: [], folders: [], recent: true, look: 'bar', windowsFolders: false });
   const FILE = () => path.join(host.dataDir, 'findr-settings.json');
   const RECENT = () => path.join(host.dataDir, 'findr-recent.json');
 
@@ -93,6 +96,7 @@ module.exports = function findr(host) {
     if (!Array.isArray(settings.folders)) settings.folders = [];
     settings.folders = settings.folders.filter((f) => typeof f === 'string' && path.isAbsolute(f));
     settings.recent = settings.recent !== false;
+    settings.windowsFolders = settings.windowsFolders === true;
     if (!LOOKS.includes(settings.look)) settings.look = 'bar';
   }
 
@@ -205,24 +209,30 @@ module.exports = function findr(host) {
 
   const driveOn = (d) => (d.letter in settings.drives ? !!settings.drives[d.letter] : ON_BY_DEFAULT.has(d.type));
 
+  // noWindows: a drive's own Windows folder is listed, not walked (findr's
+  // "windows folders" setting, off by default)
   function roots() {
-    const out = settings.known.filter(driveOn).map((d) => ({ root: d.letter.toUpperCase() + ':\\', watch: WATCHED.has(d.type) }));
-    for (const f of settings.folders) if (fs.existsSync(f)) out.push({ root: f, watch: true });
+    const noWindows = !settings.windowsFolders;
+    const out = settings.known.filter(driveOn).map((d) => ({ root: d.letter.toUpperCase() + ':\\', watch: WATCHED.has(d.type), noWindows }));
+    for (const f of settings.folders) if (fs.existsSync(f)) out.push({ root: f, watch: true, noWindows: false });
     return out;
   }
 
   // ---------------------------------------------------------------------------
-  // the threads: the watch (watch.js), always on and small, and the engine
-  // (worker.js), which holds the index and is put away when findr isn't used
+  // the threads
   // ---------------------------------------------------------------------------
   //
-  // Put away: after UNLOAD_AFTER without the popup, and with no scan running
-  // or due soon, the engine saves what changed and is ended, and its memory
-  // (100 MB and more on a big disk) goes back to Windows. Meanwhile the watch
-  // keeps which folders change. Opening the popup brings the engine back: the
-  // cache in a fraction of a second, then those folders. A scan that comes
-  // due while it's away (every 6 hours, or Windows losing track) brings it
-  // back for that, and it goes again once the scan's done.
+  // RAM saver off (utilr's settings; the default): one engine thread
+  // (worker.js) holds the index and watches the drives, always.
+  //
+  // RAM saver on: the watch moves to a thread of its own (watch.js), small and
+  // always on, and the engine is put away when findr isn't used. After
+  // UNLOAD_AFTER without the popup, and with no scan running or due soon, it
+  // saves what changed and is ended, and its memory goes back to Windows.
+  // Meanwhile the watch keeps which folders change. Opening the popup brings
+  // the engine back: the cache in a fraction of a second, then those folders.
+  // A scan that comes due while it's away (every 6 hours, or Windows losing
+  // track) brings it back for that, and it goes again once the scan's done.
 
   let engine = null;
   let watcher = null;
@@ -243,7 +253,33 @@ module.exports = function findr(host) {
   let idleTimer = null;
   let wakeTimer = null;
 
-  const unloadAfter = () => (process.env.UTILR_SMOKE && Number(process.env.UTILR_FINDR_UNLOAD)) || UNLOAD_AFTER;
+  const saving = () => !!(host.ramSaver && host.ramSaver());
+  const unloadAfter = () => (host.ramSaverMs ? host.ramSaverMs() : UNLOAD_AFTER);
+
+  // RAM saver turned off: the engine watches again (and comes back if it was
+  // away); the watch thread hands over what it kept, then goes
+  function retireWatch() {
+    if (!watcher || parking || saving()) return;
+    const w = watcher;
+    watcher = null;
+    setTimeout(() => w.terminate(), 2000); // time to pass on what it kept
+    configure(); // the engine watches again
+  }
+
+  function setRamSaver(on) {
+    if (stopping) return;
+    if (on) {
+      bootWatch();
+      link();
+      configure(); // the engine stops watching: the watch thread does
+      armIdle();
+      return;
+    }
+    clearTimeout(idleTimer);
+    if (parking) { wantBack = true; return; } // back once it's gone, then the watch goes
+    if (!engine) bootEngine('ram saver off'); // with what the watch thread kept
+    retireWatch();
+  }
 
   function bootWatch() {
     if (watcher || stopping) return;
@@ -261,7 +297,7 @@ module.exports = function findr(host) {
       parking = false;
       if (watchRestarts++ >= 3) return;
       setTimeout(() => {
-        if (stopping) return;
+        if (stopping || !saving()) return;
         bootWatch();
         link();
         // what changed in between is lost: read it all again
@@ -304,9 +340,11 @@ module.exports = function findr(host) {
     armIdle();
   }
 
-  // looked at every so often while the engine is up, and again when the popup goes
+  // looked at every so often while the engine is up (RAM saver on), and again
+  // when the popup goes
   function armIdle() {
     clearTimeout(idleTimer);
+    if (!saving()) return;
     idleTimer = setTimeout(() => {
       idleTimer = null;
       maybePark();
@@ -335,7 +373,12 @@ module.exports = function findr(host) {
     if (!engine) return;
     engine.postMessage({
       type: 'config',
-      roots: rs.map((r) => ({ root: r.root, resume: resume ? resume.get(pkey(r.root)) || null : null })),
+      roots: rs.map((r) => ({
+        root: r.root,
+        watch: r.watch && !watcher, // the engine watches, unless the watch thread does
+        noWindows: r.noWindows,
+        resume: resume ? resume.get(pkey(r.root)) || null : null,
+      })),
       home: process.env.USERPROFILE || '',
     });
   }
@@ -344,7 +387,7 @@ module.exports = function findr(host) {
   // passes the request on behind the last change it sent, and the engine
   // answers "parked" or "busy".
   function maybePark() {
-    if (!engine || !watcher || parking || stopping || shown || !heard || inflight) return;
+    if (!saving() || !engine || !watcher || parking || stopping || shown || !heard || inflight) return;
     const now = Date.now();
     if (now - usedAt < unloadAfter()) return;
     if (index.some((r) => r.scanning || (r.due && r.due - now < BUSY_SOON))) return;
@@ -373,8 +416,9 @@ module.exports = function findr(host) {
     armWake();
     if (wantBack) {
       wantBack = false;
-      bootEngine('wanted while it was going');
+      bootEngine(saving() ? 'wanted while it was going' : 'ram saver off');
       if (shown) refreshPopup(); // what it asked for in between went unanswered
+      retireWatch(); // the RAM saver was turned off meanwhile
     }
   }
 
@@ -600,7 +644,7 @@ module.exports = function findr(host) {
   async function show(opts = {}) {
     clearTimeout(releaseTimer);
     usedAt = Date.now();
-    if (!stopping && (!engine || parking)) { bootWatch(); bootEngine('opened'); }
+    if (!stopping && (!engine || parking)) { if (saving()) bootWatch(); bootEngine('opened'); }
     if (Date.now() - drivesAt > DRIVES_EVERY) detectDrives(); // a USB drive you just put in
     const t0 = Date.now();
     const cold = !win || win.isDestroyed();
@@ -775,6 +819,7 @@ module.exports = function findr(host) {
     drives: settings.known.map((d) => ({ letter: d.letter, type: d.type, label: d.label, on: driveOn(d) })),
     folders: settings.folders.slice(),
     recent: settings.recent,
+    windowsFolders: settings.windowsFolders,
     look: settings.look,
     version: host.version,
     hosted: true, // utilr does start at login and quit: findr has no rows for them
@@ -813,6 +858,11 @@ module.exports = function findr(host) {
       configure();
     }
     if (typeof patch.look === 'string') { setLook(patch.look); return; } // a new window; it gets the settings itself
+    if (typeof patch.windowsFolders === 'boolean' && patch.windowsFolders !== settings.windowsFolders) {
+      settings.windowsFolders = patch.windowsFolders;
+      log(`windows folders ${settings.windowsFolders ? 'in' : 'left out'}`);
+      configure(); // those drives are read again
+    }
     if (typeof patch.recent === 'boolean') {
       settings.recent = patch.recent;
       if (!patch.recent) clearRecent();
@@ -841,7 +891,7 @@ module.exports = function findr(host) {
     loadRecent();
     registerKey();
     bootTimer = setTimeout(() => {
-      bootWatch();
+      if (saving()) bootWatch();
       bootEngine();
       detectDrives();
     }, BOOT_AFTER);
@@ -891,5 +941,6 @@ module.exports = function findr(host) {
     ],
     keys: () => [{ id: 'key', label: 'find files', combo: settings.key, ok: registered !== null || keyPaused }],
     setKey,
+    ramSaver: setRamSaver,
   };
 };

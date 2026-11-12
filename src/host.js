@@ -5,15 +5,19 @@
 //
 // A tool's main.js exports one function, (host) => tool:
 //
-//   host   { id, name, version, dir, dataDir, ipc, shortcuts, log, changed }
+//   host   { id, name, version, dir, dataDir, ipc, shortcuts, log, changed, ramSaver }
 //            ipc        ipcMain, but every channel is "<id>/<channel>", so two
 //                       tools can both have "settings:set" (their preloads
 //                       send with the same prefix)
 //            shortcuts  globalShortcut, but shared fairly (see shortcuts.js)
 //            dataDir    %APPDATA%\utilr\tools\<id>, made before start()
 //            changed()  "my keys or actions changed": the launcher refreshes
+//            ramSaver() utilr's RAM saver setting: true means make windows
+//                       when they're used and close them after ramSaverMs()
+//                       unused (5 minutes), instead of keeping them ready
 //
-//   tool   { start(), stop(), open(), actions(), keys(), setKey(id, combo) }
+//   tool   { start(), stop(), open(), actions(), keys(), setKey(id, combo), ramSaver(on)? }
+//            ramSaver(on)  optional: the setting changed while the tool runs
 //            start()    load state, register keys, warm up windows; no UI
 //            stop()     save, close every window, let go of every key
 //            open()     the main thing (quick view tile, tray click)
@@ -30,6 +34,10 @@ const TOOLS_DIR = path.join(__dirname, '..', 'tools');
 
 let log = () => {};
 let onChange = () => {};
+let ramSaver = false;
+const RAM_SAVER_MS = 5 * 60 * 1000; // with the RAM saver on: unused this long, a window is closed
+// (the smoke test makes it seconds)
+const ramSaverMs = () => (process.env.UTILR_SMOKE && Number(process.env.UTILR_RAM_SAVER_MS)) || RAM_SAVER_MS;
 const running = new Map(); // id -> { tool, ipc: [channels] }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +146,8 @@ function start(id, { firstRun = false } = {}) {
       shortcuts: Shortcuts.scoped(id),
       log: (msg) => log(`${id}: ${msg}`),
       changed: () => onChange(id),
+      ramSaver: () => ramSaver,
+      ramSaverMs,
     });
     running.set(id, { tool, channels });
     tool.start();
@@ -202,8 +212,17 @@ function setKey(id, keyId, combo) {
   return safe(() => t.setKey(keyId, combo), { ok: false, error: 'failed' }) || { ok: false };
 }
 
+// utilr's RAM saver setting; the tools that run hear of a change
+function setRamSaver(on) {
+  on = !!on;
+  if (on === ramSaver) return;
+  ramSaver = on;
+  for (const r of running.values()) if (r.tool.ramSaver) safe(() => r.tool.ramSaver(on));
+}
+
 module.exports = {
-  list, find, start, stop, stopAll, open, actions, run, keys, setKey, dataDir,
+  list, find, start, stop, stopAll, open, actions, run, keys, setKey, dataDir, setRamSaver, ramSaverMs,
+  ramSaver: () => ramSaver,
   isRunning: (id) => running.has(id),
   setLog: (fn) => { log = fn; },
   onChange: (fn) => { onChange = fn; },
