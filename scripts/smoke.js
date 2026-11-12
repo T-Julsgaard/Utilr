@@ -411,6 +411,33 @@ async function findr(u) {
     await js(vis(), `window.findr.hide()`);
     await wait(400);
 
+    // unused for a while (here 1.5 s, not 5 minutes): the index is put away,
+    // its thread ended. The watch keeps what changes meanwhile, and opening
+    // findr brings the index back from its cache, with those changes, without
+    // reading the folder again.
+    const logNow = () => fs.readFileSync(path.join(app.getPath('userData'), 'utilr.log'), 'utf8');
+    const scans = () => (logNow().match(/findr: scanned /g) || []).length;
+    process.env.UTILR_FINDR_UNLOAD = '1500';
+    u.Host.open('findr');
+    await wait(500);
+    await js(vis(), `window.findr.hide()`);
+    await wait(2600);
+    const scanned = scans();
+    check(/findr: index put away/.test(logNow()), 'unused, the index is put away');
+    put('beta/while-away.txt');
+    fs.rmSync(path.join(fx, 'photos', 'img_0001.jpg'));
+    await wait(600);
+    u.Host.open('findr');
+    await wait(1600);
+    r = await js(vis(), `window.findr.search('while-away')`);
+    check(r.total === 1, 'opened again: a file made while it was away is there');
+    r = await js(vis(), `window.findr.search('img_0001')`);
+    check(r.total === 0, 'and one deleted while it was away is gone');
+    check(/findr: index back \(opened\)/.test(logNow()) && scans() === scanned, 'it came back from the cache, without reading the folder again');
+    await js(vis(), `window.findr.hide()`);
+    delete process.env.UTILR_FINDR_UNLOAD;
+    await wait(400);
+
     // keys, remove, reinstall: the index comes back from its cache
     const sniprKey = u.publicState().tools.find((x) => x.id === 'snipr').keys[0].combo;
     r = u.setKey('findr', 'key', sniprKey);

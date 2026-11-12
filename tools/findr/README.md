@@ -66,8 +66,8 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
   the best matches are ranked: exact names and name starts first, things you opened before and
   things in your own folder up, deep paths a little down, and machine-made folders (`AppData`,
   `node_modules`, `.git`, `Windows`, …) well down.
-- **Keeping up.** Fixed drives are watched (`fs.watch`, recursive, one per drive: Windows'
-  `ReadDirectoryChangesW`). Only names appearing and going count. When one does, its folder is
+- **Keeping up.** Fixed drives are watched by a small thread of their own (`fs.watch`,
+  recursive, one per drive: Windows' `ReadDirectoryChangesW`). Only names appearing and going count. When one does, its folder is
   read again a moment later and compared with the list, so new, renamed, moved and deleted files
   show up in about a second. A folder moved in is read whole. USB drives aren't watched (a watch
   would keep you from ejecting them). They're read when they appear and when you ask. Watching
@@ -81,7 +81,7 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
   `%APPDATA%\utilr\tools\findr` (about 45 MB for 900k entries). On the next start it's
   searchable from there within a tenth of a second. Twenty seconds later the drives are read
   again in the background, to catch what changed while utilr was off, and again every 6 hours.
-  Live changes are saved every 10 minutes and when findr stops.
+  Live changes are saved every 10 minutes, when findr stops and when the engine is put away.
 - **Left out:** the recycle bin, `System Volume Information`, `WinSxS` (100k files nobody looks
   for), Windows setup leftovers, and folders a normal user can't open (findr runs without
   admin, so it sees what you see). Junctions and symlinks are listed but not followed, so
@@ -90,7 +90,16 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
   Local and USB drives are in by default. Network drives and discs aren't. Turn any of them on
   or off in the menu (a drive turned off is dropped, cache and all). To cover a folder that
   isn't a drive (a network share, say), add it to `"folders"` in `findr-settings.json`.
-- **Memory:** about 100–150 MB with 900,000 entries indexed (most of it the names themselves).
+- **Put away when unused.** After 5 minutes without the popup, and with no scan running or due
+  within 2 minutes, the engine thread saves what changed and is ended, and its memory goes back
+  to Windows. The watch thread stays (about 11 MB) and keeps a list of the folders that change.
+  Opening findr starts the engine again: the cache loads, those folders are read again, and
+  nothing else is. On the machine this was built on, C: (430k entries) loaded in about 50 ms,
+  and the first search was answered about 85 ms after the engine started. A scan that comes
+  due while the engine is away (the 6-hourly one, or Windows losing track) starts it for that
+  scan, and it goes again afterwards. The log says when it goes and why it comes back.
+- **Memory**, measured on C: (430k entries): the engine thread with the index takes about
+  25–30 MB more than when it's put away, and that grows with the number of entries.
   The engine starts 1.5 s after utilr does, so utilr's own start isn't slowed.
 - **The popup is made the first time you open it** (about 0.1 s), then kept hidden so the shortcut
   opens it at once. After 5 minutes unused it's closed again.
@@ -103,7 +112,9 @@ anywhere else. While a drive is being read, a slow 1 px sweep runs along their b
 
 ```
 main.js      the tool: settings, drives, recent, the popup window (one per look), opening, the shortcut
-worker.js    the engine thread: roots, scans, watching, live updates, cache, searches
+worker.js    the engine thread: roots, scans, live updates, cache, searches, being put away
+watch.js     the watch thread: always on, watches the drives, keeps changes while the engine is away
+timing.js    when drives are read again (shared by main.js and worker.js)
 engine.js    the index itself: segments, search and ranking, refreshing a folder, the cache file
 walk.js      reading a folder tree into the list (used by scans and by live updates)
 scan.js      a scan thread: walks one drive, posts batches

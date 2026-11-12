@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const FILES = ['walk', 'engine', 'worker', 'scan'];
+const FILES = ['walk', 'engine', 'timing', 'worker', 'scan', 'watch'];
 
 let cached = null;
 const sources = () => cached || (cached = Object.fromEntries(
