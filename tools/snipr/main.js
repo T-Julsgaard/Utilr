@@ -34,6 +34,14 @@ const IS_MAC = process.platform === 'darwin';
 const ASSETS = path.join(__dirname, 'assets');
 const ICON = path.join(ASSETS, IS_WIN ? 'snipr.ico' : 'snipr-256.png');
 const INKS = ['ghost', 'red', 'black'];
+const GIF = {
+  fps: 15,               // frames a second while recording
+  maxSide: 1920,         // a gif wider or taller than this is scaled down (a 4k screen stays sane)
+  maxMs: 2 * 60 * 1000,  // a recording stops by itself after this long
+  bar: { width: 236, height: 34 }, // the recording bar
+  edge: 6,               // px round the recorded area for its frame (outside it, so never recorded)
+};
+const KEY_FIELDS = ['key', 'textKey', 'gifKey'];
 
 module.exports = function snipr(host) {
   const { ipc: ipcMain, shortcuts: globalShortcut } = host;
@@ -58,6 +66,7 @@ module.exports = function snipr(host) {
 
   // key:          the system-wide "snip" shortcut
   // textKey:      the system-wide "snip text" shortcut (windows): drag, and the text is on the clipboard
+  // gifKey:       the system-wide "record gif" shortcut: drag, rec, and again to stop
   // copy:        every snip goes to the clipboard right away
   // open:         show the snip in its own window after capture
   // autoSave:     also save every snip to the folder right away
@@ -71,6 +80,7 @@ module.exports = function snipr(host) {
   const defaults = () => ({
     key: Keys.DEFAULT,
     textKey: Keys.TEXT_DEFAULT,
+    gifKey: Keys.GIF_DEFAULT,
     copy: true,
     open: true,
     autoSave: false,
@@ -98,6 +108,10 @@ module.exports = function snipr(host) {
           settings.key = Keys.normalize(settings.key) || Keys.DEFAULT;
           settings.textKey = Keys.normalize(settings.textKey) || Keys.TEXT_DEFAULT;
           if (settings.textKey === settings.key) settings.textKey = settings.key === Keys.TEXT_DEFAULT ? Keys.DEFAULT : Keys.TEXT_DEFAULT;
+          settings.gifKey = Keys.normalize(settings.gifKey) || Keys.GIF_DEFAULT;
+          if (settings.gifKey === settings.key || settings.gifKey === settings.textKey) {
+            settings.gifKey = [Keys.GIF_DEFAULT, 'alt+shift+r', 'ctrl+alt+shift+g'].find((k) => k !== settings.key && k !== settings.textKey);
+          }
           if (!INKS.includes(settings.ink)) settings.ink = 'ghost';
           if (!BORDERS.includes(settings.border)) settings.border = 0;
           if (!Fonts.FONTS.includes(settings.font)) settings.font = Fonts.DEFAULT;
@@ -146,6 +160,8 @@ module.exports = function snipr(host) {
     key: settings.key,
     textKey: settings.textKey,
     textKeyOk: registered.textKey !== null || keyPaused || !Ocr.available,
+    gifKey: settings.gifKey,
+    gifKeyOk: registered.gifKey !== null || keyPaused,
     ocr: Ocr.available,
     copy: settings.copy,
     open: settings.open,
@@ -311,10 +327,12 @@ module.exports = function snipr(host) {
     ensureToast();
   }
 
-  // mode 'image': the snip (clipboard, window, folder, as set); 'text': only its text, to the clipboard
+  // mode 'image': the snip (clipboard, window, folder, as set); 'text': only its text, to the clipboard;
+  // 'gif': the area to record
   async function startCapture(origin = 'key', mode = 'image') {
     if (session) return;
     if (mode === 'text' && !Ocr.available) return;
+    if (mode === 'gif' && rec) return;
     const sid = ++sessionSeq;
     session = { sid, origin, mode, shots: null, displays: null, ready: new Set() };
     const t0 = Date.now();
@@ -419,6 +437,13 @@ module.exports = function snipr(host) {
     const { mode } = session;
     endSession();
 
+    // gif: nothing is cut out of the frozen screen; the live one is recorded
+    if (mode === 'gif') {
+      hideOverlays(false);
+      startRecording(d, rect);
+      return;
+    }
+
     const s = d.scaleFactor;
     const full = shot.getSize();
     const px = {
@@ -510,9 +535,9 @@ module.exports = function snipr(host) {
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = (t) => `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}-${pad(t.getHours())}${pad(t.getMinutes())}${pad(t.getSeconds())}`;
 
-  function freeName(dir, base) {
-    let name = base + '.png', n = 2;
-    while (fs.existsSync(path.join(dir, name))) name = `${base}-${n++}.png`;
+  function freeName(dir, base, ext = '.png') {
+    let name = base + ext, n = 2;
+    while (fs.existsSync(path.join(dir, name))) name = `${base}-${n++}${ext}`;
     return path.join(dir, name);
   }
 
@@ -670,6 +695,209 @@ module.exports = function snipr(host) {
   }
 
   // ---------------------------------------------------------------------------
+  // gif: record an area of the screen
+  //
+  // You drag the area on the frozen screen like a snip. Then the live screen is
+  // back with a thin frame just outside the area (so the frame is never in the
+  // gif) and a small bar beside it: rec, rec in 3, cancel. The bar is the
+  // recorder: it streams the screen, crops each frame to the area and hands it
+  // to the encoder (gif-worker.js). The bar never takes the focus, so the app
+  // you're recording keeps it. The gif shortcut again: rec now / cancel the
+  // countdown / stop. The gif goes to the folder and opens in a gif window.
+  // ---------------------------------------------------------------------------
+
+  let rec = null; // { d, rect, sourceId, state: 'starting'|'ready'|'count'|'rec'|'saving', at, bar, frame }
+
+  const recAbs = (r) => ({ x: r.d.bounds.x + r.rect.x, y: r.d.bounds.y + r.rect.y, width: r.rect.width, height: r.rect.height });
+
+  // under the area, right-aligned; above it when there's no room; inside it
+  // (and kept out of the recording, where Windows allows) when neither fits
+  function recBarBounds(r) {
+    const a = recAbs(r), b = r.d.bounds, { width, height } = GIF.bar, gap = 12;
+    let x = a.x + a.width - width, y = a.y + a.height + gap, inside = false;
+    if (y + height > b.y + b.height) {
+      y = a.y - height - gap;
+      if (y < b.y) { y = a.y + a.height - height - gap; x -= gap; inside = true; }
+    }
+    x = Math.max(b.x, Math.min(b.x + b.width - width, x));
+    y = Math.max(b.y, Math.min(b.y + b.height - height, y));
+    return { bounds: { x, y, width, height }, inside };
+  }
+
+  async function startRecording(d, rect) {
+    if (rec) return;
+    // whole DIPs, at least 8 × 8, inside the display
+    const W = d.bounds.width, H = d.bounds.height;
+    const x = Math.max(0, Math.min(W - 8, Math.round(rect.x)));
+    const y = Math.max(0, Math.min(H - 8, Math.round(rect.y)));
+    const r = {
+      x, y,
+      width: Math.max(8, Math.min(W - x, Math.round(rect.width))),
+      height: Math.max(8, Math.min(H - y, Math.round(rect.height))),
+    };
+    rec = { d, rect: r, sourceId: null, state: 'starting', at: new Date(), bar: null, frame: null };
+    const mine = rec;
+    try {
+      const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 0, height: 0 } });
+      const i = screen.getAllDisplays().findIndex((x) => x.id === d.id);
+      const src = sources.find((s) => s.display_id && s.display_id === String(d.id)) || sources[i] || sources[0];
+      if (!src) throw new Error('no screen source');
+      mine.sourceId = src.id;
+    } catch (err) {
+      if (rec === mine) rec = null;
+      logLine('gif: no source: ' + err.message);
+      toast(IS_MAC ? 'allow screen recording for snipr' : 'could not record the screen', '', 2600);
+      return;
+    }
+    if (rec !== mine || quitting) return;
+    mine.state = 'ready';
+    mine.frame = makeRecFrame(mine);
+    mine.bar = makeRecBar(mine);
+    host.changed();
+    logLine(`gif: area ${r.width}×${r.height} at ${r.x},${r.y} (scale ${d.scaleFactor})`);
+  }
+
+  function makeRecFrame(r) {
+    const a = recAbs(r), m = GIF.edge;
+    const b = { x: a.x - m, y: a.y - m, width: a.width + 2 * m, height: a.height + 2 * m };
+    const win = new BrowserWindow({
+      ...b,
+      frame: false,
+      show: false,
+      transparent: true,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      focusable: false,
+      skipTaskbar: true,
+      hasShadow: false,
+      enableLargerThanScreen: true,
+      alwaysOnTop: true,
+      title: 'snipr',
+      webPreferences: webPrefs(),
+    });
+    win.setAlwaysOnTop(true, 'screen-saver');
+    win.setIgnoreMouseEvents(true);
+    if (IS_MAC) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    win.loadFile(path.join(__dirname, 'frame.html'));
+    lockDown(win);
+    win.once('ready-to-show', () => {
+      if (win.isDestroyed()) return;
+      win.setBounds(b); // twice: Windows can rescale a window moved between DPIs
+      win.setBounds(b);
+      win.showInactive();
+    });
+    return win;
+  }
+
+  function makeRecBar(r) {
+    const { bounds, inside } = recBarBounds(r);
+    const win = new BrowserWindow({
+      ...bounds,
+      frame: false,
+      show: false,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      focusable: false, // clicks work, but the app being recorded keeps the focus
+      skipTaskbar: true,
+      hasShadow: false,
+      alwaysOnTop: true,
+      title: 'snipr',
+      icon: ICON,
+      backgroundColor: BG,
+      webPreferences: webPrefs({ backgroundThrottling: false }),
+    });
+    win.setAlwaysOnTop(true, 'screen-saver');
+    if (inside) win.setContentProtection(true); // over the area: kept out of the gif where the system allows
+    if (IS_MAC) win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    win.loadFile(path.join(__dirname, 'rec.html'));
+    lockDown(win);
+    win.once('ready-to-show', () => {
+      if (win.isDestroyed()) return;
+      win.setBounds(bounds);
+      win.setBounds(bounds);
+      win.showInactive();
+    });
+    // closed some other way (alt+f4): the recording goes with it
+    win.on('closed', () => { if (rec && rec.bar === win) endRec(); });
+    win.webContents.on('render-process-gone', () => { if (rec && rec.bar === win) { endRec(); toast('recording stopped', '', 2200); } });
+    return win;
+  }
+
+  function endRec() {
+    const r = rec;
+    rec = null;
+    if (!r) return;
+    for (const w of [r.frame, r.bar]) if (w && !w.isDestroyed()) w.destroy();
+    host.changed();
+  }
+
+  const recFrom = (e) => rec && rec.bar && !rec.bar.isDestroyed() && e.sender === rec.bar.webContents;
+
+  // the gif shortcut / action: start one, or tell the bar (rec now, cancel the countdown, stop)
+  function gifKey(origin = 'key') {
+    if (rec) {
+      if (rec.bar && !rec.bar.isDestroyed()) rec.bar.webContents.send('rec:key');
+      return;
+    }
+    startCapture(origin, 'gif');
+  }
+
+  // the tray / launcher row follows the recording
+  function gifLabel() {
+    if (!rec) return 'record gif';
+    return { ready: 'start recording', count: 'cancel recording', rec: 'stop recording' }[rec.state] || 'saving gif…';
+  }
+
+  const kb = (n) => (n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + ' kb' : (n / 1024 / 1024).toFixed(1) + ' mb');
+  const secs = (ms) => (ms / 1000).toFixed(1) + ' s';
+
+  // ---------------------------------------------------------------------------
+  // gif windows: the recording, lifted off the screen where it was made
+  // ---------------------------------------------------------------------------
+
+  const gifs = new Map(); // webContents.id -> { win, gif }
+
+  function openGif(gif, d, rect) {
+    const b = snipBounds(d, rect);
+    const win = new BrowserWindow({
+      ...b,
+      minWidth: SNIP_MIN.width,
+      minHeight: SNIP_MIN.height,
+      frame: false,
+      resizable: true,
+      maximizable: false,
+      fullscreenable: false,
+      show: false,
+      opacity: 0,
+      title: 'snipr',
+      icon: ICON,
+      backgroundColor: BG,
+      webPreferences: webPrefs(),
+    });
+    applyOnTop(win);
+    const wcId = win.webContents.id;
+    gifs.set(wcId, { win, gif });
+    win.loadFile(path.join(__dirname, 'gif.html'));
+    lockDown(win);
+    win.once('ready-to-show', () => {
+      win.setBounds(b);
+      win.show();
+      win.focus();
+      animate(win, { opacity: 0 }, { opacity: 1 }, 220);
+    });
+    win.on('closed', () => gifs.delete(wcId));
+    win.webContents.on('render-process-gone', () => { if (!win.isDestroyed()) win.reload(); });
+  }
+
+  const gifOf = (e) => gifs.get(e.sender.id);
+
+  // ---------------------------------------------------------------------------
   // settings window (tray → settings); the same menu also drops from a snip's gear
   // ---------------------------------------------------------------------------
 
@@ -678,8 +906,8 @@ module.exports = function snipr(host) {
   function openSettings() {
     if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
     const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
-    // + the text key row; - start at login and quit, which are utilr's in utilr
-    const width = 320, height = 582 + (Ocr.available ? 34 : 0) - 2 * 34;
+    // + the text key row; + the gif key row; - start at login and quit, which are utilr's in utilr
+    const width = 320, height = 582 + (Ocr.available ? 34 : 0) + 34 - 2 * 34;
     settingsWin = new BrowserWindow({
       x: Math.round(wa.x + (wa.width - width) / 2),
       y: Math.round(wa.y + (wa.height - height) / 3),
@@ -707,6 +935,9 @@ module.exports = function snipr(host) {
   const ownWindows = () => [
     ...overlays.values(),
     ...[...snips.values()].map((x) => x.win),
+    ...[...gifs.values()].map((x) => x.win),
+    rec && rec.bar,
+    rec && rec.frame,
     toastWin,
     settingsWin,
   ].filter((w) => w && !w.isDestroyed());
@@ -719,10 +950,12 @@ module.exports = function snipr(host) {
   // the snip key (system-wide)
   // ---------------------------------------------------------------------------
 
-  // two keys: key = snip, textKey = snip text (windows only)
-  const registered = { key: null, textKey: null };
-  const KEY_NAMES = { key: 'snip shortcut', textKey: 'text shortcut' };
-  const KEY_ACTIONS = { key: () => startCapture('key'), textKey: () => startCapture('key', 'text') };
+  // three keys: key = snip, textKey = snip text (windows only), gifKey = record gif
+  const registered = { key: null, textKey: null, gifKey: null };
+  const KEY_NAMES = { key: 'snip shortcut', textKey: 'text shortcut', gifKey: 'gif shortcut' };
+  const KEY_ACTIONS = { key: () => startCapture('key'), textKey: () => startCapture('key', 'text'), gifKey: () => gifKey('key') };
+  // which of snipr's other keys already has this combo (null = none)
+  const holder = (field, combo) => KEY_FIELDS.find((f) => f !== field && settings[f] === combo) || null;
   let keyPaused = false;
 
   // (re)registers one of the keys; false when another program has it
@@ -749,6 +982,7 @@ module.exports = function snipr(host) {
   function registerKey() {
     const ok = registerOne('key');
     registerOne('textKey');
+    registerOne('gifKey');
     return ok;
   }
 
@@ -778,12 +1012,11 @@ module.exports = function snipr(host) {
       s.onTop = patch.onTop;
       for (const { win } of snips.values()) applyOnTop(win);
     }
-    for (const field of ['key', 'textKey']) {
+    for (const field of KEY_FIELDS) {
       if (typeof patch[field] !== 'string') continue;
       const combo = Keys.normalize(patch[field]);
       if (!combo || combo === s[field]) continue;
-      const other = field === 'key' ? 'textKey' : 'key';
-      if (combo === s[other]) { broadcast('settings:key-taken', Keys.label(combo), field); continue; } // the other snip key has it
+      if (holder(field, combo)) { broadcast('settings:key-taken', Keys.label(combo), field); continue; } // another snipr key has it
       const old = s[field];
       s[field] = combo;
       if (!registerOne(field)) { s[field] = old; registerOne(field); broadcast('settings:key-taken', Keys.label(combo), field); }
@@ -946,6 +1179,156 @@ module.exports = function snipr(host) {
 
   ipcMain.on('snip:new', () => startCapture('snip'));
 
+  // the recording bar
+  ipcMain.handle('rec:init', (e) => {
+    if (!recFrom(e)) return null;
+    const { d, rect } = rec;
+    return {
+      sourceId: rec.sourceId,
+      crop: rect,                                              // DIPs, in the display
+      display: { width: d.bounds.width, height: d.bounds.height },
+      scale: d.scaleFactor,
+      fps: GIF.fps,
+      maxSide: GIF.maxSide,
+      maxMs: GIF.maxMs,
+      key: Keys.label(settings.gifKey),
+    };
+  });
+
+  ipcMain.on('rec:state', (e, state) => {
+    if (!recFrom(e) || !['ready', 'count', 'rec', 'saving'].includes(state)) return;
+    rec.state = state;
+    const fr = rec.frame;
+    if (fr && !fr.isDestroyed()) {
+      if (state === 'saving') { fr.destroy(); rec.frame = null; } // done recording: the area is free again
+      else fr.webContents.send('rec:frame', state);
+    }
+    host.changed();
+  });
+
+  ipcMain.on('rec:cancel', (e) => { if (recFrom(e)) endRec(); });
+
+  ipcMain.on('rec:fail', (e, msg) => {
+    if (!recFrom(e)) return;
+    logLine('gif failed: ' + msg);
+    endRec();
+    toast(IS_MAC ? 'allow screen recording for snipr' : 'could not record the screen', '', 2600);
+  });
+
+  // the finished gif: to the folder, then its window (or just a notice)
+  ipcMain.handle('rec:done', async (e, bytes, meta) => {
+    if (!recFrom(e) || !bytes || !bytes.length) return false;
+    const { d, rect, at } = rec;
+    endRec();
+    const m = meta || {};
+    const gif = {
+      bytes: Buffer.from(bytes),
+      width: m.width | 0,
+      height: m.height | 0,
+      ms: Math.max(0, +m.ms || 0),
+      frames: m.frames | 0,
+      lw: rect.width,  // the area's size on screen (DIPs): the window shows the gif at that size
+      lh: rect.height,
+      at,
+      file: null,
+    };
+    try {
+      const dir = folder();
+      fs.mkdirSync(dir, { recursive: true });
+      gif.file = freeName(dir, 'gif-' + stamp(at), '.gif');
+      fs.writeFileSync(gif.file, gif.bytes);
+    } catch (err) {
+      logLine('gif: save failed: ' + err.message);
+      toast('could not save the gif', '', 2600);
+      return false;
+    }
+    logLine(`gif: ${gif.width}×${gif.height}, ${gif.frames} frames, ${secs(gif.ms)}, ${kb(gif.bytes.length)} -> ${gif.file}`);
+    if (settings.open) openGif(gif, d, rect);
+    else toast('gif saved', `${secs(gif.ms)} · ${kb(gif.bytes.length)}`);
+    return true;
+  });
+
+  // gif window
+  ipcMain.handle('gif:init', (e) => {
+    const g = gifOf(e);
+    if (!g) return null;
+    const { gif } = g;
+    return {
+      bytes: gif.bytes,
+      width: gif.width,
+      height: gif.height,
+      lw: gif.lw,
+      lh: gif.lh,
+      ms: gif.ms,
+      size: kb(gif.bytes.length),
+      name: gif.file ? path.basename(gif.file) : '',
+      saved: gif.file ? shortPath(gif.file) : null,
+      settings: publicSettings(),
+    };
+  });
+
+  ipcMain.handle('gif:save-as', async (e) => {
+    const g = gifOf(e);
+    if (!g) return null;
+    const r = await dialog.showSaveDialog(g.win, {
+      title: 'save gif',
+      defaultPath: g.gif.file || path.join(folder(), 'gif-' + stamp(g.gif.at) + '.gif'),
+      filters: [{ name: 'GIF', extensions: ['gif'] }],
+    });
+    if (r.canceled || !r.filePath) return null;
+    try {
+      fs.writeFileSync(r.filePath, g.gif.bytes);
+      return shortPath(r.filePath);
+    } catch (err) {
+      logLine('gif: save as failed: ' + err.message);
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.on('gif:show', (e) => {
+    const g = gifOf(e);
+    if (g && g.gif.file && fs.existsSync(g.gif.file)) shell.showItemInFolder(g.gif.file);
+    else openFolder();
+  });
+
+  // to the recycle bin (it can come back from there), and the window closes
+  ipcMain.handle('gif:delete', async (e) => {
+    const g = gifOf(e);
+    if (!g) return false;
+    if (g.gif.file && fs.existsSync(g.gif.file)) {
+      try { await shell.trashItem(g.gif.file); } catch (err) {
+        logLine('gif: delete failed: ' + err.message);
+        return false;
+      }
+    }
+    g.gif.file = null;
+    fadeOutAndDestroy(g.win);
+    toast('gif in the recycle bin');
+    return true;
+  });
+
+  // drag the gif out of its window: the saved file itself (a temp copy if it's gone)
+  ipcMain.on('gif:drag', (e, thumb) => {
+    const g = gifOf(e);
+    if (!g) return;
+    try {
+      let file = g.gif.file;
+      if (!file || !fs.existsSync(file)) {
+        const dir = path.join(os.tmpdir(), 'snipr');
+        fs.mkdirSync(dir, { recursive: true });
+        file = path.join(dir, 'gif-' + stamp(g.gif.at) + '.gif');
+        fs.writeFileSync(file, g.gif.bytes);
+      }
+      // the window sends a small png of the gif for the drag icon (nativeImage can't read a gif)
+      const img = thumb && thumb.length ? nativeImage.createFromBuffer(Buffer.from(thumb)) : null;
+      e.sender.startDrag({ file, icon: img && !img.isEmpty() ? img : nativeImage.createFromPath(ICON) });
+    } catch (err) {
+      logLine('gif: drag failed: ' + err.message);
+    }
+  });
+
+  ipcMain.on('gif:new', () => gifKey('gif'));
+
   // ---------------------------------------------------------------------------
   // snipr as utilr sees it
   // ---------------------------------------------------------------------------
@@ -973,6 +1356,7 @@ module.exports = function snipr(host) {
     clearTimeout(delayTimer);
     clearTimeout(toastTimer);
     endSession();
+    endRec(); // a recording in progress is dropped
     clearTimeout(coolTimer);
     screen.removeListener('display-added', onDisplays);
     screen.removeListener('display-removed', onDisplays);
@@ -984,14 +1368,14 @@ module.exports = function snipr(host) {
   }
 
   // A key from utilr's keys page, with the same rules as the settings menu:
-  // the snip key and the text key can't be the same.
+  // no two of snipr's keys can be the same.
   function setKey(field, raw) {
     if (!(field in registered) || (field === 'textKey' && !Ocr.available)) return { ok: false, error: 'unknown shortcut' };
     const combo = Keys.normalize(raw);
     if (!combo) return { ok: false, error: 'not a shortcut' };
     if (combo === settings[field]) return { ok: true };
-    const other = field === 'key' ? 'textKey' : 'key';
-    if (combo === settings[other]) return { ok: false, error: `${KEY_NAMES[other]} has it` };
+    const other = holder(field, combo);
+    if (other) return { ok: false, error: `${KEY_NAMES[other]} has it` };
     const old = settings[field];
     settings[field] = combo;
     if (!registerOne(field)) {
@@ -1012,12 +1396,14 @@ module.exports = function snipr(host) {
       { id: 'snip', label: 'snip', key: 'key', run: () => startCapture('tray') },
       ...(Ocr.available ? [{ id: 'text', label: 'snip text', key: 'textKey', run: () => startCapture('tray', 'text') }] : []),
       { id: 'delay', label: 'snip in 3 seconds', run: () => delayedCapture(3) },
+      { id: 'gif', label: gifLabel(), key: 'gifKey', run: () => gifKey('tray') },
       { id: 'folder', label: 'open folder', run: openFolder },
       { id: 'settings', label: 'settings', run: openSettings },
     ],
     keys: () => [
       { id: 'key', label: 'snip', combo: settings.key, ok: registered.key !== null || keyPaused },
       ...(Ocr.available ? [{ id: 'textKey', label: 'snip text', combo: settings.textKey, ok: registered.textKey !== null || keyPaused }] : []),
+      { id: 'gifKey', label: 'record gif', combo: settings.gifKey, ok: registered.gifKey !== null || keyPaused },
     ],
     setKey,
     ramSaver: setRamSaver,

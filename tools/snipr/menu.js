@@ -19,6 +19,7 @@
     { px: 24, label: 'medium' },
     { px: 48, label: 'large' },
   ];
+  const KEY_ACTS = ['key', 'textKey', 'gifKey']; // the shortcut rows
   const borderLabel = (px) => (BORDERS.find((b) => b.px === px) || BORDERS[0]).label;
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -26,7 +27,7 @@
   function create({ el, api, inline = false, onClose = () => {} }) {
     let S = null;
     let page = 'main';      // 'main' | 'ink' | 'border' | 'font'
-    let recording = null;   // 'key' | 'textKey' while a new shortcut is being recorded
+    let recording = null;   // 'key' | 'textKey' | 'gifKey' while a new shortcut is being recorded
     let keyNote = null;     // { field, text, bad } shown in place of the key for a moment
     let noteTimer = null;
 
@@ -41,7 +42,7 @@
     const toggle = (act, label, on) => row({ act, label, value: on ? 'on' : 'off', mark: on ? '&gt;' : '' });
     // a shortcut row: click, then press the new keys
     function keyRow(field, label) {
-      const ok = field === 'key' ? S.keyOk : S.textKeyOk;
+      const ok = S[field + 'Ok'];
       const n = keyNote && keyNote.field === field ? keyNote : null;
       const value = recording === field ? 'press keys…' : n ? n.text : Keys.label(S[field]) + (ok ? '' : ' (taken)');
       const valueCls = recording === field ? 'rec' : (n && n.bad) || !ok ? 'bad' : '';
@@ -76,6 +77,7 @@
         html += row({ act: 'border', label: 'border', value: borderLabel(S.border) + ' ›' });
         html += keyRow('key', 'snip shortcut');
         if (S.ocr) html += keyRow('textKey', 'text shortcut');
+        html += keyRow('gifKey', 'gif shortcut');
         html += sep;
         html += toggle('onTop', 'keep snips on top', S.onTop);
         html += toggle('confirmDiscard', 'ask before discard', S.confirmDiscard);
@@ -121,7 +123,7 @@
         return;
       }
       if (a === 'folder') { await api.chooseFolder(); return; }
-      if (a === 'key' || a === 'textKey') {
+      if (KEY_ACTS.includes(a)) {
         if (recording === a) { stopRecording(); return; }
         if (!recording) api.recordKey(true);
         recording = a;
@@ -135,7 +137,7 @@
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-act]');
       if (!b || b.disabled) return;
-      if (recording && b.dataset.act !== 'key' && b.dataset.act !== 'textKey') stopRecording();
+      if (recording && !KEY_ACTS.includes(b.dataset.act)) stopRecording();
       act(b.dataset.act);
     });
     if (!inline) el.addEventListener('mousedown', (e) => e.preventDefault());

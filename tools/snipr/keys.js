@@ -6,6 +6,7 @@
 
   const DEFAULT = 'alt+shift+s';
   const TEXT_DEFAULT = 'alt+shift+t'; // snip text (windows)
+  const GIF_DEFAULT = 'alt+shift+g';  // record a gif
 
   const MOD_ALIASES = {
     ctrl: 'ctrl', control: 'ctrl', ctl: 'ctrl', strg: 'ctrl',
@@ -77,7 +78,7 @@
     return String(combo || '').replace('printscreen', 'prt sc');
   }
 
-  const api = { DEFAULT, TEXT_DEFAULT, normalize, toAccelerator, fromEvent, label };
+  const api = { DEFAULT, TEXT_DEFAULT, GIF_DEFAULT, normalize, toAccelerator, fromEvent, label };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.SniprKeys = api;
 })(typeof self !== 'undefined' ? self : this);

@@ -162,6 +162,65 @@ body.ghost.flash .status { opacity: 1; }
 .menu .mi-r.bad { color: var(--danger); }
 
 /* --------------------------------------------------------------------------
+   gif: the recording bar, the frame round the area, the gif window
+   -------------------------------------------------------------------------- */
+body.rec { background: var(--menu-bg); }
+.rec-bar {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 4px 0 11px;
+  border: 1px solid var(--menu-border);
+  font-size: var(--menu-size);
+  color: var(--text);
+  white-space: nowrap;
+}
+.rec-dot { flex: none; width: 7px; height: 7px; background: var(--border-focus); }
+body.rec[data-state="rec"] .rec-dot { background: var(--danger); animation: rec-blink 1.2s steps(1) infinite; }
+.rec-text { flex: 1; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.rec-text .d { color: var(--dim); }
+body.rec[data-state="count"] .rec-text { color: var(--strong); }
+body.rec[data-state="saving"] .rec-text { color: var(--dim); }
+.rec-acts { display: flex; align-items: center; gap: 1px; }
+.rbtn {
+  height: 24px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--btn);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: color var(--quick), background var(--quick);
+}
+.rbtn:hover { color: var(--btn-hover); background: var(--menu-hover); }
+.rbtn[data-act="rec"], .rbtn[data-act="stop"] { color: var(--text); }
+.rbtn.x { padding: 0 7px; }
+.rbtn[hidden] { display: none; }
+/* the screen stream plays here, unseen; frames are read off it */
+.rec-video { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+@keyframes rec-blink { 50% { opacity: .3; } }
+
+/* the frame: the window is the area plus 6px a side; the area itself stays clear */
+body.recframe { background: transparent; }
+.recframe .area { position: fixed; inset: 6px; outline: 1px solid var(--sel-line); outline-offset: 1px; }
+.recframe .area i { position: absolute; width: 18px; height: 18px; border: 0 solid var(--sel-tick); transition: border-color var(--quick); }
+.recframe .area .tl { left: -5px; top: -5px; border-left-width: 4px; border-top-width: 4px; }
+.recframe .area .br { right: -5px; bottom: -5px; border-right-width: 4px; border-bottom-width: 4px; }
+body.recframe[data-state="rec"] .area i { border-color: var(--danger); }
+body.recframe[data-state="rec"] .area { outline-color: rgba(255, 255, 255, .28); }
+
+/* the gif window: a snip window without the marks */
+#gif { display: block; cursor: grab; }
+body.matte #gif { box-shadow: 0 0 0 1px var(--edge); }
+
+@media (prefers-reduced-motion: reduce) {
+  body.rec[data-state="rec"] .rec-dot { animation: none; }
+}
+
+/* --------------------------------------------------------------------------
    settings window: the same menu, standing on its own
    -------------------------------------------------------------------------- */
 body.settings .content { padding: 0; overflow-y: auto; }

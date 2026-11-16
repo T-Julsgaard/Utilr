@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob: mediastream:; worker-src 'self'; script-src 'self'">
+<title>snipr</title>
+<link rel="stylesheet" href="theme/fonts.css">
+<link rel="stylesheet" href="theme/ghost.css">
+<link rel="stylesheet" href="snipr.css">
+</head>
+<body class="ghost rec" data-theme="ghost" data-state="ready">
+  <div class="rec-bar" id="bar">
+    <span class="rec-dot" aria-hidden="true"></span>
+    <span class="rec-text" id="text"></span>
+    <span class="rec-acts">
+      <button class="rbtn" data-act="rec" data-in="ready" id="btn-rec" title="Record now">rec</button>
+      <button class="rbtn" data-act="delay" data-in="ready" title="Record in 3 seconds">in 3</button>
+      <button class="rbtn" data-act="stop" data-in="rec" id="btn-stop" title="Stop">stop</button>
+      <button class="rbtn x" data-act="cancel" data-in="ready count" title="Cancel" aria-label="Cancel">
+        <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>
+      </button>
+    </span>
+  </div>
+  <script src="gifenc.js"></script>
+  <script src="rec.js"></script>
+</body>
+</html>
